@@ -265,6 +265,20 @@ def on_slider_change(val=None):
 
             prompt_allowed = app_state.initial_render_done
 
+            try:
+                df_groups_source = app_state.df_global[group_col].fillna('Unknown').astype(str)
+                all_groups = sorted(df_groups_source.unique())
+            except Exception:
+                all_groups = []
+
+            app_state.available_groups = all_groups
+            if app_state.visible_groups:
+                filtered_visible = [g for g in app_state.visible_groups if g in all_groups]
+                if filtered_visible:
+                    app_state.visible_groups = filtered_visible
+                else:
+                    app_state.visible_groups = None
+
             if render_mode == '3D':
                 available_cols = [c for c in app_state.data_cols if c in app_state.df_global.columns]
                 print(f"[DEBUG] Available numeric columns for 3D: {available_cols}", flush=True)

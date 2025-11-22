@@ -52,8 +52,34 @@ class FileSelectionDialog:
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
 
-        container = ttk.Frame(self.root, padding=(24, 20, 24, 20), style='FileDialog.TFrame')
-        container.grid(row=0, column=0, sticky=(tk.N, tk.S, tk.E, tk.W))
+        outer = ttk.Frame(self.root, style='FileDialog.TFrame')
+        outer.pack(fill=tk.BOTH, expand=True)
+
+        canvas = tk.Canvas(outer, highlightthickness=0, bd=0, background="#edf2f7")
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        scrollbar = ttk.Scrollbar(outer, orient=tk.VERTICAL, command=canvas.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        container = ttk.Frame(canvas, padding=(24, 20, 24, 20), style='FileDialog.TFrame')
+        window_id = canvas.create_window((0, 0), window=container, anchor='nw')
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        def _sync_scrollregion(event, target_canvas=canvas):
+            try:
+                target_canvas.configure(scrollregion=target_canvas.bbox("all"))
+            except tk.TclError:
+                pass
+
+        def _resize_canvas(event, target_canvas=canvas, item=window_id):
+            try:
+                target_canvas.itemconfigure(item, width=event.width)
+            except tk.TclError:
+                pass
+
+        container.bind("<Configure>", _sync_scrollregion)
+        canvas.bind("<Configure>", _resize_canvas)
+
         container.columnconfigure(0, weight=1)
         container.rowconfigure(2, weight=1)
 

@@ -212,7 +212,39 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, siz
             return False
         
         df_plot[group_col] = df_plot[group_col].fillna('Unknown').astype(str)
-        
+
+        all_groups = sorted(df_plot[group_col].unique())
+        app_state.available_groups = all_groups
+
+        visible_groups = app_state.visible_groups
+        if visible_groups:
+            allowed = set(visible_groups)
+            mask = df_plot[group_col].isin(allowed)
+            if not mask.any():
+                print("[INFO] No 3D data matches the selected legend filter; reverting to all groups.", flush=True)
+                app_state.visible_groups = None
+            else:
+                df_plot = df_plot[mask].copy()
+                if df_plot.empty:
+                    print("[INFO] Filtered 3D data is empty; reverting to all groups.", flush=True)
+                    df_plot = app_state.df_global.dropna(subset=data_columns).copy()
+                    df_plot[group_col] = df_plot[group_col].fillna('Unknown').astype(str)
+                    app_state.visible_groups = None
+                    all_groups = sorted(df_plot[group_col].unique())
+                    app_state.available_groups = all_groups
+        all_groups = sorted(df_plot[group_col].unique())
+        app_state.available_groups = all_groups
+
+        visible_groups = app_state.visible_groups
+        if visible_groups:
+            allowed = set(visible_groups)
+            mask = df_plot[group_col].isin(allowed)
+            if not mask.any():
+                print("[INFO] No data matches the selected legend filter; showing all groups instead.", flush=True)
+                app_state.visible_groups = None
+            else:
+                df_plot = df_plot[mask].copy()
+
         unique_cats = sorted(df_plot[group_col].unique())
         print(f"[DEBUG] Unique categories in {group_col}: {unique_cats}", flush=True)
         palette = sns.color_palette("tab20", len(unique_cats))
@@ -344,6 +376,19 @@ def plot_2d_data(group_col, data_columns, size=60):
             return False
 
         df_plot[group_col] = df_plot[group_col].fillna('Unknown').astype(str)
+
+        all_groups = sorted(df_plot[group_col].unique())
+        app_state.available_groups = all_groups
+
+        visible_groups = app_state.visible_groups
+        if visible_groups:
+            allowed = set(visible_groups)
+            mask = df_plot[group_col].isin(allowed)
+            if not mask.any():
+                print("[INFO] No 2D data matches the selected legend filter; reverting to all groups.", flush=True)
+                app_state.visible_groups = None
+            else:
+                df_plot = df_plot[mask].copy()
 
         app_state.ax.clear()
         app_state.clear_plot_state()

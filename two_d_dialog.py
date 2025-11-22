@@ -65,8 +65,33 @@ class _Select2DColumnsDialog:
         self.style.map('Secondary.TButton', background=[('active', '#e2e8f0')], foreground=[('active', '#1d4ed8')])
 
     def _build_ui(self):
-        container = ttk.Frame(self.root, padding=(18, 18, 18, 14), style='Dialog.TFrame')
-        container.pack(fill=tk.BOTH, expand=True)
+        outer = ttk.Frame(self.root, style='Dialog.TFrame')
+        outer.pack(fill=tk.BOTH, expand=True)
+
+        canvas = tk.Canvas(outer, highlightthickness=0, bd=0, background="#edf2f7")
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        scrollbar = ttk.Scrollbar(outer, orient=tk.VERTICAL, command=canvas.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        container = ttk.Frame(canvas, padding=(18, 18, 18, 14), style='Dialog.TFrame')
+        window_id = canvas.create_window((0, 0), window=container, anchor='nw')
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        def _sync_scrollregion(event, target_canvas=canvas):
+            try:
+                target_canvas.configure(scrollregion=target_canvas.bbox("all"))
+            except tk.TclError:
+                pass
+
+        def _resize_canvas(event, target_canvas=canvas, item=window_id):
+            try:
+                target_canvas.itemconfigure(item, width=event.width)
+            except tk.TclError:
+                pass
+
+        container.bind("<Configure>", _sync_scrollregion)
+        canvas.bind("<Configure>", _resize_canvas)
 
         title = ttk.Label(container, text="Choose axes for the 2D scatter", style='Header.TLabel', wraplength=340, justify=tk.LEFT)
         title.pack(anchor=tk.W)

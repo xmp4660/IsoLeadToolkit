@@ -3,7 +3,7 @@ Control Panel - Interactive Parameter Adjustment
 Tkinter-based control panel for UMAP/t-SNE parameters and visualization settings
 """
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from state import app_state
 import state as state_module
 
@@ -238,6 +238,8 @@ class ControlPanel:
 
         group_container = ttk.Frame(common_section, style='CardBody.TFrame')
         group_container.pack(fill=tk.X)
+        self.group_container = group_container
+        self.group_placeholder = None
 
         if app_state.group_cols:
             for col in app_state.group_cols:
@@ -258,6 +260,24 @@ class ControlPanel:
                 justify=tk.LEFT
             )
             placeholder.pack(anchor=tk.W, pady=4)
+            self.group_placeholder = placeholder
+
+        legend_tools = ttk.Frame(common_section, style='CardBody.TFrame')
+        legend_tools.pack(fill=tk.X, pady=(12, 0))
+
+        ttk.Button(
+            legend_tools,
+            text="Filter legend...",
+            style='Secondary.TButton',
+            command=self._open_legend_filter
+        ).pack(side=tk.LEFT, padx=(0, 10))
+
+        ttk.Button(
+            legend_tools,
+            text="Reload data...",
+            style='Secondary.TButton',
+            command=self._reload_data
+        ).pack(side=tk.LEFT)
 
         ttk.Separator(scrollable_frame, orient=tk.HORIZONTAL, style='SectionSeparator.TSeparator').pack(fill=tk.X, pady=12)
 
@@ -310,6 +330,8 @@ class ControlPanel:
 
         self.style.configure('Accent.TButton', background='#2563eb', foreground='#ffffff', font=('Segoe UI', 10, 'bold'), padding=(12, 6))
         self.style.map('Accent.TButton', background=[('active', '#1d4ed8'), ('pressed', '#1d4ed8')], foreground=[('disabled', '#d1d5db'), ('active', '#ffffff'), ('pressed', '#ffffff')])
+        self.style.configure('Secondary.TButton', background='#ffffff', foreground='#2563eb', font=('Segoe UI', 10, 'bold'), padding=(12, 6))
+        self.style.map('Secondary.TButton', background=[('active', '#e2e8f0')], foreground=[('active', '#1d4ed8')])
 
     def _create_section(self, parent, title, description=None):
         """Create a styled section container"""
@@ -362,6 +384,102 @@ class ControlPanel:
         self.labels[key] = value_label
 
         return slider
+
+    def _refresh_group_options(self):
+        """Rebuild group radio buttons to match the latest dataset."""
+        if not hasattr(self, 'group_container') or self.group_container is None:
+            return
+
+        for child in list(self.group_container.winfo_children()):
+            try:
+                child.destroy()
+            except Exception:
+                pass
+
+        self.group_placeholder = None
+
+        if app_state.group_cols:
+            for col in app_state.group_cols:
+                ttk.Radiobutton(
+                    self.group_container,
+                    text=col,
+                    variable=self.radio_vars['group'],
+                    value=col,
+                    command=self._on_change,
+                    style='Option.TRadiobutton'
+                ).pack(anchor=tk.W, pady=2)
+        else:
+            placeholder = ttk.Label(
+                self.group_container,
+                text="Load data to unlock grouping options.",
+                style='BodyMuted.TLabel',
+                wraplength=400,
+                justify=tk.LEFT
+            )
+            placeholder.pack(anchor=tk.W, pady=4)
+            self.group_placeholder = placeholder
+
+    def _open_legend_filter(self):
+        """Launch legend filter dialog to hide/show groups."""
+        if not app_state.available_groups:
+            messagebox.showinfo("Legend Filter", "No legend entries are available yet.", parent=self.root)
+            return
+
+        try:
+            from legend_dialog import select_visible_groups
+        except Exception as exc:
+            messagebox.showerror("Legend Filter", f"Unable to open filter dialog: {exc}", parent=self.root)
+            return
+
+        current = app_state.visible_groups or app_state.available_groups
+        selection = select_visible_groups(app_state.available_groups, selected=current)
+        if selection is None:
+            return
+
+        if len(selection) == len(app_state.available_groups):
+            app_state.visible_groups = None
+        else:
+            app_state.visible_groups = selection
+
+        if self.callback:
+            self.callback()
+
+    def _reload_data(self):
+        """Allow the user to pick a new dataset and refresh the UI."""
+        try:
+            from data import load_data
+        except Exception as exc:
+            messagebox.showerror("Reload Data", f"Unable to reload data: {exc}", parent=self.root)
+            return
+
+        success = load_data(show_file_dialog=True, show_config_dialog=True)
+        if not success:
+            messagebox.showinfo("Reload Data", "Data reload cancelled.", parent=self.root)
+            return
+
+        if app_state.group_cols:
+            if app_state.last_group_col not in app_state.group_cols:
+                app_state.last_group_col = app_state.group_cols[0]
+        else:
+            app_state.last_group_col = None
+
+        if 'group' in self.radio_vars:
+            self.radio_vars['group'].set(app_state.last_group_col or '')
+
+        app_state.visible_groups = None
+        app_state.available_groups = []
+        app_state.selected_2d_cols = []
+        app_state.selected_3d_cols = []
+        app_state.selected_2d_confirmed = False
+        app_state.selected_3d_confirmed = False
+        app_state.initial_render_done = False
+
+        self._refresh_group_options()
+
+        if self.callback:
+            self.callback()
+
+        messagebox.showinfo("Reload Data", "Dataset reloaded successfully.", parent=self.root)
     
     def _on_change(self):
         """Handle any parameter change - with safety checks"""
