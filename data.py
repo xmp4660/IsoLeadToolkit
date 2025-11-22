@@ -116,6 +116,8 @@ def load_data(show_file_dialog=True, show_config_dialog=True):
             app_state.selected_3d_cols = []
             app_state.selected_2d_confirmed = False
             app_state.selected_3d_confirmed = False
+            app_state.available_groups = []
+            app_state.visible_groups = None
             
             print(f"[OK] Selected group columns: {app_state.group_cols}", flush=True)
             print(f"[OK] Selected data columns: {app_state.data_cols}", flush=True)

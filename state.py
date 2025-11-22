@@ -18,6 +18,8 @@ class AppState:
         self.render_mode = 'UMAP'
         self.selected_2d_cols = []
         self.selected_3d_cols = []
+        self.available_groups = []
+        self.visible_groups = None
         self.selected_2d_confirmed = False
         self.selected_3d_confirmed = False
         
