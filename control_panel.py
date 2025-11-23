@@ -48,6 +48,9 @@ class ControlPanel:
         self.sliders = {}
         self.labels = {}
         self.radio_vars = {}
+        self._slider_after = {}
+        self._slider_steps = {}
+        self._slider_delay_ms = 350
         
         self._create_widgets()
 
@@ -160,7 +163,8 @@ class ControlPanel:
             minimum=2,
             maximum=50,
             initial=app_state.umap_params['n_neighbors'],
-            formatter=lambda v: f"{int(float(v))}"
+            formatter=lambda v: f"{int(float(v))}",
+            step=1
         )
 
         self._add_slider(
@@ -170,7 +174,8 @@ class ControlPanel:
             minimum=0.0,
             maximum=1.0,
             initial=app_state.umap_params['min_dist'],
-            formatter=lambda v: f"{float(v):.2f}"
+            formatter=lambda v: f"{float(v):.2f}",
+            step=0.01
         )
 
         self._add_slider(
@@ -180,7 +185,8 @@ class ControlPanel:
             minimum=0,
             maximum=200,
             initial=app_state.umap_params['random_state'],
-            formatter=lambda v: f"{int(float(v))}"
+            formatter=lambda v: f"{int(float(v))}",
+            step=1
         )
 
         # ========== t-SNE Parameters ==========
@@ -197,7 +203,8 @@ class ControlPanel:
             minimum=5,
             maximum=100,
             initial=app_state.tsne_params['perplexity'],
-            formatter=lambda v: f"{int(float(v))}"
+            formatter=lambda v: f"{int(float(v))}",
+            step=1
         )
 
         self._add_slider(
@@ -207,7 +214,8 @@ class ControlPanel:
             minimum=10,
             maximum=1000,
             initial=app_state.tsne_params['learning_rate'],
-            formatter=lambda v: f"{int(float(v))}"
+            formatter=lambda v: f"{int(float(v))}",
+            step=1
         )
 
         # ========== Common Parameters ==========
@@ -224,7 +232,8 @@ class ControlPanel:
             minimum=10,
             maximum=200,
             initial=app_state.point_size,
-            formatter=lambda v: f"{int(float(v))}"
+            formatter=lambda v: f"{int(float(v))}",
+            step=1
         )
 
         group_label = ttk.Label(
@@ -344,13 +353,12 @@ class ControlPanel:
 
         return section
 
-    def _add_slider(self, parent, key, label_text, minimum, maximum, initial, formatter):
-        """Add a labeled slider with value indicator"""
+    def _add_slider(self, parent, key, label_text, minimum, maximum, initial, formatter, step=1):
+        """Add a labeled slider with value indicator and micro-adjust controls."""
         row = ttk.Frame(parent, style='CardBody.TFrame')
         row.pack(fill=tk.X, pady=6)
 
-        label = ttk.Label(row, text=label_text, style='FieldLabel.TLabel')
-        label.pack(anchor=tk.W)
+        ttk.Label(row, text=label_text, style='FieldLabel.TLabel').pack(anchor=tk.W)
 
         slider_container = ttk.Frame(row, style='CardBody.TFrame')
         slider_container.pack(fill=tk.X, pady=(4, 0))
@@ -358,32 +366,126 @@ class ControlPanel:
         value_label = ttk.Label(slider_container, text=formatter(initial), style='ValueLabel.TLabel')
         value_label.pack(side=tk.RIGHT)
 
+        control_frame = ttk.Frame(slider_container, style='CardBody.TFrame')
+        control_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        decrement = ttk.Button(
+            control_frame,
+            text="<",
+            width=3,
+            style='Secondary.TButton',
+            command=lambda k=key: self._nudge_slider(k, -step)
+        )
+        decrement.pack(side=tk.LEFT, padx=(0, 6))
+
         slider = ttk.Scale(
-            slider_container,
+            control_frame,
             from_=minimum,
             to=maximum,
             orient=tk.HORIZONTAL
         )
         slider.set(initial)
-        slider.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10))
+        slider.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
 
-        def _handle_slider(value):
+        increment = ttk.Button(
+            control_frame,
+            text=">",
+            width=3,
+            style='Secondary.TButton',
+            command=lambda k=key: self._nudge_slider(k, step)
+        )
+        increment.pack(side=tk.LEFT)
+
+        def _handle_slider(value, slider_key=key):
             try:
                 numeric_value = float(value)
             except (TypeError, ValueError):
                 numeric_value = value
+            else:
+                step_value = self._slider_steps.get(slider_key, 0) or 0
+                if step_value:
+                    snapped = round(numeric_value / step_value) * step_value
+                    if step_value < 1:
+                        step_str = f"{step_value:.6f}".rstrip('0').rstrip('.')
+                        if '.' in step_str:
+                            decimals = len(step_str.split('.')[1])
+                            snapped = round(snapped, decimals)
+                    if abs(snapped - numeric_value) > 1e-9:
+                        numeric_value = snapped
+                        slider_widget = self.sliders.get(slider_key)
+                        if slider_widget is not None:
+                            slider_widget.set(numeric_value)
             try:
                 value_label.config(text=formatter(numeric_value))
             except Exception:
                 pass
-            self._on_change()
+            self._schedule_slider_callback(slider_key)
 
         slider.configure(command=_handle_slider)
+        slider.bind("<ButtonRelease-1>", lambda _e, k=key: self._apply_slider_change(k))
+        slider.bind("<FocusOut>", lambda _e, k=key: self._apply_slider_change(k))
+        slider.bind("<KeyRelease>", lambda _e, k=key: self._apply_slider_change(k))
 
         self.sliders[key] = slider
         self.labels[key] = value_label
+        self._slider_steps[key] = float(step)
 
         return slider
+
+    def _schedule_slider_callback(self, key):
+        """Debounce expensive recomputation while the slider is moving."""
+        existing = self._slider_after.get(key)
+        if existing is not None:
+            try:
+                self.root.after_cancel(existing)
+            except Exception:
+                pass
+
+        self._slider_after[key] = self.root.after(
+            self._slider_delay_ms,
+            lambda k=key: self._apply_slider_change(k)
+        )
+
+    def _apply_slider_change(self, key):
+        """Commit the slider value and trigger downstream updates."""
+        pending = self._slider_after.pop(key, None)
+        if pending is not None:
+            try:
+                self.root.after_cancel(pending)
+            except Exception:
+                pass
+
+        self._on_change()
+
+    def _nudge_slider(self, key, delta):
+        """Micro-adjust the slider value using the auxiliary buttons."""
+        slider = self.sliders.get(key)
+        if slider is None:
+            return
+
+        step = self._slider_steps.get(key, 1.0)
+        try:
+            current = float(slider.get())
+            minimum = float(slider.cget('from'))
+            maximum = float(slider.cget('to'))
+        except (TypeError, ValueError):
+            return
+
+        new_value = current + delta
+        if step:
+            new_value = round(new_value / step) * step
+
+        new_value = max(minimum, min(maximum, new_value))
+
+        # Limit floating-point noise to six decimal places at most.
+        if step < 1:
+            step_str = f"{step:.6f}".rstrip('0').rstrip('.')
+            if '.' in step_str:
+                decimals = len(step_str.split('.')[1])
+                new_value = round(new_value, decimals)
+
+        slider.set(new_value)
+        self._apply_slider_change(key)
 
     def _refresh_group_options(self):
         """Rebuild group radio buttons to match the latest dataset."""
@@ -613,6 +715,12 @@ class ControlPanel:
     def destroy(self):
         """Destroy the control panel and master if owned"""
         try:
+            for pending in list(self._slider_after.values()):
+                try:
+                    self.root.after_cancel(pending)
+                except Exception:
+                    pass
+            self._slider_after.clear()
             self.root.destroy()
         finally:
             if getattr(self, "_owns_master", False) and getattr(self, "master", None) is not None:
