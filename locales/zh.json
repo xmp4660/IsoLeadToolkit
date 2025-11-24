@@ -131,5 +131,7 @@
   "Browse...": "浏览...",
   "Excel files": "Excel 文件",
   "CSV files": "CSV 文件",
-  "All files": "所有文件"
+  "All files": "所有文件",
+  "Search groups": "搜索分组",
+  "No legend entries match your search.": "没有符合搜索条件的图例项目。"
 }

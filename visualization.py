@@ -34,7 +34,7 @@ def _ensure_axes(dimensions=2):
                         pass
                 app_state.ax = app_state.fig.add_subplot(111)
 
-        app_state.fig.subplots_adjust(left=0.08, bottom=0.12, right=0.78, top=0.9)
+        app_state.fig.subplots_adjust(left=0.08, bottom=0.12, right=0.78, top=0.88)
     except Exception as axis_err:
         print(f"[WARN] Unable to configure axes: {axis_err}", flush=True)
 
@@ -158,7 +158,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, siz
 
         # Reserve space around the axes so the legend and titles are never clipped
         try:
-            app_state.fig.subplots_adjust(left=0.08, bottom=0.12, right=0.78, top=0.9)
+            app_state.fig.subplots_adjust(left=0.08, bottom=0.12, right=0.78, top=0.88)
         except Exception:
             pass
 
@@ -314,7 +314,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, siz
         else:  # tSNE
             title = f't-SNE (perplexity={tsne_params["perplexity"]}, lr={tsne_params["learning_rate"]})\nColored by {group_col}'
         
-        app_state.ax.set_title(title, fontsize=13, color="#1f2937", pad=16)
+        app_state.ax.set_title(title, fontsize=13, color="#1f2937", pad=26)
         app_state.ax.set_xlabel('Dimension 1', color="#334155", fontsize=11)
         app_state.ax.set_ylabel('Dimension 2', color="#334155", fontsize=11)
         app_state.ax.tick_params(colors="#475569", labelsize=9)
@@ -402,7 +402,7 @@ def plot_2d_data(group_col, data_columns, size=60):
         app_state.clear_plot_state()
 
         try:
-            app_state.fig.subplots_adjust(left=0.08, bottom=0.12, right=0.78, top=0.9)
+            app_state.fig.subplots_adjust(left=0.08, bottom=0.12, right=0.78, top=0.88)
         except Exception:
             pass
 
@@ -480,7 +480,7 @@ def plot_2d_data(group_col, data_columns, size=60):
             f"2D Scatter Plot ({data_columns[0]} vs {data_columns[1]})\n"
             f"Colored by {group_col}"
         )
-        app_state.ax.set_title(title, fontsize=13, color="#1f2937", pad=16)
+        app_state.ax.set_title(title, fontsize=13, color="#1f2937", pad=26)
         app_state.ax.set_xlabel(data_columns[0], color="#334155", fontsize=11)
         app_state.ax.set_ylabel(data_columns[1], color="#334155", fontsize=11)
         app_state.ax.tick_params(colors="#475569", labelsize=9)
