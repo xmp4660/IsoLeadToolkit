@@ -26,7 +26,7 @@ class LegendFilterDialog:
         self.root.configure(bg="#edf2f7")
         self.root.geometry("420x360")
         self.root.minsize(420, 320)
-        self.root.resizable(False, False)
+        self.root.resizable(True, True)
 
         self.style = ttk.Style(self.root)
         try:
@@ -83,45 +83,24 @@ class LegendFilterDialog:
         self.style.map('LegendSecondary.TButton', background=[('active', '#e2e8f0')], foreground=[('active', '#1d4ed8')])
 
     def _build_ui(self):
-        outer = ttk.Frame(self.root, style='LegendDialog.TFrame')
+        outer = ttk.Frame(self.root, padding=(18, 18, 18, 14), style='LegendDialog.TFrame')
         outer.pack(fill=tk.BOTH, expand=True)
-
-        canvas = tk.Canvas(outer, highlightthickness=0, bd=0, background="#edf2f7")
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        dialog_scrollbar = ttk.Scrollbar(outer, orient=tk.VERTICAL, command=canvas.yview)
-        dialog_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
-        container = ttk.Frame(canvas, padding=(18, 18, 18, 14), style='LegendDialog.TFrame')
-        window_id = canvas.create_window((0, 0), window=container, anchor='nw')
-        canvas.configure(yscrollcommand=dialog_scrollbar.set)
-
-        def _sync_scrollregion(event, target_canvas=canvas):
-            try:
-                target_canvas.configure(scrollregion=target_canvas.bbox("all"))
-            except tk.TclError:
-                pass
-
-        def _resize_canvas(event, target_canvas=canvas, item=window_id):
-            try:
-                target_canvas.itemconfigure(item, width=event.width)
-            except tk.TclError:
-                pass
-
-        container.bind("<Configure>", _sync_scrollregion)
-        canvas.bind("<Configure>", _resize_canvas)
+        outer.columnconfigure(0, weight=1)
+        outer.rowconfigure(1, weight=1)
 
         title = ttk.Label(
-            container,
+            outer,
             text=translate("Choose which groups stay visible"),
             style='LegendHeader.TLabel',
             wraplength=360,
             justify=tk.LEFT
         )
-        title.pack(anchor=tk.W)
+        title.grid(row=0, column=0, sticky=tk.W)
 
-        card = ttk.Frame(container, padding=14, style='LegendCard.TFrame')
-        card.pack(fill=tk.BOTH, expand=True, pady=(12, 16))
+        card = ttk.Frame(outer, padding=14, style='LegendCard.TFrame')
+        card.grid(row=1, column=0, sticky=tk.NSEW, pady=(12, 16))
+        card.columnconfigure(0, weight=1)
+        card.rowconfigure(3, weight=1)
 
         ttk.Label(
             card,
@@ -129,10 +108,25 @@ class LegendFilterDialog:
             style='LegendBody.TLabel',
             wraplength=340,
             justify=tk.LEFT
-        ).pack(anchor=tk.W, pady=(0, 12))
+        ).grid(row=0, column=0, sticky=tk.W, pady=(0, 12))
+
+        search_row = ttk.Frame(card, style='LegendCard.TFrame')
+        search_row.grid(row=1, column=0, sticky=tk.EW, pady=(0, 10))
+        search_row.columnconfigure(0, weight=1)
+
+        ttk.Label(
+            search_row,
+            text=translate("Search groups"),
+            style='LegendBody.TLabel'
+        ).grid(row=0, column=0, sticky=tk.W)
+
+        self.search_var = tk.StringVar()
+        search_entry = ttk.Entry(search_row, textvariable=self.search_var)
+        search_entry.grid(row=1, column=0, sticky=tk.EW, pady=(4, 0))
+        search_entry.bind('<KeyRelease>', self._on_search_change)
 
         toolbar = ttk.Frame(card, style='LegendCard.TFrame')
-        toolbar.pack(fill=tk.X, pady=(0, 10))
+        toolbar.grid(row=2, column=0, sticky=tk.W, pady=(0, 10))
 
         ttk.Button(
             toolbar,
@@ -148,12 +142,18 @@ class LegendFilterDialog:
         ).pack(side=tk.LEFT)
 
         self.vars = {}
+        self._group_widgets = {}
 
-        list_canvas = tk.Canvas(card, highlightthickness=0, bd=0, background="#ffffff")
-        list_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        list_container = ttk.Frame(card, style='LegendCard.TFrame')
+        list_container.grid(row=3, column=0, sticky=tk.NSEW)
+        list_container.columnconfigure(0, weight=1)
+        list_container.rowconfigure(0, weight=1)
 
-        list_scrollbar = ttk.Scrollbar(card, orient=tk.VERTICAL, command=list_canvas.yview)
-        list_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        list_canvas = tk.Canvas(list_container, highlightthickness=0, bd=0, background="#ffffff")
+        list_canvas.grid(row=0, column=0, sticky=tk.NSEW)
+
+        list_scrollbar = ttk.Scrollbar(list_container, orient=tk.VERTICAL, command=list_canvas.yview)
+        list_scrollbar.grid(row=0, column=1, sticky=tk.NS)
 
         list_canvas.configure(yscrollcommand=list_scrollbar.set)
 
@@ -185,13 +185,24 @@ class LegendFilterDialog:
             )
             cb.pack(anchor=tk.W, pady=4)
             self.vars[group] = var
+            self._group_widgets[group] = cb
             self._bind_mousewheel(cb, list_canvas)
 
         self._bind_mousewheel(list_canvas, list_canvas)
         self._bind_mousewheel(list_frame, list_canvas)
 
-        button_row = ttk.Frame(container, style='LegendDialog.TFrame')
-        button_row.pack(fill=tk.X)
+        self.empty_label = ttk.Label(
+            list_frame,
+            text=translate("No legend entries match your search."),
+            style='LegendBody.TLabel'
+        )
+        self.empty_label.pack(anchor=tk.W, pady=8)
+        self.empty_label.pack_forget()
+
+        self._filter_groups()
+
+        button_row = ttk.Frame(outer, style='LegendDialog.TFrame')
+        button_row.grid(row=2, column=0, sticky=tk.EW, pady=(0, 4))
 
         ttk.Button(
             button_row,
@@ -205,6 +216,28 @@ class LegendFilterDialog:
             style='LegendAccent.TButton',
             command=self._on_ok
         ).pack(side=tk.RIGHT)
+
+    def _filter_groups(self):
+        """Show only groups that match the current search query."""
+        query = (self.search_var.get() or '').strip().lower()
+        any_visible = False
+
+        for group, widget in self._group_widgets.items():
+            text = str(group).lower()
+            if not query or query in text:
+                if not widget.winfo_ismapped():
+                    widget.pack(anchor=tk.W, pady=4)
+                any_visible = True
+            else:
+                widget.pack_forget()
+
+        if any_visible:
+            self.empty_label.pack_forget()
+        else:
+            self.empty_label.pack(anchor=tk.W, pady=8)
+
+    def _on_search_change(self, event=None):
+        self._filter_groups()
 
     def _select_all(self):
         for var in self.vars.values():

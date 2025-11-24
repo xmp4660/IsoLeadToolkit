@@ -233,7 +233,7 @@ def main():
         print("[INFO] Plot figure created.", flush=True)
         
         plt.ion()
-        app_state.fig.subplots_adjust(left=0.08, bottom=0.12, right=0.78, top=0.9)
+        app_state.fig.subplots_adjust(left=0.08, bottom=0.12, right=0.78, top=0.88)
 
         # Add quick access button to reopen the control panel if it is hidden
         button_ax = app_state.fig.add_axes([0.82, 0.035, 0.14, 0.05])

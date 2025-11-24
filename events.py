@@ -212,6 +212,8 @@ def toggle_selection_mode(event=None):
         else:
             print("[INFO] Selection mode disabled.", flush=True)
             _disable_rectangle_selector()
+            if app_state.selected_indices:
+                app_state.selected_indices.clear()
 
         _notify_selection_ui()
         refresh_selection_overlay()

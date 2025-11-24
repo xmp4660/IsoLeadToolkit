@@ -132,5 +132,7 @@
   "Browse...": "Browse...",
   "Excel files": "Excel files",
   "CSV files": "CSV files",
-  "All files": "All files"
+  "All files": "All files",
+  "Search groups": "Search groups",
+  "No legend entries match your search.": "No legend entries match your search."
 }
