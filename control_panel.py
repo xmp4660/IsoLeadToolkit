@@ -86,64 +86,108 @@ class ControlPanel:
             pass
     
     def _create_widgets(self):
-        """Create GUI widgets with improved styling"""
+        """Create GUI widgets with improved styling using Tabs"""
         self.root.columnconfigure(0, weight=1)
+        self.root.rowconfigure(0, weight=1)
 
-        container = ttk.Frame(self.root, padding=(18, 18, 18, 14), style='ControlPanel.TFrame')
+        # Main container
+        container = ttk.Frame(self.root, padding=(10, 10, 10, 10), style='ControlPanel.TFrame')
         container.pack(fill=tk.BOTH, expand=True)
 
-        header = ttk.Label(container, text=self._translate("Visualization Controls"), style='Header.TLabel')
-        header.pack(anchor=tk.W)
+        # Header
+        header_frame = ttk.Frame(container, style='ControlPanel.TFrame')
+        header_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        header = ttk.Label(header_frame, text=self._translate("Visualization Controls"), style='Header.TLabel')
+        header.pack(side=tk.LEFT)
         self._register_translation(header, "Visualization Controls")
 
-        subtitle = ttk.Label(
-            container,
-            text=self._translate("Fine-tune algorithm settings and instantly preview the updated embedding."),
-            style='Subheader.TLabel',
-            wraplength=440,
-            justify=tk.LEFT
+        # Notebook (Tabs)
+        self.notebook = ttk.Notebook(container)
+        self.notebook.pack(fill=tk.BOTH, expand=True)
+
+        # Tab 1: Settings (General)
+        self.tab_settings = ttk.Frame(self.notebook, style='ControlPanel.TFrame')
+        self.notebook.add(self.tab_settings, text=self._translate("Settings"))
+        self._register_translation(self.notebook, "Settings", attr='tab', formatter=lambda: {'tab_id': 0})
+
+        # Tab 2: Algorithm (Parameters)
+        self.tab_algo = ttk.Frame(self.notebook, style='ControlPanel.TFrame')
+        self.notebook.add(self.tab_algo, text=self._translate("Algorithm"))
+        self._register_translation(self.notebook, "Algorithm", attr='tab', formatter=lambda: {'tab_id': 1})
+
+        # Tab 3: Tools (Selection & Export)
+        self.tab_tools = ttk.Frame(self.notebook, style='ControlPanel.TFrame')
+        self.notebook.add(self.tab_tools, text=self._translate("Tools"))
+        self._register_translation(self.notebook, "Tools", attr='tab', formatter=lambda: {'tab_id': 2})
+        
+        # Tab 4: Legend (New!)
+        self.tab_legend = ttk.Frame(self.notebook, style='ControlPanel.TFrame')
+        self.notebook.add(self.tab_legend, text=self._translate("Legend"))
+        self._register_translation(self.notebook, "Legend", attr='tab', formatter=lambda: {'tab_id': 3})
+
+        # --- Populate Tab 1: Settings ---
+        self._build_settings_tab(self.tab_settings)
+
+        # --- Populate Tab 2: Algorithm ---
+        self._build_algorithm_tab(self.tab_algo)
+
+        # --- Populate Tab 3: Tools ---
+        self._build_tools_tab(self.tab_tools)
+        
+        # --- Populate Tab 4: Legend ---
+        self._build_legend_tab(self.tab_legend)
+
+        # Footer
+        action_frame = ttk.Frame(container, style='ControlPanel.TFrame')
+        action_frame.pack(fill=tk.X, pady=(10, 0))
+
+        close_button = ttk.Button(
+            action_frame,
+            text=self._translate("Close Panel"),
+            style='Accent.TButton',
+            command=self._on_close
         )
-        subtitle.pack(anchor=tk.W, pady=(4, 14))
-        self._register_translation(subtitle, "Fine-tune algorithm settings and instantly preview the updated embedding.")
+        close_button.pack(side=tk.RIGHT)
+        self._register_translation(close_button, "Close Panel")
 
-        canvas_frame = ttk.Frame(container, style='ControlPanel.TFrame')
-        canvas_frame.pack(fill=tk.BOTH, expand=True)
+        self.update_selection_controls()
 
-        scrollbar = ttk.Scrollbar(canvas_frame, orient=tk.VERTICAL)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y, padx=(0, 6))
-
-        main_canvas = tk.Canvas(
-            canvas_frame,
-            highlightthickness=0,
-            bd=0,
-            background=self.primary_bg
-        )
-        main_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        scrollable_frame = ttk.Frame(main_canvas, style='ControlPanel.TFrame')
-        canvas_window = main_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+    def _build_scrollable_frame(self, parent):
+        """Helper to create a scrollable frame inside a tab"""
+        canvas = tk.Canvas(parent, highlightthickness=0, bd=0, background=self.primary_bg)
+        scrollbar = ttk.Scrollbar(parent, orient=tk.VERTICAL, command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas, style='ControlPanel.TFrame')
 
         scrollable_frame.bind(
             "<Configure>",
-            lambda e: main_canvas.configure(scrollregion=main_canvas.bbox("all"))
-        )
-        main_canvas.bind(
-            "<Configure>",
-            lambda e: main_canvas.itemconfigure(canvas_window, width=e.width)
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
 
-        main_canvas.configure(yscrollcommand=scrollbar.set)
-        scrollbar.config(command=main_canvas.yview)
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
 
-        self._create_language_controls(scrollable_frame)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Bind mousewheel
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
+        return scrollable_frame
 
-        # ========== Algorithm & Dimensionality Selection ==========
+    def _build_settings_tab(self, parent):
+        frame = self._build_scrollable_frame(parent)
+        
+        # Projection Mode
         if not getattr(app_state, 'render_mode', None):
             app_state.render_mode = getattr(app_state, 'algorithm', 'UMAP')
         self.radio_vars['render_mode'] = tk.StringVar(value=app_state.render_mode)
 
         algo_section = self._create_section(
-            scrollable_frame,
+            frame,
             "Projection Mode",
             "Select between UMAP or t-SNE embeddings, or display raw measurements in either 2D or 3D space."
         )
@@ -161,8 +205,8 @@ class ControlPanel:
         ]
 
         for idx, (label_key, value) in enumerate(options):
-            column = idx // 2
-            row = idx % 2
+            column = idx // 3  # 2 columns
+            row = idx % 3
             cell = ttk.Frame(selection_grid, style='CardBody.TFrame')
             cell.grid(row=row, column=column, sticky=tk.W, padx=(0 if column == 0 else 16, 0), pady=2)
             radio = ttk.Radiobutton(
@@ -176,128 +220,9 @@ class ControlPanel:
             radio.pack(anchor=tk.W)
             self._register_translation(radio, label_key)
 
-        for col in range(2):
-            selection_grid.columnconfigure(col, weight=1)
-
-        # ========== UMAP Parameters ==========
-        umap_section = self._create_section(
-            scrollable_frame,
-            "UMAP Parameters",
-            "Control neighbourhood size and how tightly points cluster."
-        )
-
-        self._add_slider(
-            umap_section,
-            key='umap_n',
-            label_text="n_neighbors",
-            minimum=2,
-            maximum=50,
-            initial=app_state.umap_params['n_neighbors'],
-            formatter=lambda v: f"{int(float(v))}",
-            step=1
-        )
-
-        self._add_slider(
-            umap_section,
-            key='umap_d',
-            label_text="min_dist",
-            minimum=0.0,
-            maximum=1.0,
-            initial=app_state.umap_params['min_dist'],
-            formatter=lambda v: f"{float(v):.2f}",
-            step=0.01
-        )
-
-        self._add_slider(
-            umap_section,
-            key='umap_r',
-            label_text="random_state",
-            minimum=0,
-            maximum=200,
-            initial=app_state.umap_params['random_state'],
-            formatter=lambda v: f"{int(float(v))}",
-            step=1
-        )
-
-        # ========== t-SNE Parameters ==========
-        tsne_section = self._create_section(
-            scrollable_frame,
-            "t-SNE Parameters",
-            "Adjust perplexity and learning rate to refine t-SNE embeddings."
-        )
-
-        self._add_slider(
-            tsne_section,
-            key='tsne_p',
-            label_text="perplexity",
-            minimum=5,
-            maximum=100,
-            initial=app_state.tsne_params['perplexity'],
-            formatter=lambda v: f"{int(float(v))}",
-            step=1
-        )
-
-        self._add_slider(
-            tsne_section,
-            key='tsne_lr',
-            label_text="learning_rate",
-            minimum=10,
-            maximum=1000,
-            initial=app_state.tsne_params['learning_rate'],
-            formatter=lambda v: f"{int(float(v))}",
-            step=1
-        )
-
-        # ========== PCA Parameters ==========
-        pca_section = self._create_section(
-            scrollable_frame,
-            "PCA Parameters",
-            "Standard Principal Component Analysis settings."
-        )
-
-        self._add_slider(
-            pca_section,
-            key='pca_n',
-            label_text="n_components",
-            minimum=2,
-            maximum=10,
-            initial=app_state.pca_params['n_components'],
-            formatter=lambda v: f"{int(float(v))}",
-            step=1
-        )
-
-        # ========== Robust PCA Parameters ==========
-        rpca_section = self._create_section(
-            scrollable_frame,
-            "Robust PCA Parameters",
-            "Minimum Covariance Determinant (MCD) based PCA. Resistant to outliers."
-        )
-
-        self._add_slider(
-            rpca_section,
-            key='rpca_n',
-            label_text="n_components",
-            minimum=2,
-            maximum=10,
-            initial=app_state.robust_pca_params['n_components'],
-            formatter=lambda v: f"{int(float(v))}",
-            step=1
-        )
-
-        self._add_slider(
-            rpca_section,
-            key='rpca_r',
-            label_text="random_state",
-            minimum=0,
-            maximum=200,
-            initial=app_state.robust_pca_params['random_state'],
-            formatter=lambda v: f"{int(float(v))}",
-            step=1
-        )
-
-        # ========== Common Parameters ==========
+        # Common Settings
         common_section = self._create_section(
-            scrollable_frame,
+            frame,
             "Common Settings",
             "Options shared by both algorithms, including point styling and grouping."
         )
@@ -320,7 +245,7 @@ class ControlPanel:
             text=self._translate("Show Confidence Ellipses"),
             variable=self.check_vars['ellipses'],
             command=self._on_change,
-            style='Option.TRadiobutton'  # Reusing radio style for consistency
+            style='Option.TRadiobutton'
         )
         ellipse_check.pack(anchor=tk.W, pady=(4, 8))
         self._register_translation(ellipse_check, "Show Confidence Ellipses")
@@ -346,6 +271,7 @@ class ControlPanel:
             )
             rb.pack(side=tk.LEFT, padx=4)
 
+        # Group Column
         group_label = ttk.Label(
             common_section,
             text=self._translate("Group column"),
@@ -383,29 +309,263 @@ class ControlPanel:
             self.group_placeholder = placeholder
             self._register_translation(placeholder, "Load data to unlock grouping options.")
 
-        legend_tools = ttk.Frame(common_section, style='CardBody.TFrame')
-        legend_tools.pack(fill=tk.X, pady=(12, 0))
+    def _build_algorithm_tab(self, parent):
+        frame = self._build_scrollable_frame(parent)
 
-        filter_button = ttk.Button(
-            legend_tools,
-            text=self._translate("Filter legend..."),
-            style='Secondary.TButton',
-            command=self._open_legend_filter
+        # UMAP Parameters
+        umap_section = self._create_section(
+            frame,
+            "UMAP Parameters",
+            "Control neighbourhood size and how tightly points cluster."
         )
-        filter_button.pack(side=tk.LEFT, padx=(0, 10))
-        self._register_translation(filter_button, "Filter legend...")
 
-        reload_button = ttk.Button(
-            legend_tools,
-            text=self._translate("Reload data..."),
-            style='Secondary.TButton',
-            command=self._reload_data
+        self._add_slider(
+            umap_section,
+            key='umap_n',
+            label_text="n_neighbors",
+            minimum=2,
+            maximum=50,
+            initial=app_state.umap_params['n_neighbors'],
+            formatter=lambda v: f"{int(float(v))}",
+            step=1
         )
-        reload_button.pack(side=tk.LEFT)
-        self._register_translation(reload_button, "Reload data...")
+
+        self._add_slider(
+            umap_section,
+            key='umap_d',
+            label_text="min_dist",
+            minimum=0.0,
+            maximum=1.0,
+            initial=app_state.umap_params['min_dist'],
+            formatter=lambda v: f"{float(v):.2f}",
+            step=0.01
+        )
+
+        self._add_slider(
+            umap_section,
+            key='umap_r',
+            label_text="random_state",
+            minimum=0,
+            maximum=200,
+            initial=app_state.umap_params['random_state'],
+            formatter=lambda v: f"{int(float(v))}",
+            step=1
+        )
+
+        # t-SNE Parameters
+        tsne_section = self._create_section(
+            frame,
+            "t-SNE Parameters",
+            "Adjust perplexity and learning rate to refine t-SNE embeddings."
+        )
+
+        self._add_slider(
+            tsne_section,
+            key='tsne_p',
+            label_text="perplexity",
+            minimum=5,
+            maximum=100,
+            initial=app_state.tsne_params['perplexity'],
+            formatter=lambda v: f"{int(float(v))}",
+            step=1
+        )
+
+        self._add_slider(
+            tsne_section,
+            key='tsne_lr',
+            label_text="learning_rate",
+            minimum=10,
+            maximum=1000,
+            initial=app_state.tsne_params['learning_rate'],
+            formatter=lambda v: f"{int(float(v))}",
+            step=1
+        )
+
+        self._add_slider(
+            tsne_section,
+            key='tsne_r',
+            label_text="random_state",
+            minimum=0,
+            maximum=200,
+            initial=app_state.tsne_params.get('random_state', 42),
+            formatter=lambda v: f"{int(float(v))}",
+            step=1
+        )
+
+        # PCA Parameters
+        pca_section = self._create_section(
+            frame,
+            "PCA Parameters",
+            "Standard Principal Component Analysis settings."
+        )
+
+        self._add_slider(
+            pca_section,
+            key='pca_n',
+            label_text="n_components",
+            minimum=2,
+            maximum=10,
+            initial=app_state.pca_params['n_components'],
+            formatter=lambda v: f"{int(float(v))}",
+            step=1
+        )
+
+        self._add_slider(
+            pca_section,
+            key='pca_r',
+            label_text="random_state",
+            minimum=0,
+            maximum=200,
+            initial=app_state.pca_params.get('random_state', 42),
+            formatter=lambda v: f"{int(float(v))}",
+            step=1
+        )
+        
+        # PCA Dimension Selection & Scree Plot
+        pca_tools = ttk.Frame(pca_section, style='CardBody.TFrame')
+        pca_tools.pack(fill=tk.X, pady=(8, 0))
+        
+        # Scree Plot Button
+        from visualization import show_scree_plot, show_pca_loadings
+        scree_btn = ttk.Button(
+            pca_tools,
+            text=self._translate("Show Scree Plot"),
+            style='Secondary.TButton',
+            command=lambda: show_scree_plot(self.root)
+        )
+        scree_btn.pack(side=tk.LEFT, padx=(0, 10))
+        self._register_translation(scree_btn, "Show Scree Plot")
+
+        # Loadings Plot Button
+        loadings_btn = ttk.Button(
+            pca_tools,
+            text=self._translate("Show Loadings"),
+            style='Secondary.TButton',
+            command=lambda: show_pca_loadings(self.root)
+        )
+        loadings_btn.pack(side=tk.LEFT, padx=(0, 10))
+        self._register_translation(loadings_btn, "Show Loadings")
+        
+        # Dimension Selectors
+        dim_frame = ttk.Frame(pca_tools, style='CardBody.TFrame')
+        dim_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        ttk.Label(dim_frame, text="X:", style='Body.TLabel').pack(side=tk.LEFT, padx=(0, 2))
+        self.pca_x_var = tk.StringVar(value=str(app_state.pca_component_indices[0] + 1))
+        self.pca_x_spin = ttk.Spinbox(dim_frame, from_=1, to=10, width=3, textvariable=self.pca_x_var, command=self._on_pca_dim_change)
+        self.pca_x_spin.pack(side=tk.LEFT, padx=(0, 8))
+        self.pca_x_spin.bind('<Return>', lambda e: self._on_pca_dim_change())
+        
+        ttk.Label(dim_frame, text="Y:", style='Body.TLabel').pack(side=tk.LEFT, padx=(0, 2))
+        self.pca_y_var = tk.StringVar(value=str(app_state.pca_component_indices[1] + 1))
+        self.pca_y_spin = ttk.Spinbox(dim_frame, from_=1, to=10, width=3, textvariable=self.pca_y_var, command=self._on_pca_dim_change)
+        self.pca_y_spin.pack(side=tk.LEFT)
+        self.pca_y_spin.bind('<Return>', lambda e: self._on_pca_dim_change())
+
+        # Robust PCA Parameters
+        rpca_section = self._create_section(
+            frame,
+            "Robust PCA Parameters",
+            "Minimum Covariance Determinant (MCD) based PCA. Resistant to outliers."
+        )
+
+        self._add_slider(
+            rpca_section,
+            key='rpca_n',
+            label_text="n_components",
+            minimum=2,
+            maximum=10,
+            initial=app_state.robust_pca_params['n_components'],
+            formatter=lambda v: f"{int(float(v))}",
+            step=1
+        )
+
+        self._add_slider(
+            rpca_section,
+            key='rpca_r',
+            label_text="random_state",
+            minimum=0,
+            maximum=200,
+            initial=app_state.robust_pca_params['random_state'],
+            formatter=lambda v: f"{int(float(v))}",
+            step=1
+        )
+
+        self._add_slider(
+            rpca_section,
+            key='rpca_sf',
+            label_text="support_fraction",
+            minimum=0.5,
+            maximum=0.99,
+            initial=app_state.robust_pca_params.get('support_fraction', 0.75),
+            formatter=lambda v: f"{float(v):.2f}",
+            step=0.01
+        )
+        
+        # Robust PCA Dimension Selection & Scree Plot (Shared logic, but separate controls for clarity)
+        rpca_tools = ttk.Frame(rpca_section, style='CardBody.TFrame')
+        rpca_tools.pack(fill=tk.X, pady=(8, 0))
+        
+        # Scree Plot Button
+        rpca_scree_btn = ttk.Button(
+            rpca_tools,
+            text=self._translate("Show Scree Plot"),
+            style='Secondary.TButton',
+            command=lambda: show_scree_plot(self.root)
+        )
+        rpca_scree_btn.pack(side=tk.LEFT, padx=(0, 10))
+        self._register_translation(rpca_scree_btn, "Show Scree Plot")
+
+        # Loadings Plot Button
+        rpca_loadings_btn = ttk.Button(
+            rpca_tools,
+            text=self._translate("Show Loadings"),
+            style='Secondary.TButton',
+            command=lambda: show_pca_loadings(self.root)
+        )
+        rpca_loadings_btn.pack(side=tk.LEFT, padx=(0, 10))
+        self._register_translation(rpca_loadings_btn, "Show Loadings")
+        
+        # Dimension Selectors (Reuse the same state variables as PCA since they share the concept)
+        # But we need separate widgets to appear in this section
+        r_dim_frame = ttk.Frame(rpca_tools, style='CardBody.TFrame')
+        r_dim_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        ttk.Label(r_dim_frame, text="X:", style='Body.TLabel').pack(side=tk.LEFT, padx=(0, 2))
+        self.rpca_x_spin = ttk.Spinbox(r_dim_frame, from_=1, to=10, width=3, textvariable=self.pca_x_var, command=self._on_pca_dim_change)
+        self.rpca_x_spin.pack(side=tk.LEFT, padx=(0, 8))
+        self.rpca_x_spin.bind('<Return>', lambda e: self._on_pca_dim_change())
+        
+        ttk.Label(r_dim_frame, text="Y:", style='Body.TLabel').pack(side=tk.LEFT, padx=(0, 2))
+        self.rpca_y_spin = ttk.Spinbox(r_dim_frame, from_=1, to=10, width=3, textvariable=self.pca_y_var, command=self._on_pca_dim_change)
+        self.rpca_y_spin.pack(side=tk.LEFT)
+        self.rpca_y_spin.bind('<Return>', lambda e: self._on_pca_dim_change())
+
+    def _build_tools_tab(self, parent):
+        frame = self._build_scrollable_frame(parent)
+
+        # Data Analysis Tools
+        analysis_section = self._create_section(
+            frame,
+            "Data Analysis",
+            "Tools for exploring data relationships and statistics."
+        )
+        
+        analysis_row = ttk.Frame(analysis_section, style='CardBody.TFrame')
+        analysis_row.pack(fill=tk.X)
+        
+        from visualization import show_correlation_heatmap
+        corr_btn = ttk.Button(
+            analysis_row,
+            text=self._translate("Correlation Heatmap"),
+            style='Secondary.TButton',
+            command=lambda: show_correlation_heatmap(self.root)
+        )
+        corr_btn.pack(side=tk.LEFT)
+        self._register_translation(corr_btn, "Correlation Heatmap")
 
         selection_section = self._create_section(
-            scrollable_frame,
+            frame,
             "Selection Tools",
             "Enable selection mode to pick samples in 2D or embedding views, then export the results."
         )
@@ -476,31 +636,150 @@ class ControlPanel:
         self.reset_data_button.pack(side=tk.LEFT)
         self._register_translation(self.reset_data_button, "Reset Data")
 
-        ttk.Separator(scrollable_frame, orient=tk.HORIZONTAL, style='SectionSeparator.TSeparator').pack(fill=tk.X, pady=12)
-
-        footer_note = ttk.Label(
-            container,
-            text=self._translate("Adjust sliders to refresh the plot automatically. Close the panel to reclaim screen space."),
-            style='Footer.TLabel',
-            wraplength=440,
-            justify=tk.LEFT
+    def _build_legend_tab(self, parent):
+        """Build the interactive legend tab"""
+        frame = self._build_scrollable_frame(parent)
+        self.legend_container = frame
+        
+        # Add a refresh button
+        refresh_btn = ttk.Button(
+            frame,
+            text=self._translate("Refresh Legend"),
+            style='Secondary.TButton',
+            command=self._refresh_legend_tab
         )
-        footer_note.pack(anchor=tk.W, pady=(12, 8))
-        self._register_translation(footer_note, "Adjust sliders to refresh the plot automatically. Close the panel to reclaim screen space.")
+        refresh_btn.pack(anchor=tk.W, pady=(0, 10))
+        self._register_translation(refresh_btn, "Refresh Legend")
+        
+        self.legend_items_frame = ttk.Frame(frame, style='ControlPanel.TFrame')
+        self.legend_items_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Initial population
+        self._refresh_legend_tab()
 
-        action_frame = ttk.Frame(container, style='ControlPanel.TFrame')
-        action_frame.pack(fill=tk.X)
+    def _refresh_legend_tab(self):
+        """Populate the legend tab with current groups and colors"""
+        if not hasattr(self, 'legend_items_frame'):
+            return
+            
+        # Clear existing
+        for child in self.legend_items_frame.winfo_children():
+            child.destroy()
+            
+        if not app_state.current_groups:
+            lbl = ttk.Label(self.legend_items_frame, text=self._translate("No legend data available."), style='BodyMuted.TLabel')
+            lbl.pack(anchor=tk.W, pady=10)
+            self._register_translation(lbl, "No legend data available.")
+            return
 
-        close_button = ttk.Button(
-            action_frame,
-            text=self._translate("Close Panel"),
-            style='Accent.TButton',
-            command=self._on_close
+        # Checkbox var for "Select All"
+        self.select_all_var = tk.BooleanVar(value=True)
+        
+        def toggle_all():
+            state = self.select_all_var.get()
+            for var in self.legend_vars.values():
+                var.set(state)
+            self._apply_legend_filter()
+
+        select_all_cb = ttk.Checkbutton(
+            self.legend_items_frame,
+            text=self._translate("Select all"),
+            variable=self.select_all_var,
+            command=toggle_all,
+            style='Option.TRadiobutton'
         )
-        close_button.pack(side=tk.RIGHT, padx=(0, 4))
-        self._register_translation(close_button, "Close Panel")
+        select_all_cb.pack(anchor=tk.W, pady=(0, 5))
+        self._register_translation(select_all_cb, "Select all")
+        
+        self.legend_vars = {}
+        
+        visible = set(app_state.visible_groups) if app_state.visible_groups else set(app_state.current_groups)
 
-        self.update_selection_controls()
+        for group in app_state.current_groups:
+            row = ttk.Frame(self.legend_items_frame, style='ControlPanel.TFrame')
+            row.pack(fill=tk.X, pady=2)
+            
+            # Color swatch
+            color = app_state.current_palette.get(group, '#cccccc')
+            swatch = tk.Canvas(row, width=16, height=16, bg=color, highlightthickness=0)
+            swatch.pack(side=tk.LEFT, padx=(0, 8))
+            
+            # Checkbox
+            is_visible = group in visible
+            var = tk.BooleanVar(value=is_visible)
+            self.legend_vars[group] = var
+            
+            cb = ttk.Checkbutton(
+                row,
+                text=str(group),
+                variable=var,
+                command=self._apply_legend_filter,
+                style='Option.TRadiobutton'
+            )
+            cb.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+    def _apply_legend_filter(self):
+        """Apply the filter from the legend tab"""
+        selected = [g for g, var in self.legend_vars.items() if var.get()]
+        
+        if not selected:
+            # Don't allow empty selection, maybe show warning or just keep last state?
+            # For now, let's allow it but it will show "No data" in plot
+            pass
+            
+        if len(selected) == len(app_state.current_groups):
+            app_state.visible_groups = None
+        else:
+            app_state.visible_groups = selected
+            
+        if self.callback:
+            self.callback()
+
+    def _apply_translation(self, widget, attr, value):
+        """Apply translated text to a widget attribute."""
+        if widget is None or value is None:
+            return
+        try:
+            if attr == 'title' and hasattr(widget, 'title'):
+                widget.title(value)
+            elif attr == 'tab':
+                # Special handling for notebook tabs
+                tab_id = value.get('tab_id')
+                text = self._translate(self._translations[tab_id + 3]['key']) # Hacky index access, need better way
+                # Actually, let's just use the widget (notebook) and tab_id
+                self.notebook.tab(tab_id, text=text)
+            else:
+                widget.configure(**{attr: value})
+        except Exception:
+            pass
+
+    def _refresh_language(self):
+        """Reapply translations for all registered widgets."""
+        for entry in self._translations:
+            kwargs = {}
+            if entry.get('formatter') is not None:
+                result = entry['formatter']()
+                if isinstance(result, dict):
+                    kwargs = result
+                elif isinstance(result, str):
+                    self._apply_translation(entry['widget'], entry['attr'], result)
+                    continue
+            
+            # Special handling for tabs
+            if entry.get('attr') == 'tab':
+                tab_id = kwargs.get('tab_id')
+                text = self._translate(entry['key'])
+                self.notebook.tab(tab_id, text=text)
+                continue
+
+            translated = self._translate(entry['key'], **kwargs)
+            self._apply_translation(entry['widget'], entry['attr'], translated)
+            
+        # Refresh legend tab text
+        self._refresh_legend_tab()
+
+    # ... (rest of the methods need to be preserved or adapted) ...
+
 
     def _setup_styles(self):
         """Configure ttk styles for a polished appearance"""
@@ -1297,6 +1576,7 @@ class ControlPanel:
             if 'umap_n' in self.sliders and 'umap_n' in self.labels:
                 new_val = int(self.sliders['umap_n'].get())
                 if app_state.umap_params['n_neighbors'] != new_val:
+                    print(f"[DEBUG] UMAP n_neighbors changed: {app_state.umap_params['n_neighbors']} -> {new_val}", flush=True)
                     umap_changed = True
                 app_state.umap_params['n_neighbors'] = new_val
                 self.labels['umap_n'].config(text=f"{new_val}")
@@ -1304,6 +1584,7 @@ class ControlPanel:
             if 'umap_d' in self.sliders and 'umap_d' in self.labels:
                 new_val = float(self.sliders['umap_d'].get())
                 if app_state.umap_params['min_dist'] != new_val:
+                    print(f"[DEBUG] UMAP min_dist changed: {app_state.umap_params['min_dist']} -> {new_val}", flush=True)
                     umap_changed = True
                 app_state.umap_params['min_dist'] = new_val
                 self.labels['umap_d'].config(text=f"{new_val:.2f}")
@@ -1311,6 +1592,7 @@ class ControlPanel:
             if 'umap_r' in self.sliders and 'umap_r' in self.labels:
                 new_val = int(self.sliders['umap_r'].get())
                 if app_state.umap_params['random_state'] != new_val:
+                    print(f"[DEBUG] UMAP random_state changed: {app_state.umap_params['random_state']} -> {new_val}", flush=True)
                     umap_changed = True
                 app_state.umap_params['random_state'] = new_val
                 self.labels['umap_r'].config(text=f"{new_val}")
@@ -1331,6 +1613,7 @@ class ControlPanel:
                     p = app_state.df_global.shape[0] - 1
                     self.sliders['tsne_p'].set(p)
                 if app_state.tsne_params['perplexity'] != p:
+                    print(f"[DEBUG] t-SNE perplexity changed: {app_state.tsne_params['perplexity']} -> {p}", flush=True)
                     tsne_changed = True
                 app_state.tsne_params['perplexity'] = p
                 self.labels['tsne_p'].config(text=f"{p}")
@@ -1338,9 +1621,18 @@ class ControlPanel:
             if 'tsne_lr' in self.sliders and 'tsne_lr' in self.labels:
                 new_val = int(self.sliders['tsne_lr'].get())
                 if app_state.tsne_params['learning_rate'] != new_val:
+                    print(f"[DEBUG] t-SNE learning_rate changed: {app_state.tsne_params['learning_rate']} -> {new_val}", flush=True)
                     tsne_changed = True
                 app_state.tsne_params['learning_rate'] = new_val
                 self.labels['tsne_lr'].config(text=f"{new_val}")
+
+            if 'tsne_r' in self.sliders and 'tsne_r' in self.labels:
+                new_val = int(self.sliders['tsne_r'].get())
+                if app_state.tsne_params.get('random_state') != new_val:
+                    print(f"[DEBUG] t-SNE random_state changed: {app_state.tsne_params.get('random_state')} -> {new_val}", flush=True)
+                    tsne_changed = True
+                app_state.tsne_params['random_state'] = new_val
+                self.labels['tsne_r'].config(text=f"{new_val}")
             
             # Clear t-SNE cache if parameters changed
             if tsne_changed:
@@ -1349,41 +1641,59 @@ class ControlPanel:
                 keys_to_remove = [k for k in app_state.embedding_cache.keys() if k[0] == 'tsne']
                 for k in keys_to_remove:
                     del app_state.embedding_cache[k]
-
             # Update PCA parameters
             pca_changed = False
             if 'pca_n' in self.sliders and 'pca_n' in self.labels:
                 new_val = int(self.sliders['pca_n'].get())
-                if app_state.pca_params['n_components'] != new_val:
+                if app_state.pca_params.get('n_components') != new_val:
+                    print(f"[DEBUG] PCA n_components changed: {app_state.pca_params.get('n_components')} -> {new_val}", flush=True)
                     pca_changed = True
-                app_state.pca_params['n_components'] = new_val
-                self.labels['pca_n'].config(text=f"{new_val}")
+                    app_state.pca_params['n_components'] = new_val
+                    self.labels['pca_n'].config(text=f"{new_val}")
+
+            if 'pca_r' in self.sliders and 'pca_r' in self.labels:
+                new_val = int(self.sliders['pca_r'].get())
+                if app_state.pca_params.get('random_state') != new_val:
+                    print(f"[DEBUG] PCA random_state changed: {app_state.pca_params.get('random_state')} -> {new_val}", flush=True)
+                    pca_changed = True
+                    app_state.pca_params['random_state'] = new_val
+                    self.labels['pca_r'].config(text=f"{new_val}")
 
             if pca_changed:
                 print(f"[DEBUG] PCA parameters changed, clearing PCA cache", flush=True)
-                keys_to_remove = [k for k in app_state.embedding_cache.keys() if k[0] == 'pca']
+                keys_to_remove = [k for k in list(app_state.embedding_cache.keys()) if isinstance(k, tuple) and len(k) > 0 and k[0] == 'pca']
                 for k in keys_to_remove:
                     del app_state.embedding_cache[k]
-
             # Update Robust PCA parameters
             rpca_changed = False
             if 'rpca_n' in self.sliders and 'rpca_n' in self.labels:
                 new_val = int(self.sliders['rpca_n'].get())
-                if app_state.robust_pca_params['n_components'] != new_val:
+                if app_state.robust_pca_params.get('n_components') != new_val:
+                    print(f"[DEBUG] Robust PCA n_components changed: {app_state.robust_pca_params.get('n_components')} -> {new_val}", flush=True)
                     rpca_changed = True
-                app_state.robust_pca_params['n_components'] = new_val
-                self.labels['rpca_n'].config(text=f"{new_val}")
+                    app_state.robust_pca_params['n_components'] = new_val
+                    self.labels['rpca_n'].config(text=f"{new_val}")
 
             if 'rpca_r' in self.sliders and 'rpca_r' in self.labels:
                 new_val = int(self.sliders['rpca_r'].get())
-                if app_state.robust_pca_params['random_state'] != new_val:
+                if app_state.robust_pca_params.get('random_state') != new_val:
+                    print(f"[DEBUG] Robust PCA random_state changed: {app_state.robust_pca_params.get('random_state')} -> {new_val}", flush=True)
                     rpca_changed = True
-                app_state.robust_pca_params['random_state'] = new_val
-                self.labels['rpca_r'].config(text=f"{new_val}")
+                    app_state.robust_pca_params['random_state'] = new_val
+                    self.labels['rpca_r'].config(text=f"{new_val}")
+
+            if 'rpca_sf' in self.sliders and 'rpca_sf' in self.labels:
+                new_val = float(self.sliders['rpca_sf'].get())
+                current_val = app_state.robust_pca_params.get('support_fraction')
+                if current_val is None or abs(current_val - new_val) > 1e-6:
+                    rpca_changed = True
+                    print(f"[DEBUG] Robust PCA support_fraction changed: {current_val} -> {new_val}", flush=True)
+                    app_state.robust_pca_params['support_fraction'] = new_val
+                    self.labels['rpca_sf'].config(text=f"{new_val:.2f}")
 
             if rpca_changed:
                 print(f"[DEBUG] Robust PCA parameters changed, clearing cache", flush=True)
-                keys_to_remove = [k for k in app_state.embedding_cache.keys() if k[0] == 'robust_pca']
+                keys_to_remove = [k for k in list(app_state.embedding_cache.keys()) if isinstance(k, tuple) and len(k) > 0 and k[0] == 'robust_pca']
                 for k in keys_to_remove:
                     del app_state.embedding_cache[k]
             
@@ -1408,6 +1718,32 @@ class ControlPanel:
             print(f"[DEBUG] KeyError in _on_change (expected during init): {e}", flush=True)
         except Exception as e:
             print(f"[ERROR] _on_change: {e}", flush=True)
+
+    def _on_pca_dim_change(self):
+        """Handle changes to PCA dimension selection spinners"""
+        try:
+            # Get values from string vars
+            try:
+                x_dim = int(self.pca_x_var.get())
+                y_dim = int(self.pca_y_var.get())
+            except ValueError:
+                return # Invalid input
+            
+            # Convert to 0-based indices
+            x_idx = max(0, x_dim - 1)
+            y_idx = max(0, y_dim - 1)
+            
+            current_indices = app_state.pca_component_indices
+            if current_indices[0] != x_idx or current_indices[1] != y_idx:
+                print(f"[DEBUG] PCA dimensions changed: {current_indices} -> [{x_idx}, {y_idx}]", flush=True)
+                app_state.pca_component_indices = [x_idx, y_idx]
+                
+                # Trigger update if we are in PCA or RobustPCA mode
+                if app_state.render_mode in ('PCA', 'RobustPCA'):
+                    if self.callback:
+                        self.callback()
+        except Exception as e:
+            print(f"[ERROR] _on_pca_dim_change error: {e}", flush=True)
     
     def show(self):
         """Show the control panel"""

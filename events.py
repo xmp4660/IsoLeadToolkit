@@ -617,8 +617,8 @@ def on_slider_change(val=None):
             if render_mode != app_state.render_mode:
                 print(f"[DEBUG] Adjusted render mode: {app_state.render_mode} -> {render_mode}", flush=True)
                 app_state.render_mode = render_mode
-                if app_state.render_mode in ('UMAP', 'tSNE'):
-                    app_state.algorithm = 'UMAP' if app_state.render_mode == 'UMAP' else 'tSNE'
+                if app_state.render_mode in ('UMAP', 'tSNE', 'PCA', 'RobustPCA'):
+                    app_state.algorithm = app_state.render_mode
                 try:
                     panel = getattr(app_state, 'control_panel_ref', None) or getattr(state_module, 'control_panel', None)
                     if panel is not None and 'render_mode' in panel.radio_vars:
@@ -654,13 +654,17 @@ def on_slider_change(val=None):
                         size=app_state.point_size
                     )
             else:
-                algorithm = 'UMAP' if app_state.render_mode == 'UMAP' else 'tSNE'
+                # Use the current render mode as the algorithm name
+                # This supports UMAP, tSNE, PCA, RobustPCA
+                algorithm = app_state.render_mode
                 print(f"[DEBUG] Calling plot_embedding with algorithm={algorithm}, group_col={group_col}", flush=True)
                 rendered_ok = plot_embedding(
                     group_col,
                     algorithm,
                     umap_params=app_state.umap_params,
                     tsne_params=app_state.tsne_params,
+                    pca_params=app_state.pca_params,
+                    robust_pca_params=app_state.robust_pca_params,
                     size=app_state.point_size
                 )
 

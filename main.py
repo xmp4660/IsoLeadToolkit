@@ -27,6 +27,7 @@ from events import on_hover, on_click, on_legend_click, on_slider_change
 from session import load_session_params, save_session_params
 from control_panel import create_control_panel
 from localization import translate, set_language, validate_language
+from logger_setup import setup_logging
 
 
 def _enable_high_dpi_awareness():
@@ -233,10 +234,12 @@ def main():
         print("[INFO] Plot figure created.", flush=True)
         
         plt.ion()
-        app_state.fig.subplots_adjust(left=0.08, bottom=0.12, right=0.78, top=0.88)
+        # Maximize chart area - use relative positioning
+        app_state.fig.subplots_adjust(left=0.05, bottom=0.08, right=0.85, top=0.88)
 
-        # Add quick access button to reopen the control panel if it is hidden
-        button_ax = app_state.fig.add_axes([0.82, 0.035, 0.14, 0.05])
+        # Add quick access button - compact and positioned relatively
+        # Position: Bottom Right, small
+        button_ax = app_state.fig.add_axes([0.88, 0.02, 0.10, 0.04])
         button = Button(
             button_ax,
             translate("Control Panel"),
@@ -244,7 +247,7 @@ def main():
             hovercolor='#1d4ed8'
         )
         button.label.set_color('white')
-        button.label.set_fontsize(10)
+        button.label.set_fontsize(9)
 
         def _show_control_panel(event=None):
             try:
@@ -338,6 +341,9 @@ def main():
 
 if __name__ == "__main__":
     try:
+        # Initialize logging (50MB limit)
+        setup_logging(max_bytes=50*1024*1024)
+        
         print("[START] Application launching...", flush=True)
         success = main()
         print(f"[END] Application exit code: {0 if success else 1}", flush=True)

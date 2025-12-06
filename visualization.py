@@ -10,12 +10,179 @@ import umap
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 from sklearn.covariance import MinCovDet
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
 import seaborn as sns
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 from matplotlib.patches import Ellipse
 import numpy as np
 
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import tkinter as tk
+from tkinter import ttk
+
 sns.set_theme()
+
+def show_scree_plot(parent_window=None):
+    """Display a scree plot of the explained variance for the last PCA run."""
+    if not hasattr(app_state, 'last_pca_variance') or app_state.last_pca_variance is None:
+        print("[WARN] No PCA variance data available. Run PCA first.", flush=True)
+        return
+
+    variance_ratio = app_state.last_pca_variance
+    n_components = len(variance_ratio)
+    components = range(1, n_components + 1)
+    cumulative_variance = np.cumsum(variance_ratio)
+
+    # Create a new Toplevel window
+    window = tk.Toplevel(parent_window)
+    window.title("Scree Plot - Explained Variance")
+    window.geometry("600x450")
+    
+    # Create figure using Figure object directly to avoid global pyplot state
+    fig = Figure(figsize=(6, 4), dpi=100)
+    ax1 = fig.add_subplot(111)
+    
+    # Bar plot for individual variance
+    ax1.bar(components, variance_ratio, alpha=0.6, color='b', label='Individual Variance')
+    ax1.set_xlabel('Principal Component')
+    ax1.set_ylabel('Explained Variance Ratio', color='b')
+    ax1.tick_params(axis='y', labelcolor='b')
+    ax1.set_xticks(components)
+    ax1.set_ylim(0, 1.05)
+
+    # Line plot for cumulative variance
+    ax2 = ax1.twinx()
+    ax2.plot(components, cumulative_variance, marker='o', color='r', label='Cumulative Variance')
+    ax2.set_ylabel('Cumulative Variance Ratio', color='r')
+    ax2.tick_params(axis='y', labelcolor='r')
+    ax2.set_ylim(0, 1.05)
+    
+    # Add grid
+    ax1.grid(True, axis='x', alpha=0.3)
+    ax2.grid(True, axis='y', alpha=0.3)
+    
+    ax1.set_title('Scree Plot')
+    fig.tight_layout()
+
+    # Embed in Tkinter
+    canvas = FigureCanvasTkAgg(fig, master=window)
+    canvas.draw()
+    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+    
+    def _on_close():
+        # No need to call plt.close(fig) since we didn't use plt interface
+        window.destroy()
+        
+    window.protocol("WM_DELETE_WINDOW", _on_close)
+
+
+def show_pca_loadings(parent_window=None):
+    """Display a heatmap of PCA loadings (components)."""
+    if not hasattr(app_state, 'last_pca_components') or app_state.last_pca_components is None:
+        print("[WARN] No PCA components data available. Run PCA first.", flush=True)
+        return
+
+    components = app_state.last_pca_components
+    feature_names = app_state.current_feature_names
+    
+    if not feature_names or len(feature_names) != components.shape[1]:
+        print("[WARN] Feature names mismatch or missing.", flush=True)
+        feature_names = [f"Feature {i+1}" for i in range(components.shape[1])]
+
+    n_comps = components.shape[0]
+    comp_names = [f"PC{i+1}" for i in range(n_comps)]
+
+    # Create a new Toplevel window
+    window = tk.Toplevel(parent_window)
+    window.title("PCA Loadings")
+    window.geometry("800x600")
+    
+    fig = Figure(figsize=(8, 6), dpi=100)
+    ax = fig.add_subplot(111)
+    
+    # Create heatmap
+    # We transpose so features are rows (easier to read if many features) or keep as is?
+    # Usually Features x PCs is better for reading if many features.
+    # Let's do PCs on Y axis, Features on X axis as standard loadings matrix
+    
+    im = ax.imshow(components, cmap='RdBu_r', vmin=-1, vmax=1, aspect='auto')
+    
+    # Add colorbar
+    cbar = fig.colorbar(im, ax=ax)
+    cbar.set_label('Loading Value')
+    
+    # Set ticks
+    ax.set_xticks(np.arange(len(feature_names)))
+    ax.set_yticks(np.arange(len(comp_names)))
+    
+    ax.set_xticklabels(feature_names, rotation=45, ha="right")
+    ax.set_yticklabels(comp_names)
+    
+    # Loop over data dimensions and create text annotations.
+    for i in range(len(comp_names)):
+        for j in range(len(feature_names)):
+            text = ax.text(j, i, f"{components[i, j]:.2f}",
+                           ha="center", va="center", color="k" if abs(components[i, j]) < 0.5 else "w")
+
+    ax.set_title("PCA Loadings (Feature Contribution to Components)")
+    fig.tight_layout()
+
+    canvas = FigureCanvasTkAgg(fig, master=window)
+    canvas.draw()
+    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+
+def show_correlation_heatmap(parent_window=None):
+    """Display a correlation heatmap of the current dataset."""
+    X, _ = _get_analysis_data()
+    if X is None:
+        print("[WARN] No data available for correlation analysis.", flush=True)
+        return
+        
+    cols = app_state.data_cols
+    if not cols:
+        return
+
+    # Calculate correlation matrix
+    # X is numpy array, need to convert to DataFrame for easy corr
+    import pandas as pd
+    df_corr = pd.DataFrame(X, columns=cols).corr()
+
+    # Create a new Toplevel window
+    window = tk.Toplevel(parent_window)
+    window.title("Correlation Heatmap")
+    window.geometry("700x600")
+    
+    fig = Figure(figsize=(7, 6), dpi=100)
+    ax = fig.add_subplot(111)
+    
+    # Create heatmap
+    im = ax.imshow(df_corr, cmap='coolwarm', vmin=-1, vmax=1)
+    
+    cbar = fig.colorbar(im, ax=ax)
+    cbar.set_label('Correlation Coefficient')
+    
+    ax.set_xticks(np.arange(len(cols)))
+    ax.set_yticks(np.arange(len(cols)))
+    
+    ax.set_xticklabels(cols, rotation=45, ha="right")
+    ax.set_yticklabels(cols)
+    
+    # Annotate
+    for i in range(len(cols)):
+        for j in range(len(cols)):
+            text = ax.text(j, i, f"{df_corr.iloc[i, j]:.2f}",
+                           ha="center", va="center", color="k")
+
+    ax.set_title("Feature Correlation Matrix")
+    fig.tight_layout()
+
+    canvas = FigureCanvasTkAgg(fig, master=window)
+    canvas.draw()
+    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
 
 def _ensure_axes(dimensions=2):
@@ -39,7 +206,7 @@ def _ensure_axes(dimensions=2):
                         pass
                 app_state.ax = app_state.fig.add_subplot(111)
 
-        app_state.fig.subplots_adjust(left=0.08, bottom=0.12, right=0.78, top=0.88)
+        app_state.fig.subplots_adjust(left=0.05, bottom=0.08, right=0.98, top=0.88)
     except Exception as axis_err:
         print(f"[WARN] Unable to configure axes: {axis_err}", flush=True)
 
@@ -85,12 +252,26 @@ def _get_analysis_data():
         if not indices:
             return None, None
         X = app_state.df_global.iloc[indices][app_state.data_cols].values
-        return X, indices
     else:
         # Use full dataset
         X = app_state.df_global[app_state.data_cols].values
         indices = list(range(len(app_state.df_global)))
-        return X, indices
+
+    # Ensure data is numeric (float)
+    try:
+        X = X.astype(float)
+    except ValueError as e:
+        print(f"[ERROR] Data contains non-numeric values: {e}", flush=True)
+        return None, None
+
+    # Handle NaNs: Drop rows with missing values to ensure algorithms work
+    if np.isnan(X).any():
+        print("[WARN] Missing values detected in data. Dropping incomplete rows for analysis.", flush=True)
+        mask = ~np.isnan(X).any(axis=1)
+        X = X[mask]
+        indices = [indices[i] for i in range(len(indices)) if mask[i]]
+
+    return X, indices
 
 
 def get_robust_pca_embedding(params):
@@ -101,55 +282,104 @@ def get_robust_pca_embedding(params):
         if app_state.active_subset_indices is not None:
             subset_key = hash(tuple(sorted(list(app_state.active_subset_indices))))
             
-        key = ('robust_pca', params['n_components'], params['random_state'], subset_key)
+        key = ('robust_pca', params['n_components'], params['random_state'], params.get('support_fraction', 0.75), subset_key)
         
         if key in app_state.embedding_cache:
-            print(f"[INFO] Using cached Robust PCA embedding", flush=True)
+            print(f"[DEBUG] Cache HIT for Robust PCA. Key: {key}", flush=True)
             result = app_state.embedding_cache[key]
             if result is not None:
                 return result
         
-        print(f"[INFO] Computing Robust PCA with params: {params}", flush=True)
+        print(f"[DEBUG] Cache MISS for Robust PCA. Computing with params: {params}", flush=True)
         X, _ = _get_analysis_data()
         
         if X is None or X.shape[0] == 0:
             print(f"[ERROR] No data available for Robust PCA computation", flush=True)
             return None
             
+        print(f"[DEBUG] Robust PCA Input Data Shape: {X.shape}", flush=True)
+            
+        # Standardize features
+        scaler = StandardScaler()
+        try:
+            X_scaled = scaler.fit_transform(X)
+            if np.isnan(X_scaled).any():
+                print("[WARN] NaNs detected in scaled data (likely constant columns). Replacing with 0.", flush=True)
+                X_scaled = np.nan_to_num(X_scaled)
+        except Exception:
+            X_scaled = X
+
         # MinCovDet requires n_samples > n_features. 
         # If not met, fallback to standard PCA with a warning.
-        if X.shape[0] <= X.shape[1]:
-            print(f"[WARN] Not enough samples ({X.shape[0]}) for Robust PCA (needs > {X.shape[1]} features). Falling back to standard PCA.", flush=True)
+        if X_scaled.shape[0] <= X_scaled.shape[1]:
+            print(f"[WARN] Not enough samples ({X_scaled.shape[0]}) for Robust PCA (needs > {X_scaled.shape[1]} features). Falling back to standard PCA.", flush=True)
             reducer = PCA(
                 n_components=params['n_components'],
                 random_state=params['random_state']
             )
-            embedding = reducer.fit_transform(X)
+            embedding = reducer.fit_transform(X_scaled)
         else:
-            # 1. Estimate robust covariance
-            mcd = MinCovDet(random_state=params['random_state'])
-            mcd.fit(X)
+            try:
+                # 1. Estimate robust covariance
+                # support_fraction=0.75 ensures we use enough data points to be stable but robust
+                # Remove n_jobs=-1 to avoid potential multiprocess overhead/errors on small data
+                support_fraction = params.get('support_fraction', 0.75)
+                mcd = MinCovDet(random_state=params['random_state'], support_fraction=support_fraction)
+                try:
+                    mcd.fit(X_scaled)
+                except Exception:
+                    # If fit fails (e.g. singular covariance), try adding minute noise
+                    print("[INFO] MinCovDet failed, retrying with regularization...", flush=True)
+                    noise = np.random.RandomState(params['random_state']).normal(0, 1e-5, X_scaled.shape)
+                    mcd.fit(X_scaled + noise)
+                
+                # 2. Get robust covariance and location
+                robust_cov = mcd.covariance_
+                robust_location = mcd.location_
+                
+                # 3. Center data using robust location
+                X_centered = X_scaled - robust_location
+                
+                # 4. Eigendecomposition of robust covariance
+                eigvals, eigvecs = np.linalg.eigh(robust_cov)
+                
+                # 5. Sort eigenvectors by eigenvalues in descending order
+                idx = eigvals.argsort()[::-1]
+                eigvecs = eigvecs[:, idx]
+                
+                # 6. Project data onto top components
+                # Note: We project the centered data
+                embedding = np.dot(X_centered, eigvecs[:, :params['n_components']])
+                
+                # Calculate explained variance ratio for Robust PCA
+                # Total variance is sum of all eigenvalues
+                total_variance = np.sum(eigvals)
+                if total_variance > 0:
+                    explained_variance_ratio = eigvals[idx][:params['n_components']] / total_variance
+                    app_state.last_pca_variance = explained_variance_ratio
+                else:
+                    app_state.last_pca_variance = None
+                
+                # Store components (loadings)
+                # eigvecs columns are eigenvectors, so we transpose to match sklearn PCA.components_ shape (n_components, n_features)
+                app_state.last_pca_components = eigvecs[:, :params['n_components']].T
+                app_state.current_feature_names = app_state.data_cols
+                    
+                print("[INFO] Robust PCA computed successfully (MCD method).", flush=True)
             
-            # 2. Get robust covariance and location
-            robust_cov = mcd.covariance_
-            robust_location = mcd.location_
-            
-            # 3. Center data using robust location
-            X_centered = X - robust_location
-            
-            # 4. Eigendecomposition of robust covariance
-            eigvals, eigvecs = np.linalg.eigh(robust_cov)
-            
-            # 5. Sort eigenvectors by eigenvalues in descending order
-            idx = eigvals.argsort()[::-1]
-            eigvecs = eigvecs[:, idx]
-            
-            # 6. Project data onto top components
-            # Note: We project the centered data
-            embedding = np.dot(X_centered, eigvecs[:, :params['n_components']])
+            except Exception as mcd_err:
+                print(f"[WARN] Robust PCA (MCD) failed: {mcd_err}. Falling back to standard PCA.", flush=True)
+                reducer = PCA(
+                    n_components=params['n_components'],
+                    random_state=params['random_state']
+                )
+                embedding = reducer.fit_transform(X_scaled)
+                app_state.last_pca_variance = reducer.explained_variance_ratio_
+                app_state.last_pca_components = reducer.components_
+                app_state.current_feature_names = app_state.data_cols
 
         app_state.embedding_cache[key] = embedding
-        print(f"[INFO] Robust PCA embedding computed: shape {embedding.shape}", flush=True)
+        print(f"[DEBUG] Robust PCA embedding computed: shape {embedding.shape}", flush=True)
         return embedding
         
     except Exception as e:
@@ -168,26 +398,49 @@ def get_pca_embedding(params):
         key = ('pca', params['n_components'], params['random_state'], subset_key)
         
         if key in app_state.embedding_cache:
-            print(f"[INFO] Using cached PCA embedding", flush=True)
+            print(f"[DEBUG] Cache HIT for PCA. Key: {key}", flush=True)
             result = app_state.embedding_cache[key]
             if result is not None:
                 return result
         
-        print(f"[INFO] Computing PCA with params: {params}", flush=True)
+        print(f"[DEBUG] Cache MISS for PCA. Computing with params: {params}", flush=True)
         X, _ = _get_analysis_data()
         
         if X is None or X.shape[0] == 0:
             print(f"[ERROR] No data available for PCA computation", flush=True)
             return None
+            
+        print(f"[DEBUG] PCA Input Data Shape: {X.shape}", flush=True)
         
+        # Standardize features by removing the mean and scaling to unit variance
+        # This is critical for PCA to work correctly on data with different scales
+        # Handle constant columns to avoid NaNs
+        scaler = StandardScaler()
+        try:
+            X_scaled = scaler.fit_transform(X)
+            # Replace NaNs (from constant columns) with 0
+            if np.isnan(X_scaled).any():
+                print("[WARN] NaNs detected in scaled data (likely constant columns). Replacing with 0.", flush=True)
+                X_scaled = np.nan_to_num(X_scaled)
+        except Exception as scale_err:
+            print(f"[WARN] Scaling failed: {scale_err}. Using raw data.", flush=True)
+            X_scaled = X
+
         reducer = PCA(
             n_components=params['n_components'],
             random_state=params['random_state']
         )
         
-        embedding = reducer.fit_transform(X)
+        embedding = reducer.fit_transform(X_scaled)
+        
+        # Store explained variance for scree plot
+        app_state.last_pca_variance = reducer.explained_variance_ratio_
+        # Store components (loadings)
+        app_state.last_pca_components = reducer.components_
+        app_state.current_feature_names = app_state.data_cols
+        
         app_state.embedding_cache[key] = embedding
-        print(f"[INFO] PCA embedding computed: shape {embedding.shape}", flush=True)
+        print(f"[DEBUG] PCA embedding computed: shape {embedding.shape}", flush=True)
         return embedding
         
     except Exception as e:
@@ -206,17 +459,19 @@ def get_umap_embedding(params):
         key = ('umap', params['n_neighbors'], params['min_dist'], params['random_state'], subset_key)
         
         if key in app_state.embedding_cache:
-            print(f"[INFO] Using cached UMAP embedding", flush=True)
+            print(f"[DEBUG] Cache HIT for UMAP. Key: {key}", flush=True)
             result = app_state.embedding_cache[key]
             if result is not None:
                 return result
         
-        print(f"[INFO] Computing UMAP with params: {params}", flush=True)
+        print(f"[DEBUG] Cache MISS for UMAP. Computing with params: {params}", flush=True)
         X, _ = _get_analysis_data()
         
         if X is None or X.shape[0] == 0:
             print(f"[ERROR] No data available for UMAP computation", flush=True)
             return None
+        
+        print(f"[DEBUG] UMAP Input Data Shape: {X.shape}", flush=True)
         
         # Validate parameters
         n_neighbors = min(params['n_neighbors'], X.shape[0] - 1)
@@ -232,7 +487,7 @@ def get_umap_embedding(params):
         
         embedding = reducer.fit_transform(X)
         app_state.embedding_cache[key] = embedding
-        print(f"[INFO] UMAP embedding computed: shape {embedding.shape}", flush=True)
+        print(f"[DEBUG] UMAP embedding computed: shape {embedding.shape}", flush=True)
         return embedding
         
     except Exception as e:
@@ -263,12 +518,12 @@ def get_tsne_embedding(params):
         key = ('tsne', perplexity, params['learning_rate'], params['random_state'], subset_key)
         
         if key in app_state.embedding_cache:
-            print(f"[INFO] Using cached t-SNE embedding", flush=True)
+            print(f"[DEBUG] Cache HIT for t-SNE. Key: {key}", flush=True)
             result = app_state.embedding_cache[key]
             if result is not None:
                 return result
         
-        print(f"[INFO] Computing t-SNE with perplexity={perplexity}, learning_rate={params['learning_rate']}", flush=True)
+        print(f"[DEBUG] Cache MISS for t-SNE. Computing with params: {params}, adjusted_perplexity={perplexity}", flush=True)
         
         # Validate learning_rate
         learning_rate = max(params['learning_rate'], 10)
@@ -278,12 +533,13 @@ def get_tsne_embedding(params):
             perplexity=perplexity,
             learning_rate=learning_rate,
             random_state=params['random_state'],
-            verbose=0
+            verbose=0,
+            n_jobs=-1
         )
         
         embedding = reducer.fit_transform(X)
         app_state.embedding_cache[key] = embedding
-        print(f"[INFO] t-SNE embedding computed: shape {embedding.shape}", flush=True)
+        print(f"[DEBUG] t-SNE embedding computed: shape {embedding.shape}", flush=True)
         return embedding
         
     except Exception as e:
@@ -327,7 +583,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
 
         # Reserve space around the axes so the legend and titles are never clipped
         try:
-            app_state.fig.subplots_adjust(left=0.08, bottom=0.12, right=0.78, top=0.88)
+            app_state.fig.subplots_adjust(left=0.05, bottom=0.08, right=0.85, top=0.88)
         except Exception:
             pass
 
@@ -397,8 +653,22 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
                 return None
             base[group_col] = base[group_col].fillna('Unknown').astype(str)
             try:
-                base['_emb_x'] = embedding[:, 0]
-                base['_emb_y'] = embedding[:, 1]
+                # Use selected components for PCA/RobustPCA if available
+                if actual_algorithm in ('PCA', 'RobustPCA') and hasattr(app_state, 'pca_component_indices'):
+                    idx_x = app_state.pca_component_indices[0]
+                    idx_y = app_state.pca_component_indices[1]
+                    
+                    # Ensure indices are within bounds
+                    n_comps = embedding.shape[1]
+                    if idx_x >= n_comps: idx_x = 0
+                    if idx_y >= n_comps: idx_y = 1 if n_comps > 1 else 0
+                    
+                    base['_emb_x'] = embedding[:, idx_x]
+                    base['_emb_y'] = embedding[:, idx_y]
+                    print(f"[DEBUG] Plotting components {idx_x+1} and {idx_y+1}", flush=True)
+                else:
+                    base['_emb_x'] = embedding[:, 0]
+                    base['_emb_y'] = embedding[:, 1]
             except Exception as emb_error:
                 print(f"[ERROR] Unable to align embedding with data: {emb_error}", flush=True)
                 return None
@@ -435,6 +705,10 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
         unique_cats = sorted(df_plot[group_col].unique())
         print(f"[DEBUG] Unique categories in {group_col}: {unique_cats}", flush=True)
         palette = sns.color_palette("tab20", len(unique_cats))
+        
+        # Store palette for UI
+        app_state.current_groups = unique_cats
+        app_state.current_palette = {cat: matplotlib.colors.to_hex(palette[i]) for i, cat in enumerate(unique_cats)}
         
         scatters = []
         for i, cat in enumerate(unique_cats):
@@ -485,23 +759,27 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
         
         # Create legend
         try:
-            legend = app_state.ax.legend(
-                title=group_col, bbox_to_anchor=(1.02, 1), loc='upper left',
-                fontsize=9, title_fontsize=10, frameon=True, fancybox=True
-            )
+            # Only show matplotlib legend if item count is reasonable
+            if len(unique_cats) <= 20:
+                legend = app_state.ax.legend(
+                    title=group_col, bbox_to_anchor=(1.01, 1), loc='upper left',
+                    fontsize=9, title_fontsize=10, frameon=True, fancybox=True
+                )
 
-            try:
-                legend.set_bbox_to_anchor((1.02, 1), transform=app_state.ax.transAxes)
-            except Exception:
-                pass
+                try:
+                    legend.set_bbox_to_anchor((1.01, 1), transform=app_state.ax.transAxes)
+                except Exception:
+                    pass
 
-            frame = legend.get_frame()
-            frame.set_facecolor("#ffffff")
-            frame.set_edgecolor("#cbd5f5")
-            frame.set_alpha(0.95)
-            
-            for leg_patch, sc in zip(legend.get_patches(), scatters):
-                app_state.legend_to_scatter[leg_patch] = sc
+                frame = legend.get_frame()
+                frame.set_facecolor("#ffffff")
+                frame.set_edgecolor("#cbd5f5")
+                frame.set_alpha(0.95)
+                
+                for leg_patch, sc in zip(legend.get_patches(), scatters):
+                    app_state.legend_to_scatter[leg_patch] = sc
+            else:
+                print("[INFO] Too many categories for standard legend. Use Control Panel legend.", flush=True)
         except Exception as e:
             print(f"[WARN] Legend creation error: {e}", flush=True)
         
@@ -519,10 +797,18 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
         else:
             title = f'{actual_algorithm}{subset_info}\nColored by {group_col}'
         
-        app_state.ax.set_title(title, fontsize=13, color="#1f2937", pad=26)
+        app_state.ax.set_title(title, fontsize=13, color="#1f2937", pad=20)
         app_state.ax.set_xlabel('Dimension 1', color="#334155", fontsize=11)
         app_state.ax.set_ylabel('Dimension 2', color="#334155", fontsize=11)
         app_state.ax.tick_params(colors="#475569", labelsize=9)
+        
+        # Adjust layout to prevent overlap
+        try:
+            app_state.fig.tight_layout()
+            # Re-adjust margins after tight_layout to ensure legend space
+            app_state.fig.subplots_adjust(left=0.05, bottom=0.08, right=0.85, top=0.88)
+        except Exception:
+            pass
         
         # Initialize annotation (always recreate after ax.clear())
         app_state.annotation = app_state.ax.annotate(
@@ -620,7 +906,7 @@ def plot_2d_data(group_col, data_columns, size=60):
         app_state.clear_plot_state()
 
         try:
-            app_state.fig.subplots_adjust(left=0.08, bottom=0.12, right=0.78, top=0.88)
+            app_state.fig.subplots_adjust(left=0.05, bottom=0.08, right=0.85, top=0.88)
         except Exception:
             pass
 
@@ -634,6 +920,10 @@ def plot_2d_data(group_col, data_columns, size=60):
 
         unique_cats = sorted(df_plot[group_col].unique())
         palette = sns.color_palette("tab20", len(unique_cats))
+
+        # Store palette for UI
+        app_state.current_groups = unique_cats
+        app_state.current_palette = {cat: matplotlib.colors.to_hex(palette[i]) for i, cat in enumerate(unique_cats)}
 
         scatters = []
 
@@ -678,36 +968,45 @@ def plot_2d_data(group_col, data_columns, size=60):
             return False
 
         try:
-            legend = app_state.ax.legend(
-                title=group_col,
-                bbox_to_anchor=(1.02, 1),
-                loc='upper left',
-                fontsize=9,
-                title_fontsize=10,
-                frameon=True,
-                fancybox=True
-            )
-            legend.set_bbox_to_anchor((1.02, 1), transform=app_state.ax.transAxes)
-            frame = legend.get_frame()
-            frame.set_facecolor("#ffffff")
-            frame.set_edgecolor("#cbd5f5")
-            frame.set_alpha(0.95)
-        except Exception as legend_err:
-            print(f"[WARN] 2D legend creation error: {legend_err}", flush=True)
-        else:
-            try:
+            if len(unique_cats) <= 20:
+                legend = app_state.ax.legend(
+                    title=group_col,
+                    bbox_to_anchor=(1.01, 1),
+                    loc='upper left',
+                    fontsize=9,
+                    title_fontsize=10,
+                    frameon=True,
+                    fancybox=True
+                )
+                legend.set_bbox_to_anchor((1.01, 1), transform=app_state.ax.transAxes)
+                frame = legend.get_frame()
+                frame.set_facecolor("#ffffff")
+                frame.set_edgecolor("#cbd5f5")
+                frame.set_alpha(0.95)
+                
                 for leg_patch, sc in zip(legend.get_patches(), scatters):
                     app_state.legend_to_scatter[leg_patch] = sc
-            except Exception:
-                pass
+            else:
+                print("[INFO] Too many categories for standard legend. Use Control Panel legend.", flush=True)
+        except Exception as legend_err:
+            print(f"[WARN] 2D legend creation error: {legend_err}", flush=True)
 
         subset_info = " (Subset)" if app_state.active_subset_indices is not None else ""
         title = (
             f"2D Scatter Plot{subset_info} ({data_columns[0]} vs {data_columns[1]})\n"
             f"Colored by {group_col}"
         )
-        app_state.ax.set_title(title, fontsize=13, color="#1f2937", pad=26)
+        app_state.ax.set_title(title, fontsize=13, color="#1f2937", pad=20)
         app_state.ax.set_xlabel(data_columns[0], color="#334155", fontsize=11)
+        app_state.ax.set_ylabel(data_columns[1], color="#334155", fontsize=11)
+        app_state.ax.tick_params(colors="#475569", labelsize=9)
+        
+        # Adjust layout to prevent overlap
+        try:
+            app_state.fig.tight_layout()
+            app_state.fig.subplots_adjust(left=0.05, bottom=0.08, right=0.85, top=0.88)
+        except Exception:
+            pass
         app_state.ax.set_ylabel(data_columns[1], color="#334155", fontsize=11)
         app_state.ax.tick_params(colors="#475569", labelsize=9)
 
@@ -787,6 +1086,10 @@ def plot_3d_data(group_col, data_columns, size=60):
 
         unique_cats = sorted(df_plot[group_col].unique())
         palette = sns.color_palette("tab20", len(unique_cats))
+        
+        # Store palette for UI
+        app_state.current_groups = unique_cats
+        app_state.current_palette = {cat: matplotlib.colors.to_hex(palette[i]) for i, cat in enumerate(unique_cats)}
 
         for i, cat in enumerate(unique_cats):
             subset = df_plot[df_plot[group_col] == cat]
@@ -816,20 +1119,23 @@ def plot_3d_data(group_col, data_columns, size=60):
             return False
 
         try:
-            legend = app_state.ax.legend(
-                title=group_col,
-                bbox_to_anchor=(1.02, 1),
-                loc='upper left',
-                fontsize=9,
-                title_fontsize=10,
-                frameon=True,
-                fancybox=True
-            )
-            legend.set_bbox_to_anchor((1.02, 1), transform=app_state.ax.transAxes)
-            frame = legend.get_frame()
-            frame.set_facecolor("#ffffff")
-            frame.set_edgecolor("#cbd5f5")
-            frame.set_alpha(0.95)
+            if len(unique_cats) <= 20:
+                legend = app_state.ax.legend(
+                    title=group_col,
+                    bbox_to_anchor=(1.01, 1),
+                    loc='upper left',
+                    fontsize=9,
+                    title_fontsize=10,
+                    frameon=True,
+                    fancybox=True
+                )
+                legend.set_bbox_to_anchor((1.01, 1), transform=app_state.ax.transAxes)
+                frame = legend.get_frame()
+                frame.set_facecolor("#ffffff")
+                frame.set_edgecolor("#cbd5f5")
+                frame.set_alpha(0.95)
+            else:
+                print("[INFO] Too many categories for standard legend. Use Control Panel legend.", flush=True)
         except Exception as legend_err:
             print(f"[WARN] 3D legend creation error: {legend_err}", flush=True)
 
@@ -838,10 +1144,17 @@ def plot_3d_data(group_col, data_columns, size=60):
             f"3D Scatter Plot{subset_info} ({data_columns[0]}, {data_columns[1]}, {data_columns[2]})\n"
             f"Colored by {group_col}"
         )
-        app_state.ax.set_title(title, fontsize=13, color="#1f2937", pad=16)
+        app_state.ax.set_title(title, fontsize=13, color="#1f2937", pad=20)
         app_state.ax.set_xlabel(data_columns[0], color="#334155", fontsize=11)
         app_state.ax.set_ylabel(data_columns[1], color="#334155", fontsize=11)
         app_state.ax.set_zlabel(data_columns[2], color="#334155", fontsize=11)
+        
+        # Adjust layout to prevent overlap
+        try:
+            app_state.fig.tight_layout()
+            app_state.fig.subplots_adjust(left=0.05, bottom=0.08, right=0.85, top=0.88)
+        except Exception:
+            pass
 
         # Disable 2D annotations for 3D renderings
         app_state.annotation = None

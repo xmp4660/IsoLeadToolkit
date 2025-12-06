@@ -6,7 +6,8 @@ import tkinter as tk
 from tkinter import ttk, filedialog
 import os
 
-from localization import translate as t
+from localization import translate as t, available_languages, set_language
+from state import app_state
 
 
 class FileSelectionDialog:
@@ -16,11 +17,12 @@ class FileSelectionDialog:
         """Initialize file selection dialog"""
         self.result = None
         self.selected_file = None
+        self._translations = []
 
         self.root = tk.Tk()
         self.root.title(t("Select Data File"))
-        self.root.geometry("780x420")
-        self.root.minsize(640, 340)
+        self.root.geometry("780x480")
+        self.root.minsize(640, 400)
         self.root.configure(bg="#edf2f7")
         self.root.resizable(True, True)
 
@@ -32,6 +34,42 @@ class FileSelectionDialog:
 
         self._setup_styles()
         self._create_widgets()
+        self._refresh_language()
+
+    def _register_translation(self, widget, key, attr='text'):
+        """Register a widget for translation updates"""
+        self._translations.append({'widget': widget, 'key': key, 'attr': attr})
+
+    def _refresh_language(self):
+        """Update all registered widgets with current language"""
+        for item in self._translations:
+            try:
+                widget = item['widget']
+                key = item['key']
+                attr = item['attr']
+                if widget.winfo_exists():
+                    if attr == 'title':
+                        widget.title(t(key))
+                    else:
+                        widget.configure(**{attr: t(key)})
+            except Exception:
+                pass
+
+    def _on_language_change(self, event=None):
+        """Handle language selection change"""
+        code = self.language_combobox.get().split(' - ')[0]
+        # Find code from label if needed, but here we construct "code - label"
+        # Let's reverse lookup or just store code
+        selected_label = self.language_combobox.get()
+        code = next((k for k, v in self._language_labels.items() if f"{k} - {v}" == selected_label), 'en')
+        
+        set_language(code)
+        app_state.language = code
+        self._refresh_language()
+        
+        # Update combobox values to reflect new language (if labels were translated)
+        # But here labels are static names like "English", "中文"
+        pass
 
     def _setup_styles(self):
         """Configure ttk styles for a cohesive dialog appearance"""
@@ -85,8 +123,38 @@ class FileSelectionDialog:
         container.columnconfigure(0, weight=1)
         container.rowconfigure(2, weight=1)
 
-        header = ttk.Label(container, text=t("Select Data File"), style='Header.TLabel')
-        header.grid(row=0, column=0, sticky=tk.W)
+        # Header Row with Language Selector
+        header_frame = ttk.Frame(container, style='FileDialog.TFrame')
+        header_frame.grid(row=0, column=0, sticky=(tk.W, tk.E))
+        
+        header = ttk.Label(header_frame, text=t("Select Data File"), style='Header.TLabel')
+        header.pack(side=tk.LEFT)
+        self._register_translation(header, "Select Data File")
+        self._register_translation(self.root, "Select Data File", attr='title')
+
+        # Language Selector
+        self._language_labels = dict(available_languages())
+        lang_frame = ttk.Frame(header_frame, style='FileDialog.TFrame')
+        lang_frame.pack(side=tk.RIGHT)
+        
+        ttk.Label(lang_frame, text="Language:", style='Body.TLabel').pack(side=tk.LEFT, padx=(0, 5))
+        
+        current_lang = app_state.language or 'en'
+        lang_values = [f"{k} - {v}" for k, v in self._language_labels.items()]
+        self.language_combobox = ttk.Combobox(
+            lang_frame, 
+            values=lang_values,
+            state="readonly",
+            width=15
+        )
+        current_label = f"{current_lang} - {self._language_labels.get(current_lang, current_lang)}"
+        if current_label in lang_values:
+            self.language_combobox.set(current_label)
+        elif lang_values:
+            self.language_combobox.current(0)
+            
+        self.language_combobox.pack(side=tk.LEFT)
+        self.language_combobox.bind("<<ComboboxSelected>>", self._on_language_change)
 
         subtitle = ttk.Label(
             container,
@@ -96,6 +164,7 @@ class FileSelectionDialog:
             justify=tk.LEFT
         )
         subtitle.grid(row=1, column=0, sticky=tk.W, pady=(6, 18))
+        self._register_translation(subtitle, "Choose a CSV or Excel file (.csv, .xlsx, .xls) that contains the isotope dataset you want to explore.")
 
         card = ttk.Frame(container, padding=18, style='Card.TFrame')
         card.grid(row=2, column=0, sticky=(tk.N, tk.S, tk.E, tk.W))
@@ -103,9 +172,11 @@ class FileSelectionDialog:
 
         card_header = ttk.Label(card, text=t("Current selection"), style='Body.TLabel')
         card_header.grid(row=0, column=0, sticky=tk.W)
+        self._register_translation(card_header, "Current selection")
 
         self.file_label = ttk.Label(card, text=t("No file selected"), style='Muted.TLabel', wraplength=640, justify=tk.LEFT)
         self.file_label.grid(row=1, column=0, sticky=tk.W, pady=(6, 10))
+        self._register_translation(self.file_label, "No file selected")
 
         helper_text = ttk.Label(
             card,
@@ -113,6 +184,7 @@ class FileSelectionDialog:
             style='Body.TLabel'
         )
         helper_text.grid(row=2, column=0, sticky=tk.W)
+        self._register_translation(helper_text, "Tip: For Excel workbooks, you can pick the sheet in the next step.")
 
         button_row = ttk.Frame(container, style='FileDialog.TFrame')
         button_row.grid(row=3, column=0, sticky=(tk.W, tk.E), pady=(18, 12))
@@ -121,8 +193,13 @@ class FileSelectionDialog:
         button_group = ttk.Frame(button_row, style='FileDialog.TFrame')
         button_group.grid(row=0, column=0, sticky=tk.W)
 
-        ttk.Button(button_group, text=t("Browse..."), style='Accent.TButton', command=self._browse_file).grid(row=0, column=0, padx=(0, 10))
-        ttk.Button(button_group, text=t("Clear Selection"), style='Secondary.TButton', command=self._clear_file).grid(row=0, column=1)
+        browse_btn = ttk.Button(button_group, text=t("Browse..."), style='Accent.TButton', command=self._browse_file)
+        browse_btn.grid(row=0, column=0, padx=(0, 10))
+        self._register_translation(browse_btn, "Browse...")
+        
+        clear_btn = ttk.Button(button_group, text=t("Clear Selection"), style='Secondary.TButton', command=self._clear_file)
+        clear_btn.grid(row=0, column=1)
+        self._register_translation(clear_btn, "Clear Selection")
 
         separator = ttk.Separator(container, orient=tk.HORIZONTAL)
         separator.grid(row=4, column=0, sticky=(tk.W, tk.E), pady=12)
@@ -134,8 +211,13 @@ class FileSelectionDialog:
         button_container = ttk.Frame(footer, style='FileDialog.TFrame')
         button_container.grid(row=0, column=0, sticky=tk.E)
 
-        ttk.Button(button_container, text=t("Cancel"), style='Secondary.TButton', command=self._cancel_clicked).grid(row=0, column=0, padx=(0, 12))
-        ttk.Button(button_container, text=t("Continue"), style='Accent.TButton', command=self._ok_clicked).grid(row=0, column=1)
+        cancel_btn = ttk.Button(button_container, text=t("Cancel"), style='Secondary.TButton', command=self._cancel_clicked)
+        cancel_btn.grid(row=0, column=0, padx=(0, 12))
+        self._register_translation(cancel_btn, "Cancel")
+        
+        continue_btn = ttk.Button(button_container, text=t("Continue"), style='Accent.TButton', command=self._ok_clicked)
+        continue_btn.grid(row=0, column=1)
+        self._register_translation(continue_btn, "Continue")
     
     def _browse_file(self):
         """Open file browser"""

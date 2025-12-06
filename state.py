@@ -13,8 +13,18 @@ class AppState:
         self.algorithm = 'UMAP'  # Default algorithm: always start with UMAP
         self.umap_params = CONFIG['umap_params'].copy()
         self.tsne_params = CONFIG['tsne_params'].copy()
-        self.pca_params = CONFIG.get('pca_params', {}).copy()
-        self.robust_pca_params = CONFIG.get('robust_pca_params', {}).copy()
+        self.pca_params = CONFIG.get('pca_params', {'n_components': 2, 'random_state': 42}).copy()
+        self.robust_pca_params = CONFIG.get('robust_pca_params', {'n_components': 2, 'random_state': 42, 'support_fraction': 0.75}).copy()
+        if 'support_fraction' not in self.robust_pca_params:
+            self.robust_pca_params['support_fraction'] = 0.75
+            
+        # PCA/RobustPCA Dimension Selection
+        self.pca_component_indices = [0, 1]  # Default to PC1 and PC2
+        self.last_pca_variance = None  # Store explained variance ratio for scree plot
+        self.last_pca_components = None  # Store PCA components (loadings)
+        self.current_feature_names = []  # Store names of features used in analysis
+        
+        self.standardize_data = True  # Default to True for better PCA/RobustPCA performance
         self.show_ellipses = CONFIG.get('show_ellipses', False)
         self.ellipse_confidence = CONFIG.get('ellipse_confidence', 0.95)
         self.point_size = CONFIG['point_size']
@@ -38,6 +48,10 @@ class AppState:
         self.language = CONFIG.get('default_language', 'zh')
         self.language_labels = CONFIG.get('languages', {'zh': '中文', 'en': 'English'})
         self.language_listeners = []
+        
+        # Legend and Color State
+        self.current_palette = {}  # Map group name to hex color
+        self.current_groups = []   # List of current groups in order
         
         # Dynamic column configuration (populated from data)
         self.group_cols = []  # Available grouping columns from data
