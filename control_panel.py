@@ -131,10 +131,15 @@ class ControlPanel:
         self.notebook.add(self.tab_tools, text=self._translate("Tools"))
         self._register_translation(self.notebook, "Tools", attr='tab', formatter=lambda: {'tab_id': 2})
         
-        # Tab 4: Legend (New!)
+        # Tab 4: Style (New!)
+        self.tab_style = ttk.Frame(self.notebook, style='ControlPanel.TFrame')
+        self.notebook.add(self.tab_style, text=self._translate("Style"))
+        self._register_translation(self.notebook, "Style", attr='tab', formatter=lambda: {'tab_id': 3})
+
+        # Tab 5: Legend
         self.tab_legend = ttk.Frame(self.notebook, style='ControlPanel.TFrame')
         self.notebook.add(self.tab_legend, text=self._translate("Legend"))
-        self._register_translation(self.notebook, "Legend", attr='tab', formatter=lambda: {'tab_id': 3})
+        self._register_translation(self.notebook, "Legend", attr='tab', formatter=lambda: {'tab_id': 4})
 
         # --- Populate Tab 1: Settings ---
         self._build_settings_tab(self.tab_settings)
@@ -145,7 +150,10 @@ class ControlPanel:
         # --- Populate Tab 3: Tools ---
         self._build_tools_tab(self.tab_tools)
         
-        # --- Populate Tab 4: Legend ---
+        # --- Populate Tab 4: Style ---
+        self._build_style_tab(self.tab_style)
+        
+        # --- Populate Tab 5: Legend ---
         self._build_legend_tab(self.tab_legend)
 
         # Footer
@@ -342,6 +350,84 @@ class ControlPanel:
         )
         group_config_btn.pack(anchor=tk.W, pady=(4, 4))
         self._register_translation(group_config_btn, "Configure Group Columns")
+
+    def _build_style_tab(self, parent):
+        """Build the Style tab"""
+        frame = self._build_scrollable_frame(parent)
+        
+        # Style Section
+        style_section = self._create_section(
+            frame,
+            "Plot Style",
+            "Customize the visual appearance of the plots."
+        )
+        
+        # Style Selection
+        style_label = ttk.Label(style_section, text=self._translate("Style Theme"), style='FieldLabel.TLabel')
+        style_label.pack(anchor=tk.W, pady=(0, 4))
+        self._register_translation(style_label, "Style Theme")
+        
+        style_options = ['science', 'ieee', 'nature']
+        self.style_var = tk.StringVar(value=getattr(app_state, 'plot_style', 'science'))
+        style_combo = ttk.Combobox(
+            style_section, 
+            textvariable=self.style_var, 
+            values=style_options,
+            state="readonly"
+        )
+        style_combo.pack(fill=tk.X, pady=(0, 8))
+        style_combo.bind("<<ComboboxSelected>>", self._on_style_change)
+        
+        # Grid Checkbox
+        self.grid_var = tk.BooleanVar(value=getattr(app_state, 'plot_style_grid', False))
+        grid_check = ttk.Checkbutton(
+            style_section,
+            text=self._translate("Show Grid"),
+            variable=self.grid_var,
+            command=self._on_style_change,
+            style='Option.TRadiobutton'
+        )
+        grid_check.pack(anchor=tk.W, pady=(0, 12))
+        self._register_translation(grid_check, "Show Grid")
+        
+        # Color Scheme Section
+        color_section = self._create_section(
+            frame,
+            "Color Scheme",
+            "Select a color palette for the plot."
+        )
+        
+        color_label = ttk.Label(color_section, text=self._translate("Palette"), style='FieldLabel.TLabel')
+        color_label.pack(anchor=tk.W, pady=(0, 4))
+        self._register_translation(color_label, "Palette")
+        
+        color_options = [
+            'vibrant', 'bright', 'high-vis', 'std-colors', 
+            'light', 'retro', 'muted', 'dark_background'
+        ]
+        self.color_scheme_var = tk.StringVar(value=getattr(app_state, 'color_scheme', 'vibrant'))
+        color_combo = ttk.Combobox(
+            color_section, 
+            textvariable=self.color_scheme_var, 
+            values=color_options,
+            state="readonly"
+        )
+        color_combo.pack(fill=tk.X, pady=(0, 8))
+        color_combo.bind("<<ComboboxSelected>>", self._on_style_change)
+
+    def _on_style_change(self, event=None):
+        """Handle style changes"""
+        app_state.plot_style = self.style_var.get()
+        app_state.plot_style_grid = self.grid_var.get()
+        app_state.color_scheme = self.color_scheme_var.get()
+        
+        # Clear palette cache to force regeneration of colors based on new scheme
+        if hasattr(app_state, 'current_palette'):
+            app_state.current_palette = {}
+        
+        # Trigger update
+        if self.callback:
+            self.callback()
 
     def _refresh_group_list(self):
         """Refresh the list of group column radio buttons"""

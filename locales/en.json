@@ -1,4 +1,12 @@
 {
+  "Style": "Style",
+  "Plot Style": "Plot Style",
+  "Customize the visual appearance of the plots.": "Customize the visual appearance of the plots.",
+  "Style Theme": "Style Theme",
+  "Show Grid": "Show Grid",
+  "Color Scheme": "Color Scheme",
+  "Select a color palette for the plot.": "Select a color palette for the plot.",
+  "Palette": "Palette",
   "Settings": "Settings",
   "Algorithm": "Algorithm",
   "Tools": "Tools",

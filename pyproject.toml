@@ -15,4 +15,5 @@ dependencies = [
     "pyinstaller>=6.17.0",
     "python-calamine>=0.6.1",
     "xlsxwriter>=3.2.9",
+    "scienceplots>=2.2.0",
 ]

@@ -84,6 +84,10 @@ class AppState:
         # Tooltip configuration
         self.tooltip_columns = ['Lab No.', 'Discovery site', 'Period']  # Default columns
 
+        # Plot Style Configuration
+        self.plot_style = 'science'
+        self.plot_style_grid = False
+        self.color_scheme = 'vibrant'
         
     def clear_plot_state(self):
         """Reset plot-specific state"""

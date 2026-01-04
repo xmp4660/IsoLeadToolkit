@@ -1,4 +1,12 @@
 {
+  "Style": "样式",
+  "Plot Style": "绘图样式",
+  "Customize the visual appearance of the plots.": "自定义图表的视觉外观。",
+  "Style Theme": "样式主题",
+  "Show Grid": "显示网格",
+  "Color Scheme": "配色方案",
+  "Select a color palette for the plot.": "选择图表的配色方案。",
+  "Palette": "调色板",
   "Show Scree Plot": "显示碎石图",
   "Show Loadings": "显示载荷图",
   "Show Axis Corr.": "显示轴相关性",
