@@ -31,12 +31,67 @@ except ImportError:
     calculate_all_parameters = None
 
 import matplotlib.pyplot as plt
+from matplotlib import font_manager
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import tkinter as tk
 from tkinter import ttk
+import scienceplots
+import itertools
 
-sns.set_theme()
+# sns.set_theme()
+# Use science style with no-latex to avoid dependency issues on Windows
+# and ensure compatibility with CJK fonts configured in main.py
+# plt.style.use(['science', 'no-latex']) # Moved to _apply_current_style
+
+def _apply_current_style():
+    """Apply the current plot style and color scheme from app_state."""
+    style_list = []
+    
+    # Base style
+    base_style = getattr(app_state, 'plot_style', 'science')
+    style_list.append(base_style)
+    
+    # Always disable latex to avoid issues
+    style_list.append('no-latex')
+    
+    # Grid
+    if getattr(app_state, 'plot_style_grid', False):
+        style_list.append('grid')
+        
+    # Color scheme
+    color_scheme = getattr(app_state, 'color_scheme', 'vibrant')
+    if color_scheme:
+        style_list.append(color_scheme)
+        
+    # Apply styles
+    try:
+        plt.style.use(style_list)
+    except Exception as e:
+        print(f"[WARN] Failed to apply styles {style_list}: {e}", flush=True)
+        # Fallback to science
+        plt.style.use(['science', 'no-latex'])
+
+    # Re-apply CJK fonts
+    preferred_fonts = CONFIG.get('preferred_plot_fonts', [])
+    available_fonts = {f.name for f in font_manager.fontManager.ttflist}
+    chosen_font = None
+    for name in preferred_fonts:
+        if name in available_fonts:
+            chosen_font = name
+            break
+            
+    if chosen_font:
+        matplotlib.rcParams['font.family'] = 'sans-serif'
+        matplotlib.rcParams['font.sans-serif'] = [chosen_font, 'Arial', 'sans-serif']
+        
+    matplotlib.rcParams['axes.unicode_minus'] = False
+    
+    # Update figure background if it exists
+    if app_state.fig is not None:
+        app_state.fig.patch.set_facecolor(plt.rcParams.get('figure.facecolor', 'white'))
+        if app_state.ax is not None:
+            app_state.ax.set_facecolor(plt.rcParams.get('axes.facecolor', 'white'))
 
 def show_scree_plot(parent_window=None):
     """Display a scree plot of the explained variance for the last PCA run."""
@@ -775,6 +830,9 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
             print("[ERROR] Failed to configure 2D axes", flush=True)
             return False
 
+        # Apply style before clearing
+        _apply_current_style()
+
         app_state.ax.clear()
         app_state.clear_plot_state()
 
@@ -784,13 +842,14 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
         except Exception:
             pass
 
-        app_state.fig.patch.set_facecolor("#f8fafc")
-        app_state.ax.set_facecolor("#ffffff")
-        app_state.ax.grid(True, color="#e2e8f0", linewidth=0.7, alpha=0.8)
-        app_state.ax.set_axisbelow(True)
-        for spine in app_state.ax.spines.values():
-            spine.set_color("#cbd5f5")
-            spine.set_linewidth(1.0)
+        # Manual styling removed in favor of scienceplots
+        # app_state.fig.patch.set_facecolor("#f8fafc")
+        # app_state.ax.set_facecolor("#ffffff")
+        # app_state.ax.grid(True, color="#e2e8f0", linewidth=0.7, alpha=0.8)
+        # app_state.ax.set_axisbelow(True)
+        # for spine in app_state.ax.spines.values():
+        #     spine.set_color("#cbd5f5")
+        #     spine.set_linewidth(1.0)
         
         # Ensure parameters are provided
         if umap_params is None:
@@ -964,8 +1023,12 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
         if not hasattr(app_state, 'current_palette'):
             app_state.current_palette = {}
             
-        # Generate a default palette for all categories
-        default_palette = sns.color_palette("tab20", len(unique_cats))
+        # Generate a default palette for all categories using current style cycle
+        prop_cycle = plt.rcParams['axes.prop_cycle']
+        cycle_colors = prop_cycle.by_key()['color']
+        color_cycle = itertools.cycle(cycle_colors)
+        default_palette = [next(color_cycle) for _ in range(len(unique_cats))]
+        
         new_palette = {}
         
         for i, cat in enumerate(unique_cats):
@@ -1193,6 +1256,9 @@ def plot_2d_data(group_col, data_columns, size=60):
                     all_groups = sorted(df_plot[group_col].unique())
                     app_state.available_groups = all_groups
 
+        # Apply style before clearing
+        _apply_current_style()
+
         app_state.ax.clear()
         app_state.clear_plot_state()
 
@@ -1201,13 +1267,14 @@ def plot_2d_data(group_col, data_columns, size=60):
         except Exception:
             pass
 
-        app_state.fig.patch.set_facecolor("#f8fafc")
-        app_state.ax.set_facecolor("#ffffff")
-        app_state.ax.grid(True, color="#e2e8f0", linewidth=0.7, alpha=0.8)
-        app_state.ax.set_axisbelow(True)
-        for spine in app_state.ax.spines.values():
-            spine.set_color("#cbd5f5")
-            spine.set_linewidth(1.0)
+        # Manual styling removed in favor of scienceplots
+        # app_state.fig.patch.set_facecolor("#f8fafc")
+        # app_state.ax.set_facecolor("#ffffff")
+        # app_state.ax.grid(True, color="#e2e8f0", linewidth=0.7, alpha=0.8)
+        # app_state.ax.set_axisbelow(True)
+        # for spine in app_state.ax.spines.values():
+        #     spine.set_color("#cbd5f5")
+        #     spine.set_linewidth(1.0)
 
         unique_cats = sorted(df_plot[group_col].unique())
         
@@ -1215,7 +1282,12 @@ def plot_2d_data(group_col, data_columns, size=60):
         if not hasattr(app_state, 'current_palette'):
             app_state.current_palette = {}
             
-        default_palette = sns.color_palette("tab20", len(unique_cats))
+        # Generate a default palette for all categories using current style cycle
+        prop_cycle = plt.rcParams['axes.prop_cycle']
+        cycle_colors = prop_cycle.by_key()['color']
+        color_cycle = itertools.cycle(cycle_colors)
+        default_palette = [next(color_cycle) for _ in range(len(unique_cats))]
+        
         new_palette = {}
         
         for i, cat in enumerate(unique_cats):
@@ -1382,15 +1454,24 @@ def plot_3d_data(group_col, data_columns, size=60):
 
         df_plot[group_col] = df_plot[group_col].fillna('Unknown').astype(str)
 
+        # Apply style before clearing
+        _apply_current_style()
+
         app_state.ax.clear()
         app_state.clear_plot_state()
 
-        app_state.fig.patch.set_facecolor("#f8fafc")
-        app_state.ax.set_facecolor("#ffffff")
-        app_state.ax.grid(True, color="#e2e8f0", linewidth=0.7, alpha=0.6)
+        # Manual styling removed in favor of scienceplots
+        # app_state.fig.patch.set_facecolor("#f8fafc")
+        # app_state.ax.set_facecolor("#ffffff")
+        # app_state.ax.grid(True, color="#e2e8f0", linewidth=0.7, alpha=0.6)
 
         unique_cats = sorted(df_plot[group_col].unique())
-        palette = sns.color_palette("tab20", len(unique_cats))
+        
+        # Generate a default palette for all categories using current style cycle
+        prop_cycle = plt.rcParams['axes.prop_cycle']
+        cycle_colors = prop_cycle.by_key()['color']
+        color_cycle = itertools.cycle(cycle_colors)
+        palette = [next(color_cycle) for _ in range(len(unique_cats))]
         
         # Store palette for UI
         app_state.current_groups = unique_cats
