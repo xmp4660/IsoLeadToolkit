@@ -35,6 +35,62 @@ except ImportError:
     geochemistry = None
     calculate_all_parameters = None
 
+
+def _build_group_palette(unique_cats):
+    """Build or reuse a stable group -> color mapping."""
+    if not hasattr(app_state, 'current_palette'):
+        app_state.current_palette = {}
+
+    prop_cycle = plt.rcParams['axes.prop_cycle']
+    cycle_colors = prop_cycle.by_key().get('color', [])
+    color_cycle = itertools.cycle(cycle_colors if cycle_colors else ['#333333'])
+    default_palette = [next(color_cycle) for _ in range(len(unique_cats))]
+
+    new_palette = {}
+    for i, cat in enumerate(unique_cats):
+        if cat in app_state.current_palette:
+            new_palette[cat] = app_state.current_palette[cat]
+        else:
+            new_palette[cat] = matplotlib.colors.to_hex(default_palette[i])
+
+    app_state.current_palette = new_palette
+    app_state.current_groups = unique_cats
+    return new_palette
+
+
+def _apply_ternary_stretch(t_vals, l_vals, r_vals):
+    """Apply ternary stretch transform based on current mode."""
+    if not getattr(app_state, 'ternary_stretch', False):
+        return t_vals, l_vals, r_vals
+
+    if not getattr(app_state, 'ternary_factors', None) or len(app_state.ternary_factors) != 3:
+        calculate_auto_ternary_factors()
+    f_top, f_left, f_right = getattr(app_state, 'ternary_factors', [1.0, 1.0, 1.0])
+    t_vals = t_vals * f_top
+    l_vals = l_vals * f_left
+    r_vals = r_vals * f_right
+
+    mode = getattr(app_state, 'ternary_stretch_mode', 'power')
+    if mode in ('minmax', 'hybrid'):
+        def _minmax(arr):
+            if len(arr) == 0:
+                return arr
+            mn, mx = np.min(arr), np.max(arr)
+            if mx - mn < 1e-9:
+                return np.zeros_like(arr) + 0.5
+            return (arr - mn) / (mx - mn)
+        t_vals = _minmax(t_vals)
+        l_vals = _minmax(l_vals)
+        r_vals = _minmax(r_vals)
+
+    if mode in ('power', 'hybrid'):
+        stretch_pow = getattr(app_state, 'ternary_stretch_power', 0.5)
+        t_vals = np.power(np.clip(t_vals, 1e-12, None), stretch_pow)
+        l_vals = np.power(np.clip(l_vals, 1e-12, None), stretch_pow)
+        r_vals = np.power(np.clip(r_vals, 1e-12, None), stretch_pow)
+
+    return t_vals, l_vals, r_vals
+
 def _draw_isochron_overlays(ax, mode):
     """Draw isochron reference lines for Pb-Pb plots."""
     if geochemistry is None: return
@@ -1412,26 +1468,8 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
         unique_cats = sorted(df_plot[group_col].unique())
         print(f"[DEBUG] Unique categories in {group_col}: {unique_cats}", flush=True)
         
-        # Logic to preserve colors if possible
-        if not hasattr(app_state, 'current_palette'):
-            app_state.current_palette = {}
-            
-        # Generate a default palette for all categories using current style cycle
-        prop_cycle = plt.rcParams['axes.prop_cycle']
-        cycle_colors = prop_cycle.by_key()['color']
-        color_cycle = itertools.cycle(cycle_colors)
-        default_palette = [next(color_cycle) for _ in range(len(unique_cats))]
-        
-        new_palette = {}
-        
-        for i, cat in enumerate(unique_cats):
-            if cat in app_state.current_palette:
-                new_palette[cat] = app_state.current_palette[cat]
-            else:
-                new_palette[cat] = matplotlib.colors.to_hex(default_palette[i])
-        
-        app_state.current_palette = new_palette
-        app_state.current_groups = unique_cats
+        # Build palette while preserving user overrides
+        new_palette = _build_group_palette(unique_cats)
         
         # Initialize custom ternary plot settings
         if actual_algorithm == 'TERNARY':
@@ -1513,29 +1551,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
                         ls = subset['_emb_l'].to_numpy(dtype=float)
                         rs = subset['_emb_r'].to_numpy(dtype=float)
                         
-                        if getattr(app_state, 'ternary_stretch', False):
-                            if not getattr(app_state, 'ternary_factors', None) or len(app_state.ternary_factors) != 3:
-                                calculate_auto_ternary_factors()
-                            f_top, f_left, f_right = getattr(app_state, 'ternary_factors', [1.0, 1.0, 1.0])
-                            ts = ts * f_top
-                            ls = ls * f_left
-                            rs = rs * f_right
-                            mode = getattr(app_state, 'ternary_stretch_mode', 'power')
-                            if mode in ('minmax', 'hybrid'):
-                                def _minmax(arr):
-                                    if len(arr) == 0: return arr
-                                    mn, mx = np.min(arr), np.max(arr)
-                                    if mx - mn < 1e-9: return np.zeros_like(arr) + 0.5
-                                    return (arr - mn) / (mx - mn)
-                                ts = _minmax(ts)
-                                ls = _minmax(ls)
-                                rs = _minmax(rs)
-                            if mode in ('power', 'hybrid'):
-                                # Power transform spreads compositional ratios without breaking closure
-                                stretch_pow = getattr(app_state, 'ternary_stretch_power', 0.5)
-                                ts = np.power(np.clip(ts, 1e-12, None), stretch_pow)
-                                ls = np.power(np.clip(ls, 1e-12, None), stretch_pow)
-                                rs = np.power(np.clip(rs, 1e-12, None), stretch_pow)
+                        ts, ls, rs = _apply_ternary_stretch(ts, ls, rs)
                         
                         sums = ts + ls + rs
                         with np.errstate(divide='ignore', invalid='ignore'):
@@ -1609,29 +1625,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
                     r_vals = rs
 
                     # Apply compositional stretching if enabled
-                    if getattr(app_state, 'ternary_stretch', False):
-                        if not getattr(app_state, 'ternary_factors', None) or len(app_state.ternary_factors) != 3:
-                            calculate_auto_ternary_factors()
-                        f_top, f_left, f_right = getattr(app_state, 'ternary_factors', [1.0, 1.0, 1.0])
-                        t_vals = t_vals * f_top
-                        l_vals = l_vals * f_left
-                        r_vals = r_vals * f_right
-                        mode = getattr(app_state, 'ternary_stretch_mode', 'power')
-                        if mode in ('minmax', 'hybrid'):
-                            def _minmax(arr):
-                                if len(arr) == 0: return arr
-                                mn, mx = np.min(arr), np.max(arr)
-                                if mx - mn < 1e-9: return np.zeros_like(arr) + 0.5
-                                return (arr - mn) / (mx - mn)
-                            t_vals = _minmax(t_vals)
-                            l_vals = _minmax(l_vals)
-                            r_vals = _minmax(r_vals)
-                        if mode in ('power', 'hybrid'):
-                            # Power transform spreads compositional ratios without breaking closure
-                            stretch_pow = getattr(app_state, 'ternary_stretch_power', 0.5)
-                            t_vals = np.power(np.clip(t_vals, 1e-12, None), stretch_pow)
-                            l_vals = np.power(np.clip(l_vals, 1e-12, None), stretch_pow)
-                            r_vals = np.power(np.clip(r_vals, 1e-12, None), stretch_pow)
+                    t_vals, l_vals, r_vals = _apply_ternary_stretch(t_vals, l_vals, r_vals)
 
                     # Normalize to sum to 1.0
                     sums = t_vals + l_vals + r_vals
@@ -2014,26 +2008,8 @@ def plot_2d_data(group_col, data_columns, size=60, show_kde=False):
 
         unique_cats = sorted(df_plot[group_col].unique())
         
-        # Logic to preserve colors if possible
-        if not hasattr(app_state, 'current_palette'):
-            app_state.current_palette = {}
-            
-        # Generate a default palette for all categories using current style cycle
-        prop_cycle = plt.rcParams['axes.prop_cycle']
-        cycle_colors = prop_cycle.by_key()['color']
-        color_cycle = itertools.cycle(cycle_colors)
-        default_palette = [next(color_cycle) for _ in range(len(unique_cats))]
-        
-        new_palette = {}
-        
-        for i, cat in enumerate(unique_cats):
-            if cat in app_state.current_palette:
-                new_palette[cat] = app_state.current_palette[cat]
-            else:
-                new_palette[cat] = matplotlib.colors.to_hex(default_palette[i])
-        
-        app_state.current_palette = new_palette
-        app_state.current_groups = unique_cats
+        # Build palette while preserving user overrides
+        new_palette = _build_group_palette(unique_cats)
 
         if show_kde:
             try:
@@ -2260,24 +2236,7 @@ def plot_3d_data(group_col, data_columns, size=60):
 
         unique_cats = sorted(df_plot[group_col].unique())
 
-        # Preserve user-selected colors when possible
-        if not hasattr(app_state, 'current_palette'):
-            app_state.current_palette = {}
-
-        prop_cycle = plt.rcParams['axes.prop_cycle']
-        cycle_colors = prop_cycle.by_key()['color']
-        color_cycle = itertools.cycle(cycle_colors)
-        default_palette = [next(color_cycle) for _ in range(len(unique_cats))]
-
-        new_palette = {}
-        for i, cat in enumerate(unique_cats):
-            if cat in app_state.current_palette:
-                new_palette[cat] = app_state.current_palette[cat]
-            else:
-                new_palette[cat] = matplotlib.colors.to_hex(default_palette[i])
-
-        app_state.current_groups = unique_cats
-        app_state.current_palette = new_palette
+        new_palette = _build_group_palette(unique_cats)
 
         for i, cat in enumerate(unique_cats):
             subset = df_plot[df_plot[group_col] == cat]
