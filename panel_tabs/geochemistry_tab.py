@@ -181,7 +181,11 @@ class GeochemistryTabMixin:
 
                 # 若已有数据，则触发重算更新图形。
                 if app_state.df_global is not None:
-                    if app_state.render_mode == 'V1V2':
+                    if app_state.render_mode in (
+                        'V1V2', 'ISOCHRON1', 'ISOCHRON2',
+                        'PB_EVOL_76', 'PB_EVOL_86',
+                        'PB_MODEL_AGE', 'PB_MU_AGE', 'PB_KAPPA_AGE',
+                    ):
                         self._on_change()
 
                 messagebox.showinfo(
@@ -198,11 +202,13 @@ class GeochemistryTabMixin:
 
         def reset_defaults():
             defaults = {
+                'T1': 3700,
+                'T2': 4570,
                 'Tsec': 3700,
                 'lambda_238': 1.55125e-10, 'lambda_235': 9.8485e-10, 'lambda_232': 4.94752e-11,
                 'a0': 9.307, 'b0': 10.294, 'c0': 29.476,
                 'a1': 11.152, 'b1': 12.998, 'c1': 31.23,
-                'mu_M': 7.8, 'omega_M': 4.04 * 7.8, 'U_ratio': 1/137.88
+                'mu_M': 9.74, 'omega_M': 36.84, 'U_ratio': 1/137.88
             }
 
             for k, v in defaults.items():
@@ -253,3 +259,12 @@ class GeochemistryTabMixin:
             safe_set('U_ratio', current_params['U_ratio'])
 
             print(f"[INFO] Loaded Geochemistry Model: {model_name}")
+            
+            # 若已有数据且处于地化模式，则自动刷新图像
+            if app_state.df_global is not None:
+                if app_state.render_mode in (
+                    'V1V2', 'ISOCHRON1', 'ISOCHRON2',
+                    'PB_EVOL_76', 'PB_EVOL_86',
+                    'PB_MODEL_AGE', 'PB_MU_AGE', 'PB_KAPPA_AGE',
+                ):
+                    self._on_change()

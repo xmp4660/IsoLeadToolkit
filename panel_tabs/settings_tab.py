@@ -17,6 +17,8 @@ class SettingsTabMixin:
         # Projection Mode
         if not getattr(app_state, 'render_mode', None):
             app_state.render_mode = getattr(app_state, 'algorithm', 'UMAP')
+        if app_state.render_mode in ('PB_MODELS_76', 'PB_MODELS_86'):
+            app_state.render_mode = 'PB_EVOL_76' if app_state.render_mode.endswith('_76') else 'PB_EVOL_86'
         self.radio_vars['render_mode'] = tk.StringVar(value=app_state.render_mode)
 
         algo_section = self._create_section(
@@ -37,6 +39,11 @@ class SettingsTabMixin:
             ("Ternary Plot", "Ternary"),
             ("207Pb/204Pb - 206Pb/204Pb", "ISOCHRON1"),
             ("208Pb/204Pb - 206Pb/204Pb", "ISOCHRON2"),
+            ("Pb Evolution 206-207", "PB_EVOL_76"),
+            ("Pb Evolution 206-208", "PB_EVOL_86"),
+            ("Model Age Diagram", "PB_MODEL_AGE"),
+            ("Mu vs Age", "PB_MU_AGE"),
+            ("Kappa vs Age", "PB_KAPPA_AGE"),
             ("2D Scatter (raw)", "2D"),
             ("3D Scatter (raw)", "3D"),
         ]

@@ -94,6 +94,12 @@ class PanelHandlersMixin:
                 app_state.show_isochrons = self.check_vars['show_isochrons'].get()
             if 'show_growth_curves' in self.check_vars:
                 app_state.show_growth_curves = self.check_vars['show_growth_curves'].get()
+            if 'show_model_curves' in self.check_vars:
+                app_state.show_model_curves = self.check_vars['show_model_curves'].get()
+            if 'show_paleoisochrons' in self.check_vars:
+                app_state.show_paleoisochrons = self.check_vars['show_paleoisochrons'].get()
+            if 'show_model_age_lines' in self.check_vars:
+                app_state.show_model_age_lines = self.check_vars['show_model_age_lines'].get()
 
             if 'confidence' in self.radio_vars:
                 app_state.ellipse_confidence = self.radio_vars['confidence'].get()
