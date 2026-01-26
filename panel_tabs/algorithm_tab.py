@@ -352,6 +352,52 @@ class AlgorithmTabMixin:
         )
         chk_growth.pack(anchor=tk.W, pady=2)
         self._register_translation(chk_growth, "Show Growth Curves")
+
+        # Geochemistry Plot Controls
+        self.geochem_section = self._create_section(
+            frame,
+            "Geochemistry Plot Controls",
+            "Toggle model curves, paleoisochrons and age lines."
+        )
+
+        self.check_vars['show_model_curves'] = tk.BooleanVar(
+            value=getattr(app_state, 'show_model_curves', True)
+        )
+        chk_model_curves = ttk.Checkbutton(
+            self.geochem_section,
+            text=self._translate("Show Model Curves"),
+            variable=self.check_vars['show_model_curves'],
+            command=self._on_change,
+            style='Option.TCheckbutton'
+        )
+        chk_model_curves.pack(anchor=tk.W, pady=2)
+        self._register_translation(chk_model_curves, "Show Model Curves")
+
+        self.check_vars['show_paleoisochrons'] = tk.BooleanVar(
+            value=getattr(app_state, 'show_paleoisochrons', True)
+        )
+        chk_paleo = ttk.Checkbutton(
+            self.geochem_section,
+            text=self._translate("Show Paleoisochrons"),
+            variable=self.check_vars['show_paleoisochrons'],
+            command=self._on_change,
+            style='Option.TCheckbutton'
+        )
+        chk_paleo.pack(anchor=tk.W, pady=2)
+        self._register_translation(chk_paleo, "Show Paleoisochrons")
+
+        self.check_vars['show_model_age_lines'] = tk.BooleanVar(
+            value=getattr(app_state, 'show_model_age_lines', True)
+        )
+        chk_age = ttk.Checkbutton(
+            self.geochem_section,
+            text=self._translate("Show Model Age Lines"),
+            variable=self.check_vars['show_model_age_lines'],
+            command=self._on_change,
+            style='Option.TCheckbutton'
+        )
+        chk_age.pack(anchor=tk.W, pady=2)
+        self._register_translation(chk_age, "Show Model Age Lines")
         
         # 2D Scatter Parameters
         self.twod_section = self._create_section(
@@ -673,10 +719,12 @@ class AlgorithmTabMixin:
     def _update_algorithm_visibility(self):
         """Show or hide algorithm controls based on current mode."""
         mode = app_state.render_mode
+        if mode in ('PB_MODELS_76', 'PB_MODELS_86'):
+            mode = 'PB_EVOL_76' if mode.endswith('_76') else 'PB_EVOL_86'
         
         # Hide all sections first
         for section in ['umap_section', 'tsne_section', 'pca_section', 'rpca_section', 
-                        'ternary_section', 'v1v2_section', 'isochron_section', 'twod_section']:
+                        'ternary_section', 'v1v2_section', 'isochron_section', 'geochem_section', 'twod_section']:
             if hasattr(self, section):
                 getattr(self, section).pack_forget()
 
@@ -695,6 +743,9 @@ class AlgorithmTabMixin:
             self.v1v2_section.pack(fill=tk.X, padx=6, pady=6)
         elif mode in ('ISOCHRON1', 'ISOCHRON2') and hasattr(self, 'isochron_section'):
             self.isochron_section.pack(fill=tk.X, padx=6, pady=6)
+        elif mode in ('PB_EVOL_76', 'PB_EVOL_86', 'PB_MODEL_AGE',
+                      'PB_MU_AGE', 'PB_KAPPA_AGE') and hasattr(self, 'geochem_section'):
+            self.geochem_section.pack(fill=tk.X, padx=6, pady=6)
         elif mode == '2D' and hasattr(self, 'twod_section'):
             self.twod_section.pack(fill=tk.X, padx=6, pady=6)
             self._refresh_2d_combos()

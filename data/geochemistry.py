@@ -46,9 +46,9 @@ B1_SK = 12.998
 C1_SK = 31.23
 
 # 1.5 地幔参考参数
-# 注意: Geokit/V1V2 传统使用 mu=7.8, 而 SK75 标准值为 9.74
-MU_M_DEFAULT = 7.8           # 默认地幔 mu 值 (238U/204Pb)
-OMEGA_M_DEFAULT = 4.04 * MU_M_DEFAULT # 默认地幔 omega 值 (232Th/204Pb)
+# PbIso 默认采用 Stacey & Kramers (1975) 二阶段参数
+MU_M_DEFAULT = 9.74           # 默认地幔 mu 值 (238U/204Pb)
+OMEGA_M_DEFAULT = 36.84       # 默认地幔 omega 值 (232Th/204Pb)
 
 # 1.6 物理比值
 U_RATIO_NATURAL = 1.0 / 137.88  # 天然 235U/238U 比值
@@ -69,19 +69,21 @@ E2_DEFAULT = 0.0
 
 PRESET_MODELS = {
     "V1V2 (Geokit)": {
-        'T1': T_EARTH_1ST,
-        'T2': T_EARTH_CANON,
-        'Tsec': T_SK_STAGE2,
-        'a0': A0, 'b0': B0, 'c0': C0,
-        'a1': A1_SK, 'b1': B1_SK, 'c1': C1_SK,
-        'mu_M': 7.8,
-        'omega_M': 31.512,
-        'U_ratio': U_RATIO_NATURAL,
+        # Geokit 版本参数（与其他算法保持“年”为单位）
+        'T1': 4430e6,      # Age01
+        'T2': 4570e6,      # Age02
+        'Tsec': 3700e6,    # Age1
+        'a0': 9.307, 'b0': 10.294, 'c0': 29.476,
+        'a1': 11.152, 'b1': 12.998, 'c1': 31.23,
+        'mu_M': 7.90,
+        'omega_M': 31.92,
+        'U_ratio': 1.0 / 137.88,
         'E1': E1_DEFAULT,
         'E2': E2_DEFAULT
     },
     "Stacey & Kramers (2nd Stage)": {
-        'T1': T_EARTH_CANON,
+        # PbIso Table 1: T1 = 3700 Ma for SK2
+        'T1': T_SK_STAGE2,
         'T2': T_EARTH_CANON,
         'Tsec': T_SK_STAGE2,
         'a0': A0, 'b0': B0, 'c0': C0,
@@ -98,8 +100,9 @@ PRESET_MODELS = {
         'Tsec': T_SK_STAGE2,
         'a0': A0, 'b0': B0, 'c0': C0,
         'a1': A0, 'b1': B0, 'c1': C0, # Start from primordial
-        'mu_M': 7.19,
-        'omega_M': 32.21,
+        # PbIso Table 3: Mu1=7.2, W1=33.2
+        'mu_M': 7.2,
+        'omega_M': 33.2,
         'U_ratio': U_RATIO_NATURAL,
         'E1': E1_DEFAULT,
         'E2': E2_DEFAULT
@@ -108,11 +111,12 @@ PRESET_MODELS = {
         'T1': 4509e6, 'T2': 4509e6, 'Tsec': 0, # Continuous
         'a0': A0, 'b0': B0, 'c0': C0,
         'a1': A0, 'b1': B0, 'c1': C0,
-        'mu_M': 9.164,
-        'omega_M': 36.8,
+        # PbIso Table 3: Mu1=10.8, W1=41.2, E1/E2 non-zero
+        'mu_M': 10.8,
+        'omega_M': 41.2,
         'U_ratio': U_RATIO_NATURAL,
-        'E1': E1_DEFAULT,
-        'E2': E2_DEFAULT
+        'E1': 5e-11,
+        'E2': 3.7e-11
     }
 }
 
@@ -129,9 +133,9 @@ class GeochemistryEngine:
     """
     
     def __init__(self):
-        # 默认参数初始化 (使用 Geokit 兼容值)
+        # 默认参数初始化 (与 PbIso 文献默认一致: SK 2nd stage)
         self.params = {
-            'T1': T_EARTH_1ST,
+            'T1': T_SK_STAGE2,
             'T2': T_EARTH_CANON,
             'Tsec': T_SK_STAGE2,
             
@@ -149,7 +153,7 @@ class GeochemistryEngine:
             'a': REGRESSION_A, 'b': REGRESSION_B, 'c': REGRESSION_C,
             'E1': E1_DEFAULT, 'E2': E2_DEFAULT
         }
-        self.current_model_name = "V1V2 (Geokit)"
+        self.current_model_name = "Stacey & Kramers (2nd Stage)"
         self._update_derived_params()
 
     def _update_derived_params(self):
@@ -289,7 +293,7 @@ def calculate_modelcurve(t_Ma, params=None, T1=None, X1=None, Y1=None, Z1=None,
 
     t_years = np.asarray(t_Ma, dtype=float) * 1e6
 
-    T1_years = params['Tsec'] if T1 is None else float(T1) * 1e6
+    T1_years = params['T1'] if T1 is None else float(T1) * 1e6
     X1_val = params['a1'] if X1 is None else float(X1)
     Y1_val = params['b1'] if Y1 is None else float(Y1)
     Z1_val = params['c1'] if Z1 is None else float(Z1)
@@ -583,7 +587,7 @@ def calculate_mu_sk_model(Pb206_204_S, Pb207_204_S, t_Ma, params=None):
     l5 = params['lambda_235']
     l8 = params['lambda_238']
     
-    T1 = params['Tsec'] 
+    T1 = params['T1'] 
     X1 = params['a1']
     Y1 = params['b1']
     u_ratio = params['U_ratio']
@@ -620,7 +624,7 @@ def calculate_kappa_sk_model(Pb208_204_S, Pb206_204_S, t_Ma, params=None):
     l238 = params['lambda_238']
     l232 = params['lambda_232']
     
-    T = params['Tsec']
+    T = params['T1']
     X1 = params['a1']
     Z1 = params['c1']
     
@@ -651,7 +655,7 @@ def calculate_initial_ratio_64(t_Ma, Pb206_204_S, Pb207_204_S, params=None):
     
     l5 = params['lambda_235']
     l8 = params['lambda_238']
-    T1 = params['Tsec']
+    T1 = params['T1']
     X1 = params['a1']
     Y1 = params['b1']
     u_ratio = params['U_ratio']
@@ -686,7 +690,7 @@ def calculate_initial_ratio_74(t_Ma, Pb206_204_S, Pb207_204_S, params=None):
     
     l5 = params['lambda_235']
     l8 = params['lambda_238']
-    T1 = params['Tsec']
+    T1 = params['T1']
     X1 = params['a1']
     Y1 = params['b1']
     u_ratio = params['U_ratio']
@@ -721,7 +725,7 @@ def calculate_initial_ratio_84(t_Ma, Pb206_204_S, Pb207_204_S, Pb208_204_S, para
     l5 = params['lambda_235']
     l8 = params['lambda_238']
     l2 = params['lambda_232']
-    T1 = params['Tsec']
+    T1 = params['T1']
     X1 = params['a1']
     Y1 = params['b1']
     Z1 = params['c1']
@@ -979,9 +983,11 @@ def calculate_all_parameters(Pb206_204_S, Pb207_204_S, Pb208_204_S, calculate_ag
     current_model = getattr(engine, 'current_model_name', '')
     # V1V2 (Geokit) 模式特殊处理: 使用 T1=4.43Ga 计算 tCDT
     is_geokit = "V1V2" in current_model or "Geokit" in current_model
-    is_two_stage = "2nd Stage" in current_model or "Stacey" in current_model
+    # 仅在明确的两阶段模型中使用两阶段逻辑
+    is_two_stage = "2nd Stage" in current_model or current_model.endswith("(2nd Stage)")
     
     # 2. 模式年龄计算
+    params_calc = engine.get_parameters()
     if is_geokit:
         tCDT = calculate_single_stage_age(Pb206, Pb207, initial_age=engine.params['T1'])
     else:
@@ -999,13 +1005,13 @@ def calculate_all_parameters(Pb206_204_S, Pb207_204_S, Pb208_204_S, calculate_ag
     if is_two_stage:
         t_model = tSK
         d_alpha, d_beta, d_gamma = calculate_deltas(
-            Pb206, Pb207, Pb208, t_model, use_two_stage=True, E1=E1_val, E2=E2_val
+            Pb206, Pb207, Pb208, t_model, params=params_calc, use_two_stage=True, E1=E1_val, E2=E2_val
         )
     else:
         # 默认 V1V2 逻辑: 使用 T1=4.43Ga 计算出的单阶段年龄作为基准
-        t_calc = tCDT if is_geokit else calculate_single_stage_age(Pb206, Pb207, initial_age=engine.params['T1'])
+        t_calc = tCDT if is_geokit else calculate_single_stage_age(Pb206, Pb207, params=params_calc, initial_age=params_calc.get('T1'))
         d_alpha, d_beta, d_gamma = calculate_deltas(
-            Pb206, Pb207, Pb208, t_calc, use_two_stage=False, E1=E1_val, E2=E2_val
+            Pb206, Pb207, Pb208, t_calc, params=params_calc, use_two_stage=False, E1=E1_val, E2=E2_val
         )
         
     results.update({
@@ -1015,7 +1021,7 @@ def calculate_all_parameters(Pb206_204_S, Pb207_204_S, Pb208_204_S, calculate_ag
     })
     
     # 4. V1-V2 坐标计算
-    params_temp = engine.get_parameters()
+    params_temp = params_calc.copy()
     if a is not None: params_temp['a'] = a
     if b is not None: params_temp['b'] = b
     if c is not None: params_temp['c'] = c
@@ -1026,21 +1032,21 @@ def calculate_all_parameters(Pb206_204_S, Pb207_204_S, Pb208_204_S, calculate_ag
     
     # 5. 源区参数反演
     # 使用通用/混合参数 (基于 tSK)
-    mu_val = calculate_mu_sk(Pb206, Pb207, tSK)
+    mu_val = calculate_mu_sk(Pb206, Pb207, tSK, params=params_calc)
     results['mu'] = mu_val
-    results['nu'] = calculate_nu_sk(mu_val)
-    results['omega'] = calculate_omega_sk(Pb208, tSK)
+    results['nu'] = calculate_nu_sk(mu_val, params=params_calc)
+    results['omega'] = calculate_omega_sk(Pb208, tSK, params=params_calc)
     
     # 5.2 R语言 PbIso 对应参数 (严格 SK 模型)
-    mu_sk = calculate_mu_sk_model(Pb206, Pb207, tSK)
-    kappa_sk = calculate_kappa_sk_model(Pb208, Pb206, tSK)
+    mu_sk = calculate_mu_sk_model(Pb206, Pb207, tSK, params=params_calc)
+    kappa_sk = calculate_kappa_sk_model(Pb208, Pb206, tSK, params=params_calc)
     results['mu_SK'] = mu_sk
     results['kappa_SK'] = kappa_sk
     results['omega_SK'] = kappa_sk * mu_sk # Omega = Kappa * Mu
     
     # 6. 初始比值反演 (基于 tSK)
-    results['Init_206_204'] = calculate_initial_ratio_64(tSK, Pb206, Pb207)
-    results['Init_207_204'] = calculate_initial_ratio_74(tSK, Pb206, Pb207)
-    results['Init_208_204'] = calculate_initial_ratio_84(tSK, Pb206, Pb207, Pb208)
+    results['Init_206_204'] = calculate_initial_ratio_64(tSK, Pb206, Pb207, params=params_calc)
+    results['Init_207_204'] = calculate_initial_ratio_74(tSK, Pb206, Pb207, params=params_calc)
+    results['Init_208_204'] = calculate_initial_ratio_84(tSK, Pb206, Pb207, Pb208, params=params_calc)
     
     return results
