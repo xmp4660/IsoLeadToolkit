@@ -32,15 +32,14 @@ class GeochemistryTabMixin:
             # Container for label+entry
             cell = ttk.Frame(parent_frame, style='ControlPanel.TFrame')
             cell.grid(row=row, column=col, padx=8, pady=4, sticky=tk.EW)
-            
-            lbl = ttk.Label(cell, text=self._translate(label_key), style='Body.TLabel')
-            lbl.pack(anchor=tk.W)
-            self._register_translation(lbl, label_key)
-            
+
+            form = self._create_form_grid(cell)
+            form.pack(fill=tk.X)
+
             var = tk.StringVar(value=str(default_val))
             self.geo_vars[var_key] = var
-            entry = ttk.Entry(cell, textvariable=var)
-            entry.pack(fill=tk.X, expand=True)
+            entry = ttk.Entry(form, textvariable=var)
+            self._add_form_row(form, 0, label_key, entry)
             return var
 
         # Load current params from module
@@ -56,9 +55,8 @@ class GeochemistryTabMixin:
         model_frame = ttk.Frame(sect_model, style='CardBody.TFrame')
         model_frame.pack(fill=tk.X, expand=True)
         
-        lbl_mod = ttk.Label(model_frame, text=self._translate("Preset Model:"), style='Body.TLabel')
-        lbl_mod.pack(side=tk.LEFT, padx=(0, 5))
-        self._register_translation(lbl_mod, "Preset Model:")
+        model_form = self._create_form_grid(model_frame)
+        model_form.pack(fill=tk.X)
         
         try:
             models = geochemistry.engine.get_available_models()
@@ -68,8 +66,8 @@ class GeochemistryTabMixin:
             current_model = ""
         
         self.geo_model_var = tk.StringVar(value=current_model)
-        model_combo = ttk.Combobox(model_frame, textvariable=self.geo_model_var, values=models, state="readonly")
-        model_combo.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        model_combo = ttk.Combobox(model_form, textvariable=self.geo_model_var, values=models, state="readonly")
+        self._add_form_row(model_form, 0, "Preset Model:", model_combo)
         model_combo.bind("<<ComboboxSelected>>", self._on_model_selected)
 
         # Actions (move near top for quick access)

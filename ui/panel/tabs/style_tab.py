@@ -25,19 +25,17 @@ class StyleTabMixin:
 
         ui_theme_frame = ttk.Frame(theme_section, style='CardBody.TFrame')
         ui_theme_frame.pack(fill=tk.X, pady=(0, 8))
-        
-        lbl_ui_theme = ttk.Label(ui_theme_frame, text=self._translate("UI Theme:"), style='Body.TLabel')
-        lbl_ui_theme.pack(side=tk.LEFT, padx=(0, 5))
-        self._register_translation(lbl_ui_theme, "UI Theme:")
+        ui_theme_grid = self._create_form_grid(ui_theme_frame)
+        ui_theme_grid.pack(fill=tk.X)
 
         self.ui_theme_var = tk.StringVar(value=getattr(app_state, 'ui_theme', 'Modern Light'))
         ui_theme_combo = ttk.Combobox(
-            ui_theme_frame, 
+            ui_theme_grid, 
             textvariable=self.ui_theme_var, 
             values=style_manager_instance.get_ui_theme_names(),
             state="readonly"
         )
-        ui_theme_combo.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self._add_form_row(ui_theme_grid, 0, "UI Theme:", ui_theme_combo)
         ui_theme_combo.bind("<<ComboboxSelected>>", self._on_ui_theme_change)
 
         # --- Saved Plot Settings ---
@@ -49,35 +47,35 @@ class StyleTabMixin:
         
         theme_frame = ttk.Frame(saved_section, style='CardBody.TFrame')
         theme_frame.pack(fill=tk.X, pady=(0, 8))
-        
-        # Theme Name Entry
-        lbl_name = ttk.Label(theme_frame, text=self._translate("Theme Name:"), style='Body.TLabel')
-        lbl_name.pack(side=tk.LEFT, padx=(0, 5))
-        self._register_translation(lbl_name, "Theme Name:")
+        theme_grid = self._create_form_grid(theme_frame)
+        theme_grid.pack(fill=tk.X)
 
         self.theme_name_var = tk.StringVar()
-        ttk.Entry(theme_frame, textvariable=self.theme_name_var, width=15).pack(side=tk.LEFT, padx=(0, 10))
-        
+        name_controls = ttk.Frame(theme_grid, style='CardBody.TFrame')
+        ttk.Entry(name_controls, textvariable=self.theme_name_var, width=15).pack(side=tk.LEFT, padx=(0, 10))
+
         # Save Button
-        btn_save = ttk.Button(theme_frame, text=self._translate("Save"), command=self._save_theme, style='Secondary.TButton', width=6)
+        btn_save = ttk.Button(name_controls, text=self._translate("Save"), command=self._save_theme, style='Secondary.TButton', width=6)
         btn_save.pack(side=tk.LEFT, padx=(0, 5))
         self._register_translation(btn_save, "Save")
+        self._add_form_row(theme_grid, 0, "Theme Name:", name_controls)
         
         # Load/Delete Frame
         load_frame = ttk.Frame(theme_section, style='CardBody.TFrame')
         load_frame.pack(fill=tk.X)
-        
-        lbl_load = ttk.Label(load_frame, text=self._translate("Load Theme:"), style='Body.TLabel')
-        lbl_load.pack(side=tk.LEFT, padx=(0, 5))
-        self._register_translation(lbl_load, "Load Theme:")
+        load_grid = self._create_form_grid(load_frame)
+        load_grid.pack(fill=tk.X)
 
-        self.theme_load_combo = ttk.Combobox(load_frame, state="readonly", width=15)
+        load_controls = ttk.Frame(load_grid, style='CardBody.TFrame')
+
+        self.theme_load_combo = ttk.Combobox(load_controls, state="readonly", width=15)
         self.theme_load_combo.pack(side=tk.LEFT, padx=(0, 10))
         self.theme_load_combo.bind("<<ComboboxSelected>>", self._load_theme)
         
-        btn_delete = ttk.Button(load_frame, text=self._translate("Delete"), command=self._delete_theme, style='Secondary.TButton', width=6)
+        btn_delete = ttk.Button(load_controls, text=self._translate("Delete"), command=self._delete_theme, style='Secondary.TButton', width=6)
         btn_delete.pack(side=tk.LEFT)
         self._register_translation(btn_delete, "Delete")
+        self._add_form_row(load_grid, 0, "Load Theme:", load_controls)
         
         # Initialize themes
         self._refresh_theme_list()
@@ -102,19 +100,18 @@ class StyleTabMixin:
         self._register_translation(grid_check, "Show Grid")
         
         # Color Scheme
-        color_label = ttk.Label(general_section, text=self._translate("Palette"), style='FieldLabel.TLabel')
-        color_label.pack(anchor=tk.W, pady=(0, 4))
-        self._register_translation(color_label, "Palette")
-        
+        color_form = self._create_form_grid(general_section)
+        color_form.pack(fill=tk.X, pady=(0, 8))
+
         color_options = style_manager_instance.get_palette_names()
         self.color_scheme_var = tk.StringVar(value=getattr(app_state, 'color_scheme', 'vibrant'))
         color_combo = ttk.Combobox(
-            general_section, 
+            color_form, 
             textvariable=self.color_scheme_var, 
             values=color_options,
             state="readonly"
         )
-        color_combo.pack(fill=tk.X, pady=(0, 8))
+        self._add_form_row(color_form, 0, "Palette", color_combo, label_style='FieldLabel.TLabel')
         color_combo.bind("<<ComboboxSelected>>", self._on_style_change)
 
         # --- Style Columns (Font + Marker) ---
@@ -138,11 +135,10 @@ class StyleTabMixin:
         other_fonts = [f for f in all_system_fonts if f not in installed_preferred]
         font_options = ['<Default>'] + installed_preferred + other_fonts
         
+        font_form = self._create_form_grid(font_section)
+        font_form.pack(fill=tk.X, pady=(0, 8))
+
         # Primary Font
-        primary_font_label = ttk.Label(font_section, text=self._translate("Primary Font (English)"), style='FieldLabel.TLabel')
-        primary_font_label.pack(anchor=tk.W, pady=(0, 4))
-        self._register_translation(primary_font_label, "Primary Font (English)")
-        
         # Handle empty string as <Default> for display
         current_primary = getattr(app_state, 'custom_primary_font', '')
         if not current_primary:
@@ -150,19 +146,15 @@ class StyleTabMixin:
         
         self.primary_font_var = tk.StringVar(value=current_primary)
         primary_font_combo = ttk.Combobox(
-            font_section,
+            font_form,
             textvariable=self.primary_font_var,
             values=font_options,
             state="readonly"
         )
-        primary_font_combo.pack(fill=tk.X, pady=(0, 8))
+        self._add_form_row(font_form, 0, "Primary Font (English)", primary_font_combo, label_style='FieldLabel.TLabel')
         primary_font_combo.bind("<<ComboboxSelected>>", self._on_style_change)
         
         # CJK Font
-        cjk_font_label = ttk.Label(font_section, text=self._translate("CJK Font (Chinese)"), style='FieldLabel.TLabel')
-        cjk_font_label.pack(anchor=tk.W, pady=(0, 4))
-        self._register_translation(cjk_font_label, "CJK Font (Chinese)")
-        
         # Handle empty string as <Default> for display
         current_cjk = getattr(app_state, 'custom_cjk_font', '')
         if not current_cjk:
@@ -170,34 +162,30 @@ class StyleTabMixin:
         
         self.cjk_font_var = tk.StringVar(value=current_cjk)
         cjk_font_combo = ttk.Combobox(
-            font_section,
+            font_form,
             textvariable=self.cjk_font_var,
             values=font_options,
             state="readonly"
         )
-        cjk_font_combo.pack(fill=tk.X, pady=(0, 8))
+        self._add_form_row(font_form, 1, "CJK Font (Chinese)", cjk_font_combo, label_style='FieldLabel.TLabel')
         cjk_font_combo.bind("<<ComboboxSelected>>", self._on_style_change)
         
         # Font Sizes
         size_frame = ttk.Frame(font_section, style='CardBody.TFrame')
         size_frame.pack(fill=tk.X, pady=(8, 0))
+        size_grid = self._create_form_grid(size_frame, columns=3)
+        size_grid.pack(fill=tk.X)
+        size_grid.columnconfigure(0, weight=0)
+        size_grid.columnconfigure(1, weight=1)
+        size_grid.columnconfigure(2, weight=0)
         
         # Helper to create size slider
-        def add_size_slider(parent, label_key, key, default):
-            container = ttk.Frame(parent)
-            container.pack(fill=tk.X, pady=2)
-            
-            # Label
-            lbl = ttk.Label(container, text=self._translate(label_key), width=8, style='Body.TLabel')
-            lbl.pack(side=tk.LEFT)
-            self._register_translation(lbl, label_key)
-            
+        def add_size_slider(grid, label_key, key, default, row):
             # Variable
             var = tk.IntVar(value=app_state.plot_font_sizes.get(key, default))
             
             # Value Display
-            val_lbl = ttk.Label(container, text=str(var.get()), width=3)
-            val_lbl.pack(side=tk.RIGHT)
+            val_lbl = ttk.Label(grid, text=str(var.get()), width=3)
             
             # Slider
             def on_change(val):
@@ -205,17 +193,17 @@ class StyleTabMixin:
                 var.set(v)
                 val_lbl.configure(text=str(v))
                 
-            scale = ttk.Scale(container, from_=6, to=36, variable=var, command=on_change)
-            scale.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+            scale = ttk.Scale(grid, from_=6, to=36, variable=var, command=on_change)
+            self._add_form_row_with_value(grid, row, label_key, scale, val_lbl)
             scale.bind("<ButtonRelease-1>", lambda e: self._on_style_change())
             
             return var
 
         self.font_size_vars = {}
-        self.font_size_vars['title'] = add_size_slider(size_frame, "Title", 'title', 14)
-        self.font_size_vars['label'] = add_size_slider(size_frame, "Label", 'label', 12)
-        self.font_size_vars['tick'] = add_size_slider(size_frame, "Tick", 'tick', 10)
-        self.font_size_vars['legend'] = add_size_slider(size_frame, "Legend", 'legend', 10)
+        self.font_size_vars['title'] = add_size_slider(size_grid, "Title", 'title', 14, 0)
+        self.font_size_vars['label'] = add_size_slider(size_grid, "Label", 'label', 12, 1)
+        self.font_size_vars['tick'] = add_size_slider(size_grid, "Tick", 'tick', 10, 2)
+        self.font_size_vars['legend'] = add_size_slider(size_grid, "Legend", 'legend', 10, 3)
 
         self.show_title_var = tk.BooleanVar(value=getattr(app_state, 'show_plot_title', True))
         show_title_chk = ttk.Checkbutton(
@@ -236,25 +224,19 @@ class StyleTabMixin:
         marker_desc.pack(fill=tk.X, pady=(0, 10))
         self._register_translation(marker_desc, "Customize data point appearance.")
         
-        marker_frame = ttk.Frame(marker_section, style='CardBody.TFrame')
-        marker_frame.pack(fill=tk.X)
+        marker_grid = self._create_form_grid(marker_section)
+        marker_grid.pack(fill=tk.X)
         
         # Size
-        size_lbl = ttk.Label(marker_frame, text=self._translate("Size"), style='Body.TLabel')
-        size_lbl.pack(side=tk.LEFT, padx=(0, 5))
-        self._register_translation(size_lbl, "Size")
         self.marker_size_var = tk.IntVar(value=getattr(app_state, 'plot_marker_size', 60))
-        size_scale = ttk.Scale(marker_frame, from_=10, to=500, variable=self.marker_size_var)
-        size_scale.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 15))
+        size_scale = ttk.Scale(marker_grid, from_=10, to=500, variable=self.marker_size_var)
+        self._add_form_row(marker_grid, 0, "Size", size_scale)
         size_scale.bind("<ButtonRelease-1>", lambda e: self._on_style_change())
         
         # Alpha
-        alpha_lbl = ttk.Label(marker_frame, text=self._translate("Opacity"), style='Body.TLabel')
-        alpha_lbl.pack(side=tk.LEFT, padx=(0, 5))
-        self._register_translation(alpha_lbl, "Opacity")
         self.marker_alpha_var = tk.DoubleVar(value=getattr(app_state, 'plot_marker_alpha', 0.8))
-        alpha_scale = ttk.Scale(marker_frame, from_=0.1, to=1.0, variable=self.marker_alpha_var)
-        alpha_scale.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        alpha_scale = ttk.Scale(marker_grid, from_=0.1, to=1.0, variable=self.marker_alpha_var)
+        self._add_form_row(marker_grid, 1, "Opacity", alpha_scale)
         alpha_scale.bind("<ButtonRelease-1>", lambda e: self._on_style_change())
 
         # --- Axes & Lines ---
@@ -281,11 +263,10 @@ class StyleTabMixin:
         def add_labeled_entry(parent, label_key, var, row, col, width=10):
             cell = ttk.Frame(parent, style='CardBody.TFrame')
             cell.grid(row=row, column=col, sticky=tk.EW, padx=(0 if col == 0 else 16, 0), pady=3)
-            lbl = ttk.Label(cell, text=self._translate(label_key), style='Body.TLabel')
-            lbl.pack(anchor=tk.W)
-            self._register_translation(lbl, label_key)
-            entry = ttk.Entry(cell, textvariable=var, width=width)
-            entry.pack(fill=tk.X)
+            form = self._create_form_grid(cell)
+            form.pack(fill=tk.X)
+            entry = ttk.Entry(form, textvariable=var, width=width)
+            self._add_form_row(form, 0, label_key, entry)
             entry.bind('<Return>', lambda e: self._on_style_change())
             entry.bind('<FocusOut>', lambda e: self._on_style_change())
 
@@ -314,33 +295,31 @@ class StyleTabMixin:
 
         grid_style_cell = ttk.Frame(axes_grid, style='CardBody.TFrame')
         grid_style_cell.grid(row=4, column=0, sticky=tk.EW, pady=3)
-        grid_style_label = ttk.Label(grid_style_cell, text=self._translate("Grid Style"), style='Body.TLabel')
-        grid_style_label.pack(anchor=tk.W)
-        self._register_translation(grid_style_label, "Grid Style")
         self.grid_style_var = tk.StringVar(value=getattr(app_state, 'grid_linestyle', '--'))
+        grid_style_form = self._create_form_grid(grid_style_cell)
+        grid_style_form.pack(fill=tk.X)
         grid_style_combo = ttk.Combobox(
-            grid_style_cell,
+            grid_style_form,
             textvariable=self.grid_style_var,
             values=['-', '--', '-.', ':'],
             state='readonly'
         )
-        grid_style_combo.pack(fill=tk.X)
+        self._add_form_row(grid_style_form, 0, "Grid Style", grid_style_combo)
         grid_style_combo.bind("<<ComboboxSelected>>", self._on_style_change)
 
         # Tick direction & axis linewidth
         self.tick_dir_var = tk.StringVar(value=getattr(app_state, 'tick_direction', 'out'))
         tick_cell = ttk.Frame(axes_grid, style='CardBody.TFrame')
         tick_cell.grid(row=4, column=1, sticky=tk.EW, pady=3)
-        tick_label = ttk.Label(tick_cell, text=self._translate("Tick Direction"), style='Body.TLabel')
-        tick_label.pack(anchor=tk.W)
-        self._register_translation(tick_label, "Tick Direction")
+        tick_form = self._create_form_grid(tick_cell)
+        tick_form.pack(fill=tk.X)
         tick_combo = ttk.Combobox(
-            tick_cell,
+            tick_form,
             textvariable=self.tick_dir_var,
             values=['out', 'in', 'inout'],
             state='readonly'
         )
-        tick_combo.pack(fill=tk.X)
+        self._add_form_row(tick_form, 0, "Tick Direction", tick_combo)
         tick_combo.bind("<<ComboboxSelected>>", self._on_style_change)
 
         self.axis_linewidth_var = tk.StringVar(value=str(getattr(app_state, 'axis_linewidth', 1.0)))

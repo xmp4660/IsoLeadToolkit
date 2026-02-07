@@ -284,3 +284,47 @@ class PanelUtilsMixin:
             self.data_count_label.config(text=text)
         else:
             self.data_count_label.config(text="")
+
+    def _create_form_grid(self, parent, columns=2, style='CardBody.TFrame'):
+        """Create a grid container for form-like rows."""
+        grid = ttk.Frame(parent, style=style)
+        for col in range(columns):
+            grid.columnconfigure(col, weight=1)
+        return grid
+
+    def _add_form_row(
+        self,
+        grid,
+        row,
+        label_key,
+        widget,
+        label_style='Body.TLabel',
+        label_sticky=tk.W,
+        widget_sticky=tk.EW,
+    ):
+        """Add a standard label + widget row to a form grid."""
+        label = ttk.Label(grid, text=self._translate(label_key), style=label_style)
+        label.grid(row=row, column=0, sticky=label_sticky, padx=(0, 8), pady=2)
+        self._register_translation(label, label_key)
+        widget.grid(row=row, column=1, sticky=widget_sticky, pady=2)
+        return label
+
+    def _add_form_row_with_value(
+        self,
+        grid,
+        row,
+        label_key,
+        widget,
+        value_widget,
+        label_style='Body.TLabel',
+        label_sticky=tk.W,
+        widget_sticky=tk.EW,
+        value_sticky=tk.E,
+    ):
+        """Add a label + widget + value row to a form grid."""
+        label = ttk.Label(grid, text=self._translate(label_key), style=label_style)
+        label.grid(row=row, column=0, sticky=label_sticky, padx=(0, 8), pady=2)
+        self._register_translation(label, label_key)
+        widget.grid(row=row, column=1, sticky=widget_sticky, pady=2)
+        value_widget.grid(row=row, column=2, sticky=value_sticky, padx=(8, 0), pady=2)
+        return label

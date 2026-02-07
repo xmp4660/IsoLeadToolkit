@@ -183,19 +183,17 @@ class AlgorithmTabMixin:
         loadings_btn.pack(side=tk.LEFT, padx=(0, 10))
         self._register_translation(loadings_btn, "Show Loadings")
         
-        dim_frame = ttk.Frame(pca_tools, style='CardBody.TFrame')
-        dim_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        
-        ttk.Label(dim_frame, text=self._translate("X:"), style='Body.TLabel').pack(side=tk.LEFT, padx=(0, 2))
+        dim_grid = self._create_form_grid(pca_tools)
+        dim_grid.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
         self.pca_x_var = tk.StringVar(value=str(app_state.pca_component_indices[0] + 1))
-        self.pca_x_spin = ttk.Spinbox(dim_frame, from_=1, to=10, width=3, textvariable=self.pca_x_var, command=self._on_pca_dim_change)
-        self.pca_x_spin.pack(side=tk.LEFT, padx=(0, 8))
+        self.pca_x_spin = ttk.Spinbox(dim_grid, from_=1, to=10, width=3, textvariable=self.pca_x_var, command=self._on_pca_dim_change)
+        self._add_form_row(dim_grid, 0, "X:", self.pca_x_spin)
         self.pca_x_spin.bind('<Return>', lambda e: self._on_pca_dim_change())
-        
-        ttk.Label(dim_frame, text=self._translate("Y:"), style='Body.TLabel').pack(side=tk.LEFT, padx=(0, 2))
+
         self.pca_y_var = tk.StringVar(value=str(app_state.pca_component_indices[1] + 1))
-        self.pca_y_spin = ttk.Spinbox(dim_frame, from_=1, to=10, width=3, textvariable=self.pca_y_var, command=self._on_pca_dim_change)
-        self.pca_y_spin.pack(side=tk.LEFT)
+        self.pca_y_spin = ttk.Spinbox(dim_grid, from_=1, to=10, width=3, textvariable=self.pca_y_var, command=self._on_pca_dim_change)
+        self._add_form_row(dim_grid, 1, "Y:", self.pca_y_spin)
         self.pca_y_spin.bind('<Return>', lambda e: self._on_pca_dim_change())
 
         # Robust PCA Parameters
@@ -260,17 +258,15 @@ class AlgorithmTabMixin:
         self._register_translation(rpca_loadings_btn, "Show Loadings")
 
         # RPCA Dimensions
-        r_dim_frame = ttk.Frame(rpca_tools, style='CardBody.TFrame')
-        r_dim_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        
-        ttk.Label(r_dim_frame, text=self._translate("X:"), style='Body.TLabel').pack(side=tk.LEFT, padx=(0, 2))
-        self.rpca_x_spin = ttk.Spinbox(r_dim_frame, from_=1, to=10, width=3, textvariable=self.pca_x_var, command=self._on_pca_dim_change)
-        self.rpca_x_spin.pack(side=tk.LEFT, padx=(0, 8))
+        r_dim_grid = self._create_form_grid(rpca_tools)
+        r_dim_grid.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        self.rpca_x_spin = ttk.Spinbox(r_dim_grid, from_=1, to=10, width=3, textvariable=self.pca_x_var, command=self._on_pca_dim_change)
+        self._add_form_row(r_dim_grid, 0, "X:", self.rpca_x_spin)
         self.rpca_x_spin.bind('<Return>', lambda e: self._on_pca_dim_change())
-        
-        ttk.Label(r_dim_frame, text=self._translate("Y:"), style='Body.TLabel').pack(side=tk.LEFT, padx=(0, 2))
-        self.rpca_y_spin = ttk.Spinbox(r_dim_frame, from_=1, to=10, width=3, textvariable=self.pca_y_var, command=self._on_pca_dim_change)
-        self.rpca_y_spin.pack(side=tk.LEFT)
+
+        self.rpca_y_spin = ttk.Spinbox(r_dim_grid, from_=1, to=10, width=3, textvariable=self.pca_y_var, command=self._on_pca_dim_change)
+        self._add_form_row(r_dim_grid, 1, "Y:", self.rpca_y_spin)
         self.rpca_y_spin.bind('<Return>', lambda e: self._on_pca_dim_change())
 
         # --- Ternary Parameters ---
@@ -326,17 +322,12 @@ class AlgorithmTabMixin:
         # Paleoisochron density (step in Ma)
         paleo_step_frame = ttk.Frame(self.geochem_section, style='CardBody.TFrame')
         paleo_step_frame.pack(fill=tk.X, pady=(2, 4))
-        paleo_step_label = ttk.Label(
-            paleo_step_frame,
-            text=self._translate("Paleoisochron Step (Ma):"),
-            style='Body.TLabel'
-        )
-        paleo_step_label.pack(side=tk.LEFT)
-        self._register_translation(paleo_step_label, "Paleoisochron Step (Ma):")
+        paleo_step_grid = self._create_form_grid(paleo_step_frame)
+        paleo_step_grid.pack(fill=tk.X)
 
         self.paleo_step_var = tk.StringVar(value=str(getattr(app_state, 'paleoisochron_step', 1000)))
         paleo_step_spin = ttk.Spinbox(
-            paleo_step_frame,
+            paleo_step_grid,
             from_=50,
             to=5000,
             increment=50,
@@ -344,7 +335,7 @@ class AlgorithmTabMixin:
             textvariable=self.paleo_step_var,
             command=self._on_change
         )
-        paleo_step_spin.pack(side=tk.LEFT, padx=(8, 0))
+        self._add_form_row(paleo_step_grid, 0, "Paleoisochron Step (Ma):", paleo_step_spin)
         paleo_step_spin.bind('<Return>', lambda e: self._on_change())
         paleo_step_spin.bind('<FocusOut>', lambda e: self._on_change())
 
@@ -368,27 +359,19 @@ class AlgorithmTabMixin:
             "Select axes for 2D scatter plot."
         )
         
-        twod_grid = ttk.Frame(self.twod_section, style='CardBody.TFrame')
+        twod_grid = self._create_form_grid(self.twod_section)
         twod_grid.pack(fill=tk.X, pady=(4, 0))
-        
+
         # X Axis
-        lbl_x = ttk.Label(twod_grid, text=self._translate("X Axis:"), style='Body.TLabel')
-        lbl_x.pack(anchor=tk.W)
-        self._register_translation(lbl_x, "X Axis:")
-        
         self.xaxis_var = tk.StringVar()
         self.xaxis_combo = ttk.Combobox(twod_grid, textvariable=self.xaxis_var, state="readonly")
-        self.xaxis_combo.pack(fill=tk.X, pady=(0, 8))
+        self._add_form_row(twod_grid, 0, "X Axis:", self.xaxis_combo)
         self.xaxis_combo.bind("<<ComboboxSelected>>", self._on_2d_axis_change)
-        
+
         # Y Axis
-        lbl_y = ttk.Label(twod_grid, text=self._translate("Y Axis:"), style='Body.TLabel')
-        lbl_y.pack(anchor=tk.W)
-        self._register_translation(lbl_y, "Y Axis:")
-        
         self.yaxis_var = tk.StringVar()
         self.yaxis_combo = ttk.Combobox(twod_grid, textvariable=self.yaxis_var, state="readonly")
-        self.yaxis_combo.pack(fill=tk.X)
+        self._add_form_row(twod_grid, 1, "Y Axis:", self.yaxis_combo)
         self.yaxis_combo.bind("<<ComboboxSelected>>", self._on_2d_axis_change)
 
         # Initial visibility update

@@ -129,15 +129,12 @@ class ToolsTabMixin:
         mixing_frame = ttk.Frame(mixing_section, style='CardBody.TFrame')
         mixing_frame.pack(fill=tk.X)
 
-        name_row = ttk.Frame(mixing_frame, style='CardBody.TFrame')
-        name_row.pack(fill=tk.X, pady=(0, 6))
-        name_label = ttk.Label(name_row, text=self._translate("Group Name:"), style='Body.TLabel')
-        name_label.pack(side=tk.LEFT)
-        self._register_translation(name_label, "Group Name:")
+        mixing_grid = self._create_form_grid(mixing_frame)
+        mixing_grid.pack(fill=tk.X, pady=(0, 6))
 
         self.mixing_group_name_var = tk.StringVar(value="")
-        name_entry = ttk.Entry(name_row, textvariable=self.mixing_group_name_var)
-        name_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 0))
+        name_entry = ttk.Entry(mixing_grid, textvariable=self.mixing_group_name_var)
+        self._add_form_row(mixing_grid, 0, "Group Name:", name_entry)
 
         btn_row = ttk.Frame(mixing_frame, style='CardBody.TFrame')
         btn_row.pack(fill=tk.X, pady=(0, 6))
@@ -203,16 +200,18 @@ class ToolsTabMixin:
         
         conf_frame = ttk.Frame(conf_section, style='CardBody.TFrame')
         conf_frame.pack(fill=tk.X, pady=(0, 8))
-        
-        conf_label = ttk.Label(conf_frame, text=self._translate("Confidence Level"), style='Body.TLabel')
-        conf_label.pack(side=tk.LEFT, padx=(0, 8))
-        self._register_translation(conf_label, "Confidence Level")
+
+        conf_grid = self._create_form_grid(conf_frame)
+        conf_grid.pack(fill=tk.X)
+
+        conf_options = ttk.Frame(conf_grid, style='CardBody.TFrame')
+        self._add_form_row(conf_grid, 0, "Confidence Level", conf_options)
         
         self.radio_vars['confidence'] = tk.DoubleVar(value=app_state.ellipse_confidence)
         
         for level in [0.68, 0.95, 0.99]:
             rb = ttk.Radiobutton(
-                conf_frame,
+                conf_options,
                 text=f"{int(level*100)}%",
                 variable=self.radio_vars['confidence'],
                 value=level,
