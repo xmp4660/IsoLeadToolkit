@@ -30,6 +30,67 @@ class AppState:
         self.show_model_curves = True
         self.show_paleoisochrons = True
         self.show_model_age_lines = True
+        self.show_equation_overlays = False
+        self.equation_overlays = [
+            {
+                'id': 'eq_206_208',
+                'label': 'y=1.0049x+20.259',
+                'latex': r"y=1.0049x+20.259",
+                'expression': '1.0049*x+20.259',
+                'slope': 1.0049,
+                'intercept': 20.259,
+                'enabled': True,
+                'color': '#ef4444',
+                'linewidth': 1.0,
+                'linestyle': '--',
+                'alpha': 0.85
+            },
+            {
+                'id': 'eq_identity',
+                'label': 'y=x',
+                'latex': r"y=x",
+                'expression': 'x',
+                'slope': 1.0,
+                'intercept': 0.0,
+                'enabled': True,
+                'color': '#ef4444',
+                'linewidth': 1.0,
+                'linestyle': '--',
+                'alpha': 0.85
+            }
+        ]
+        self.line_styles = {
+            'model_curve': {
+                'color': None,
+                'linewidth': 1.2,
+                'linestyle': '-',
+                'alpha': 0.8
+            },
+            'growth_curve': {
+                'color': None,
+                'linewidth': 1.2,
+                'linestyle': ':',
+                'alpha': 0.6
+            },
+            'paleoisochron': {
+                'color': '#94a3b8',
+                'linewidth': 0.9,
+                'linestyle': '--',
+                'alpha': 0.85
+            },
+            'model_age_line': {
+                'color': '#cbd5f5',
+                'linewidth': 0.7,
+                'linestyle': '-',
+                'alpha': 0.7
+            },
+            'isochron': {
+                'color': None,
+                'linewidth': 1.5,
+                'linestyle': '-',
+                'alpha': 0.8
+            }
+        }
         self.paleoisochron_min_age = 0
         self.paleoisochron_max_age = 3000
         self.paleoisochron_step = 1000

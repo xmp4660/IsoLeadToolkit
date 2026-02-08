@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from core import app_state
+from visualization.line_styles import open_line_style_dialog
 
 try:
     from data import geochemistry
@@ -282,45 +283,46 @@ class AlgorithmTabMixin:
             "Toggle model curves, paleoisochrons and age lines."
         )
 
+        def _add_geochem_toggle(label_key, var_key, style_key=None):
+            row = ttk.Frame(self.geochem_section, style='CardBody.TFrame')
+            row.pack(fill=tk.X, pady=2)
+            chk = ttk.Checkbutton(
+                row,
+                text=self._translate(label_key),
+                variable=self.check_vars[var_key],
+                command=self._on_change,
+                style='Option.TCheckbutton'
+            )
+            chk.pack(side=tk.LEFT, anchor=tk.W)
+            self._register_translation(chk, label_key)
+
+            if style_key:
+                style = getattr(app_state, 'line_styles', {}).get(style_key, {})
+                swatch_color = style.get('color') if style.get('color') else '#e2e8f0'
+                swatch = tk.Label(row, width=2, height=1, bg=swatch_color, relief='solid', bd=1)
+                swatch.pack(side=tk.LEFT, padx=(8, 0))
+                swatch.bind(
+                    "<Button-1>",
+                    lambda e, k=style_key, s=swatch: open_line_style_dialog(
+                        self.root, self._translate, app_state, k, s, on_apply=self._on_change
+                    )
+                )
+
         # Isochron Line Toggle
         self.check_vars['show_isochrons'] = tk.BooleanVar(value=getattr(app_state, 'show_isochrons', True))
-        chk_iso = ttk.Checkbutton(
-            self.geochem_section,
-            text=self._translate("Show Age Isochrons"),
-            variable=self.check_vars['show_isochrons'],
-            command=self._on_change,
-            style='Option.TCheckbutton'
-        )
-        chk_iso.pack(anchor=tk.W, pady=2)
-        self._register_translation(chk_iso, "Show Age Isochrons")
+        _add_geochem_toggle("Show Age Isochrons", 'show_isochrons', style_key='isochron')
 
         self.check_vars['show_model_curves'] = tk.BooleanVar(
             value=getattr(app_state, 'show_model_curves', True)
         )
-        chk_model_curves = ttk.Checkbutton(
-            self.geochem_section,
-            text=self._translate("Show Model Curves"),
-            variable=self.check_vars['show_model_curves'],
-            command=self._on_change,
-            style='Option.TCheckbutton'
-        )
-        chk_model_curves.pack(anchor=tk.W, pady=2)
-        self._register_translation(chk_model_curves, "Show Model Curves")
+        _add_geochem_toggle("Show Model Curves", 'show_model_curves', style_key='model_curve')
 
         # Model curve selection removed: curves follow current model only
 
         self.check_vars['show_paleoisochrons'] = tk.BooleanVar(
             value=getattr(app_state, 'show_paleoisochrons', True)
         )
-        chk_paleo = ttk.Checkbutton(
-            self.geochem_section,
-            text=self._translate("Show Paleoisochrons"),
-            variable=self.check_vars['show_paleoisochrons'],
-            command=self._on_change,
-            style='Option.TCheckbutton'
-        )
-        chk_paleo.pack(anchor=tk.W, pady=2)
-        self._register_translation(chk_paleo, "Show Paleoisochrons")
+        _add_geochem_toggle("Show Paleoisochrons", 'show_paleoisochrons', style_key='paleoisochron')
 
         # Paleoisochron density (step in Ma)
         paleo_step_frame = ttk.Frame(self.geochem_section, style='CardBody.TFrame')
@@ -345,15 +347,7 @@ class AlgorithmTabMixin:
         self.check_vars['show_model_age_lines'] = tk.BooleanVar(
             value=getattr(app_state, 'show_model_age_lines', True)
         )
-        chk_age = ttk.Checkbutton(
-            self.geochem_section,
-            text=self._translate("Show Model Age Lines"),
-            variable=self.check_vars['show_model_age_lines'],
-            command=self._on_change,
-            style='Option.TCheckbutton'
-        )
-        chk_age.pack(anchor=tk.W, pady=2)
-        self._register_translation(chk_age, "Show Model Age Lines")
+        _add_geochem_toggle("Show Model Age Lines", 'show_model_age_lines', style_key='model_age_line')
         
         # 2D Scatter Parameters
         self.twod_section = self._create_section(

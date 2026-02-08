@@ -92,6 +92,8 @@ class PanelHandlersMixin:
                 app_state.show_marginal_kde = self.check_vars['show_marginal_kde'].get()
             if 'show_tooltip' in self.check_vars:
                 app_state.show_tooltip = self.check_vars['show_tooltip'].get()
+            if 'show_equation_overlays' in self.check_vars:
+                app_state.show_equation_overlays = self.check_vars['show_equation_overlays'].get()
                 
             # Update Isochron settings
             if 'show_isochrons' in self.check_vars:
@@ -104,6 +106,16 @@ class PanelHandlersMixin:
                 app_state.show_paleoisochrons = self.check_vars['show_paleoisochrons'].get()
             if 'show_model_age_lines' in self.check_vars:
                 app_state.show_model_age_lines = self.check_vars['show_model_age_lines'].get()
+
+            # Update equation overlay toggles
+            if hasattr(app_state, 'equation_overlays'):
+                for overlay in app_state.equation_overlays:
+                    overlay_id = overlay.get('id')
+                    if not overlay_id:
+                        continue
+                    key = f"equation_overlay_{overlay_id}"
+                    if key in self.check_vars:
+                        overlay['enabled'] = self.check_vars[key].get()
 
             # Update paleoisochron density (step in Ma)
             if hasattr(self, 'paleo_step_var'):

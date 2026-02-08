@@ -2,13 +2,207 @@
 Tools Tab - Selection, export, and data management tools
 """
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, colorchooser, messagebox
+import uuid
+import re
+import numpy as np
 
 from core import app_state
 
 
 class ToolsTabMixin:
     """Mixin providing the Tools tab builder"""
+
+    def _add_equation_overlay_row(self, overlay):
+        """Add a single equation overlay row to the UI."""
+        overlay_id = overlay.get('id')
+        if not overlay_id or not hasattr(self, 'equation_overlay_frame'):
+            return
+
+        row = ttk.Frame(self.equation_overlay_frame, style='CardBody.TFrame')
+        row.pack(fill=tk.X, pady=1)
+
+        var_key = f"equation_overlay_{overlay_id}"
+        self.check_vars[var_key] = tk.BooleanVar(value=overlay.get('enabled', True))
+        label_text = overlay.get('label', 'Equation')
+        eq_chk = ttk.Checkbutton(
+            row,
+            text=self._translate(label_text),
+            variable=self.check_vars[var_key],
+            command=self._on_change,
+            style='Option.TCheckbutton'
+        )
+        eq_chk.pack(side=tk.LEFT, anchor=tk.W)
+        self._register_translation(eq_chk, label_text)
+
+        color_val = overlay.get('color', '#ef4444')
+        swatch = tk.Label(row, width=2, height=1, bg=color_val, relief='solid', bd=1)
+        swatch.pack(side=tk.LEFT, padx=(8, 0))
+        swatch.bind(
+            "<Button-1>",
+            lambda e, ov=overlay, sw=swatch: self._open_equation_style_dialog(ov, sw)
+        )
+        self.equation_overlay_swatches[overlay_id] = swatch
+
+    def _open_equation_style_dialog(self, overlay, swatch):
+        """Open a dialog to edit line style for an equation overlay."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title(self._translate("Edit Equation Style"))
+        dialog.geometry("420x260")
+        dialog.transient(self.root)
+        dialog.grab_set()
+
+        body = ttk.Frame(dialog, padding=12)
+        body.pack(fill=tk.BOTH, expand=True)
+
+        style_grid = ttk.Frame(body, style='CardBody.TFrame')
+        style_grid.pack(fill=tk.X)
+
+        line_color = tk.StringVar(value=overlay.get('color', '#ef4444'))
+        line_width = tk.DoubleVar(value=float(overlay.get('linewidth', 1.0)))
+        line_style = tk.StringVar(value=overlay.get('linestyle', '--'))
+        line_alpha = tk.DoubleVar(value=float(overlay.get('alpha', 0.85)))
+
+        color_row = ttk.Frame(style_grid, style='CardBody.TFrame')
+        color_row.pack(fill=tk.X, pady=4)
+        ttk.Label(color_row, text=self._translate("Line Color"), style='Body.TLabel').pack(side=tk.LEFT)
+        color_swatch = tk.Label(color_row, width=3, height=1, bg=line_color.get(), relief='solid', bd=1)
+        color_swatch.pack(side=tk.LEFT, padx=(8, 0))
+
+        def _pick_color():
+            chosen = colorchooser.askcolor(initialcolor=line_color.get(), parent=dialog)
+            if chosen and chosen[1]:
+                line_color.set(chosen[1])
+                color_swatch.configure(bg=chosen[1])
+
+        ttk.Button(
+            color_row,
+            text=self._translate("Choose Color"),
+            style='Secondary.TButton',
+            command=_pick_color
+        ).pack(side=tk.LEFT, padx=(8, 0))
+
+        width_row = ttk.Frame(style_grid, style='CardBody.TFrame')
+        width_row.pack(fill=tk.X, pady=4)
+        ttk.Label(width_row, text=self._translate("Line Width"), style='Body.TLabel').pack(side=tk.LEFT)
+        ttk.Spinbox(width_row, from_=0.2, to=6.0, increment=0.1, textvariable=line_width, width=6).pack(side=tk.LEFT, padx=(8, 0))
+
+        style_row = ttk.Frame(style_grid, style='CardBody.TFrame')
+        style_row.pack(fill=tk.X, pady=4)
+        ttk.Label(style_row, text=self._translate("Line Style"), style='Body.TLabel').pack(side=tk.LEFT)
+        ttk.Combobox(style_row, textvariable=line_style, values=['-', '--', '-.', ':'], state='readonly', width=6).pack(side=tk.LEFT, padx=(8, 0))
+
+        alpha_row = ttk.Frame(style_grid, style='CardBody.TFrame')
+        alpha_row.pack(fill=tk.X, pady=4)
+        ttk.Label(alpha_row, text=self._translate("Opacity"), style='Body.TLabel').pack(side=tk.LEFT)
+        ttk.Spinbox(alpha_row, from_=0.1, to=1.0, increment=0.05, textvariable=line_alpha, width=6).pack(side=tk.LEFT, padx=(8, 0))
+
+        btn_row = ttk.Frame(body)
+        btn_row.pack(fill=tk.X, pady=(12, 0))
+        btn_row.columnconfigure(0, weight=1)
+
+        def _apply():
+            overlay['color'] = line_color.get() or '#ef4444'
+            overlay['linewidth'] = float(line_width.get())
+            overlay['linestyle'] = line_style.get() or '--'
+            overlay['alpha'] = float(line_alpha.get())
+            if swatch is not None:
+                swatch.configure(bg=overlay['color'])
+            dialog.destroy()
+            self._on_change()
+
+        ttk.Button(btn_row, text=self._translate("Cancel"), style='Secondary.TButton', command=dialog.destroy).pack(side=tk.RIGHT)
+        ttk.Button(btn_row, text=self._translate("Save"), style='Accent.TButton', command=_apply).pack(side=tk.RIGHT, padx=(0, 8))
+
+    def _open_add_equation_dialog(self):
+        """Open a dialog to add a custom equation overlay."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title(self._translate("Add Equation"))
+        dialog.geometry("520x340")
+        dialog.transient(self.root)
+        dialog.grab_set()
+
+        body = ttk.Frame(dialog, padding=12)
+        body.pack(fill=tk.BOTH, expand=True)
+
+        name_var = tk.StringVar(value="")
+        latex_var = tk.StringVar(value="y=x")
+        expr_var = tk.StringVar(value="x")
+
+        form = ttk.Frame(body, style='CardBody.TFrame')
+        form.pack(fill=tk.X)
+
+        ttk.Label(form, text=self._translate("Equation Name"), style='Body.TLabel').grid(row=0, column=0, sticky=tk.W, pady=4)
+        ttk.Entry(form, textvariable=name_var, width=42).grid(row=0, column=1, sticky=tk.W, pady=4)
+
+        ttk.Label(form, text=self._translate("Equation (LaTeX)"), style='Body.TLabel').grid(row=1, column=0, sticky=tk.W, pady=4)
+        ttk.Entry(form, textvariable=latex_var, width=42).grid(row=1, column=1, sticky=tk.W, pady=4)
+
+        ttk.Label(form, text=self._translate("Expression (Python, x only)"), style='Body.TLabel').grid(row=2, column=0, sticky=tk.W, pady=4)
+        ttk.Entry(form, textvariable=expr_var, width=42).grid(row=2, column=1, sticky=tk.W, pady=4)
+
+        hint = ttk.Label(
+            body,
+            text=self._translate("Use LaTeX for display, and Python expression for computation. Example: 1.0049*x+20.259"),
+            style='BodyMuted.TLabel',
+            wraplength=470
+        )
+        hint.pack(anchor=tk.W, pady=(8, 0))
+
+        btn_row = ttk.Frame(body)
+        btn_row.pack(fill=tk.X, pady=(12, 0))
+        btn_row.columnconfigure(0, weight=1)
+
+        def _latex_to_expression(latex_text):
+            expr = latex_text.strip()
+            expr = expr.strip('$')
+            expr = re.sub(r'^y\s*=\s*', '', expr)
+            expr = expr.replace('\\times', '*').replace('\\cdot', '*')
+            expr = expr.replace('^', '**')
+            expr = expr.replace('{', '').replace('}', '')
+            expr = re.sub(r'(\d)\s*(x)', r'\1*\2', expr)
+            expr = re.sub(r'(\d)\s*\(', r'\1*(', expr)
+            expr = re.sub(r'\s+', '', expr)
+            return expr
+
+        def _apply():
+            label = name_var.get().strip() or latex_var.get().strip()
+            latex = latex_var.get().strip()
+            expr = expr_var.get().strip()
+            if not expr and latex:
+                expr = _latex_to_expression(latex)
+            if not expr:
+                messagebox.showwarning(self._translate("Add Equation"), self._translate("Expression cannot be empty."), parent=dialog)
+                return
+            try:
+                test_x = np.array([0.0, 1.0])
+                eval(expr, {"__builtins__": {}}, {"x": test_x, "np": np})
+            except Exception:
+                messagebox.showwarning(self._translate("Add Equation"), self._translate("Invalid expression."), parent=dialog)
+                return
+
+            overlay_id = f"eq_custom_{uuid.uuid4().hex[:8]}"
+            overlay = {
+                'id': overlay_id,
+                'label': label or 'Equation',
+                'latex': latex,
+                'expression': expr,
+                'enabled': True,
+                'color': '#ef4444',
+                'linewidth': 1.0,
+                'linestyle': '--',
+                'alpha': 0.85
+            }
+            app_state.equation_overlays.append(overlay)
+            app_state.show_equation_overlays = True
+            if 'show_equation_overlays' in self.check_vars:
+                self.check_vars['show_equation_overlays'].set(True)
+            self._add_equation_overlay_row(overlay)
+            dialog.destroy()
+            self._on_change()
+
+        ttk.Button(btn_row, text=self._translate("Cancel"), style='Secondary.TButton', command=dialog.destroy).pack(side=tk.RIGHT)
+        ttk.Button(btn_row, text=self._translate("Save"), style='Accent.TButton', command=_apply).pack(side=tk.RIGHT, padx=(0, 8))
 
     def _build_tools_tab(self, parent):
         """Build the Tools tab content"""
@@ -88,6 +282,36 @@ class ToolsTabMixin:
         )
         marginal_kde_chk.pack(anchor=tk.W)
         self._register_translation(marginal_kde_chk, "Show Marginal KDE")
+
+        self.check_vars['show_equation_overlays'] = tk.BooleanVar(
+            value=getattr(app_state, 'show_equation_overlays', False)
+        )
+        eq_overlay_chk = ttk.Checkbutton(
+            plot_frame,
+            text=self._translate("Show Equation Overlays"),
+            variable=self.check_vars['show_equation_overlays'],
+            command=self._on_change,
+            style='Option.TCheckbutton'
+        )
+        eq_overlay_chk.pack(anchor=tk.W, pady=(8, 2))
+        self._register_translation(eq_overlay_chk, "Show Equation Overlays")
+
+        eq_list_frame = ttk.Frame(plot_frame, style='CardBody.TFrame')
+        eq_list_frame.pack(fill=tk.X)
+        self.equation_overlay_frame = eq_list_frame
+        self.equation_overlay_swatches = {}
+
+        for overlay in getattr(app_state, 'equation_overlays', []):
+            self._add_equation_overlay_row(overlay)
+
+        add_eq_btn = ttk.Button(
+            plot_frame,
+            text=self._translate("Add Equation"),
+            style='Secondary.TButton',
+            command=self._open_add_equation_dialog
+        )
+        add_eq_btn.pack(anchor=tk.W, pady=(6, 0))
+        self._register_translation(add_eq_btn, "Add Equation")
 
         # Tooltip Settings
         tooltip_section = self._create_section(

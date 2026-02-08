@@ -559,15 +559,11 @@ class StyleTabMixin:
         self.legend_frame_edgecolor_var = tk.StringVar(value=getattr(app_state, 'legend_frame_edgecolor', '#cbd5f5'))
         axes_cells.append(add_labeled_entry(axes_grid, "Legend Frame Edge Color", self.legend_frame_edgecolor_var, 17, 0))
 
-        # Line widths
+        # Line widths (managed via Line Styles section)
         self.model_curve_width_var = tk.DoubleVar(value=float(getattr(app_state, 'model_curve_width', 1.2)))
         self.paleoisochron_width_var = tk.DoubleVar(value=float(getattr(app_state, 'paleoisochron_width', 0.9)))
         self.model_age_width_var = tk.DoubleVar(value=float(getattr(app_state, 'model_age_line_width', 0.7)))
         self.isochron_width_var = tk.DoubleVar(value=float(getattr(app_state, 'isochron_line_width', 1.5)))
-        axes_cells.append(add_slider_with_spin(axes_grid, "Model Curve Width", self.model_curve_width_var, 18, 0, 0.2, 4.0, 0.1, decimals=2))
-        axes_cells.append(add_slider_with_spin(axes_grid, "Paleoisochron Width", self.paleoisochron_width_var, 18, 1, 0.2, 4.0, 0.1, decimals=2))
-        axes_cells.append(add_slider_with_spin(axes_grid, "Model Age Line Width", self.model_age_width_var, 19, 0, 0.2, 4.0, 0.1, decimals=2))
-        axes_cells.append(add_slider_with_spin(axes_grid, "Isochron Line Width", self.isochron_width_var, 19, 1, 0.2, 4.0, 0.1, decimals=2))
 
         def _relayout_axes_grid(_event=None):
             width = axes_grid.winfo_width()
@@ -594,6 +590,7 @@ class StyleTabMixin:
                 cell.grid(row=row, column=col, sticky=tk.EW, padx=padx, pady=3)
 
         axes_grid.bind('<Configure>', _relayout_axes_grid)
+
 
     def _refresh_theme_list(self):
         """Load themes from disk and update combobox"""
@@ -652,6 +649,7 @@ class StyleTabMixin:
             'paleoisochron_width': self.paleoisochron_width_var.get(),
             'model_age_line_width': self.model_age_width_var.get(),
             'isochron_line_width': self.isochron_width_var.get(),
+            'line_styles': getattr(app_state, 'line_styles', {}),
             'label_color': self.label_color_var.get(),
             'label_weight': self.label_weight_var.get(),
             'label_pad': self.label_pad_var.get(),
@@ -728,6 +726,12 @@ class StyleTabMixin:
         self.paleoisochron_width_var.set(float(data.get('paleoisochron_width', 0.9)))
         self.model_age_width_var.set(float(data.get('model_age_line_width', 0.7)))
         self.isochron_width_var.set(float(data.get('isochron_line_width', 1.5)))
+        if 'line_styles' in data:
+            app_state.line_styles = data.get('line_styles', {})
+            if hasattr(self, 'line_style_swatches'):
+                for key, swatch in self.line_style_swatches.items():
+                    style = app_state.line_styles.get(key, {})
+                    swatch.configure(bg=style.get('color') or '#e2e8f0')
         self.label_color_var.set(data.get('label_color', '#1f2937'))
         self.label_weight_var.set(data.get('label_weight', 'normal'))
         self.label_pad_var.set(float(data.get('label_pad', 6.0)))
@@ -839,6 +843,11 @@ class StyleTabMixin:
         app_state.paleoisochron_width = _safe_float(self.paleoisochron_width_var, 0.9)
         app_state.model_age_line_width = _safe_float(self.model_age_width_var, 0.7)
         app_state.isochron_line_width = _safe_float(self.isochron_width_var, 1.5)
+        if hasattr(app_state, 'line_styles'):
+            app_state.line_styles.setdefault('model_curve', {})['linewidth'] = app_state.model_curve_width
+            app_state.line_styles.setdefault('paleoisochron', {})['linewidth'] = app_state.paleoisochron_width
+            app_state.line_styles.setdefault('model_age_line', {})['linewidth'] = app_state.model_age_line_width
+            app_state.line_styles.setdefault('isochron', {})['linewidth'] = app_state.isochron_line_width
         app_state.label_color = self.label_color_var.get() or '#1f2937'
         app_state.label_weight = self.label_weight_var.get() or 'normal'
         app_state.label_pad = _safe_float(self.label_pad_var, 6.0)

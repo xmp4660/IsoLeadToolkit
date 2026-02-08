@@ -14,6 +14,7 @@ except ImportError:
 
 import pandas as pd
 import numpy as np
+from visualization.line_styles import resolve_line_style
 
 # from data import geochemistry calculation logic
 try:
@@ -81,7 +82,7 @@ def _clear_marginal_axes():
     app_state.marginal_axes = None
 
 
-def _draw_marginal_kde(ax, df_plot, group_col, palette, unique_cats):
+def _draw_marginal_kde(ax, df_plot, group_col, palette, unique_cats, x_col='_emb_x', y_col='_emb_y'):
     """Draw marginal KDEs on top/right axes for 2D plots."""
     try:
         _lazy_import_seaborn()
@@ -98,8 +99,10 @@ def _draw_marginal_kde(ax, df_plot, group_col, palette, unique_cats):
         subset = df_plot[df_plot[group_col] == cat]
         if subset.empty:
             continue
-        xs = subset['_emb_x'].to_numpy(dtype=float, copy=False)
-        ys = subset['_emb_y'].to_numpy(dtype=float, copy=False)
+        if x_col not in subset.columns or y_col not in subset.columns:
+            continue
+        xs = subset[x_col].to_numpy(dtype=float, copy=False)
+        ys = subset[y_col].to_numpy(dtype=float, copy=False)
 
         if len(xs) > 1:
             sns.kdeplot(
@@ -353,12 +356,22 @@ def _draw_isochron_overlays(ax, mode):
                 if grp == 'All Data': color = '#64748b'
 
                 # Plot Line
+                isochron_style = resolve_line_style(
+                    app_state,
+                    'isochron',
+                    {
+                        'color': None,
+                        'linewidth': getattr(app_state, 'isochron_line_width', 1.5),
+                        'linestyle': '-',
+                        'alpha': 0.8
+                    }
+                )
                 ax.plot(
                     x_line, y_line,
-                    linestyle='-',
-                    color=color,
-                    linewidth=getattr(app_state, 'isochron_line_width', 1.5),
-                    alpha=0.8,
+                    linestyle=isochron_style['linestyle'],
+                    color=isochron_style['color'] or color,
+                    linewidth=isochron_style['linewidth'],
+                    alpha=isochron_style['alpha'],
                     zorder=2
                 )
 
@@ -416,12 +429,22 @@ def _draw_isochron_overlays(ax, mode):
                                         annot_text = f" μ={mu_source:.1f}"
 
                                 if x_growth is not None:
+                                     growth_style = resolve_line_style(
+                                         app_state,
+                                         'growth_curve',
+                                         {
+                                             'color': None,
+                                             'linewidth': getattr(app_state, 'model_curve_width', 1.2),
+                                             'linestyle': ':',
+                                             'alpha': 0.6
+                                         }
+                                     )
                                      ax.plot(
                                          x_growth, y_growth,
-                                         linestyle=':',
-                                         color=color,
-                                         alpha=0.6,
-                                         linewidth=getattr(app_state, 'model_curve_width', 1.2),
+                                         linestyle=growth_style['linestyle'],
+                                         color=growth_style['color'] or color,
+                                         alpha=growth_style['alpha'],
+                                         linewidth=growth_style['linewidth'],
                                          zorder=1.5
                                      )
                                      ax.text(x_growth[0], y_growth[0], annot_text, 
@@ -480,7 +503,25 @@ def _draw_isochron_overlays(ax, mode):
                                             # y (208)
                                             y_growth = c0 + omega_source * (geochemistry._exp_evolution_term(l232, T_start, E2_val) - geochemistry._exp_evolution_term(l232, t_steps, E2_val))
                                             
-                                            ax.plot(x_growth, y_growth, linestyle=':', color=color, alpha=0.6, linewidth=1.0, zorder=1.5)
+                                            growth_style = resolve_line_style(
+                                                app_state,
+                                                'growth_curve',
+                                                {
+                                                    'color': None,
+                                                    'linewidth': getattr(app_state, 'model_curve_width', 1.2),
+                                                    'linestyle': ':',
+                                                    'alpha': 0.6
+                                                }
+                                            )
+                                            ax.plot(
+                                                x_growth,
+                                                y_growth,
+                                                linestyle=growth_style['linestyle'],
+                                                color=growth_style['color'] or color,
+                                                alpha=growth_style['alpha'],
+                                                linewidth=growth_style['linewidth'],
+                                                zorder=1.5
+                                            )
                                             
                                             # Label
                                             label_text = f" κ={kappa_source:.1f}\n ({age_ma:.0f}Ma)"
@@ -553,16 +594,92 @@ def _draw_model_curves(ax, mode, params_list):
                 y_vals = curve['Pb207_204']
             else:
                 y_vals = curve['Pb208_204']
+            model_style = resolve_line_style(
+                app_state,
+                'model_curve',
+                {
+                    'color': None,
+                    'linewidth': getattr(app_state, 'model_curve_width', 1.2),
+                    'linestyle': '-',
+                    'alpha': 0.8
+                }
+            )
             ax.plot(
                 x_vals, y_vals,
-                color=next(color_cycle),
-                linewidth=getattr(app_state, 'model_curve_width', 1.2),
-                alpha=0.8,
+                color=model_style['color'] or next(color_cycle),
+                linewidth=model_style['linewidth'],
+                linestyle=model_style['linestyle'],
+                alpha=model_style['alpha'],
                 zorder=1,
                 label='_nolegend_'
             )
         except Exception as err:
             print(f"[WARN] Failed to draw model curve: {err}", flush=True)
+
+
+def _draw_equation_overlays(ax):
+    """Draw equation overlays for bivariate plots."""
+    if not getattr(app_state, 'show_equation_overlays', False):
+        return
+    overlays = getattr(app_state, 'equation_overlays', [])
+    if not overlays:
+        return
+
+    try:
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+    except Exception:
+        return
+
+    x_min, x_max = xlim
+    if x_min == x_max:
+        return
+
+    for overlay in overlays:
+        if not overlay.get('enabled', True):
+            continue
+
+        expr = overlay.get('expression')
+        slope = overlay.get('slope', None)
+        intercept = overlay.get('intercept', None)
+        if not expr and slope is not None and intercept is not None:
+            expr = f"({float(slope)})*x+({float(intercept)})"
+
+        if not expr:
+            continue
+
+        x_vals = np.array([x_min, x_max], dtype=float)
+        try:
+            with np.errstate(all='ignore'):
+                y_vals = eval(expr, {"__builtins__": {}}, {"x": x_vals, "np": np})
+        except Exception as err:
+            print(f"[WARN] Failed to evaluate equation '{expr}': {err}", flush=True)
+            continue
+
+        try:
+            y_vals = np.asarray(y_vals, dtype=float)
+        except Exception:
+            continue
+
+        if y_vals.size == 1:
+            y_vals = np.array([y_vals.item(), y_vals.item()], dtype=float)
+
+        ax.plot(
+            x_vals,
+            y_vals,
+            linestyle=overlay.get('linestyle', '--'),
+            color=overlay.get('color', '#ef4444'),
+            linewidth=float(overlay.get('linewidth', 1.0)),
+            alpha=float(overlay.get('alpha', 0.85)),
+            zorder=3,
+            label='_nolegend_'
+        )
+
+    try:
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+    except Exception:
+        pass
 
 
 def _label_angle_for_slope(ax, x0, y0, slope, dx):
@@ -589,19 +706,75 @@ def _position_paleo_label(ax, text_artist, slope, intercept, age=None):
 
     pad_x = x_span * 0.02
     pad_y = y_span * 0.02
-    x_anchor = xlim[1] - pad_x
-    y_anchor = slope * x_anchor + intercept
-    if y_anchor > ylim[1] - pad_y:
-        y_anchor = ylim[1] - pad_y
-    if y_anchor < ylim[0] + pad_y:
-        y_anchor = ylim[0] + pad_y
+
+    def _in_bounds(x_val, y_val):
+        return (xlim[0] + pad_x) <= x_val <= (xlim[1] - pad_x) and (ylim[0] + pad_y) <= y_val <= (ylim[1] - pad_y)
+
+    candidates = []
+
+    # Candidate at right edge
+    x_right = xlim[1] - pad_x
+    y_right = slope * x_right + intercept
+    if _in_bounds(x_right, y_right):
+        candidates.append((x_right, y_right, 'right'))
+
+    # Candidate at top edge (avoid near-horizontal slope)
+    if abs(slope) > 1e-12:
+        y_top = ylim[1] - pad_y
+        x_top = (y_top - intercept) / slope
+        if _in_bounds(x_top, y_top):
+            candidates.append((x_top, y_top, 'top'))
+
+    # Candidate at left edge
+    x_left = xlim[0] + pad_x
+    y_left = slope * x_left + intercept
+    if _in_bounds(x_left, y_left):
+        candidates.append((x_left, y_left, 'left'))
+
+    # Candidate at bottom edge (avoid near-horizontal slope)
+    if abs(slope) > 1e-12:
+        y_bottom = ylim[0] + pad_y
+        x_bottom = (y_bottom - intercept) / slope
+        if _in_bounds(x_bottom, y_bottom):
+            candidates.append((x_bottom, y_bottom, 'bottom'))
+
+    if candidates:
+        # Prefer top when zoomed in and the line intersects it, else right
+        preferred = None
+        for candidate in candidates:
+            if candidate[2] == 'top':
+                preferred = candidate
+                break
+        if preferred is None:
+            for candidate in candidates:
+                if candidate[2] == 'right':
+                    preferred = candidate
+                    break
+        if preferred is None:
+            preferred = candidates[0]
+        x_anchor, y_anchor, edge = preferred
+    else:
+        x_anchor = xlim[1] - pad_x
+        y_anchor = slope * x_anchor + intercept
+        y_anchor = min(max(y_anchor, ylim[0] + pad_y), ylim[1] - pad_y)
+        edge = 'right'
 
     angle = _label_angle_for_slope(ax, x_anchor, y_anchor, slope, dx=x_span * 0.02)
     text_artist.set_position((x_anchor, y_anchor))
     text_artist.set_rotation(angle)
     text_artist.set_rotation_mode('anchor')
-    text_artist.set_ha('right')
-    text_artist.set_va('center')
+    if edge == 'top':
+        text_artist.set_ha('center')
+        text_artist.set_va('bottom')
+    elif edge == 'right':
+        text_artist.set_ha('right')
+        text_artist.set_va('center')
+    elif edge == 'left':
+        text_artist.set_ha('left')
+        text_artist.set_va('center')
+    else:
+        text_artist.set_ha('center')
+        text_artist.set_va('top')
     text_artist.set_clip_on(True)
     if age is not None:
         text_artist.set_text(f" {age:.0f} Ma")
@@ -648,12 +821,22 @@ def _draw_paleoisochrons(ax, mode, ages_ma, params):
                 intercept = Z1 - slope * X1
 
             y_vals = slope * x_vals + intercept
+            paleo_style = resolve_line_style(
+                app_state,
+                'paleoisochron',
+                {
+                    'color': '#94a3b8',
+                    'linewidth': getattr(app_state, 'paleoisochron_width', 0.9),
+                    'linestyle': '--',
+                    'alpha': 0.85
+                }
+            )
             ax.plot(
                 x_vals, y_vals,
-                linestyle='--',
-                color='#94a3b8',
-                linewidth=getattr(app_state, 'paleoisochron_width', 0.9),
-                alpha=0.85,
+                linestyle=paleo_style['linestyle'],
+                color=paleo_style['color'],
+                linewidth=paleo_style['linewidth'],
+                alpha=paleo_style['alpha'],
                 zorder=3,
                 label='_nolegend_'
             )
@@ -662,11 +845,11 @@ def _draw_paleoisochrons(ax, mode, ages_ma, params):
                 text_artist = ax.text(
                     x_vals[-1], y_vals[-1],
                     f" {age:.0f} Ma",
-                    color='#94a3b8',
+                    color=paleo_style['color'],
                     fontsize=8,
                     va='center',
                     ha='left',
-                    alpha=0.85
+                    alpha=paleo_style['alpha']
                 )
                 app_state.paleoisochron_label_data.append({
                     'text': text_artist,
@@ -725,11 +908,22 @@ def _draw_model_age_lines(ax, pb206, pb207, params):
         for i in idxs:
             if np.isnan(pb206[i]) or np.isnan(pb207[i]) or np.isnan(x_curve[i]) or np.isnan(y_curve[i]):
                 continue
+            age_style = resolve_line_style(
+                app_state,
+                'model_age_line',
+                {
+                    'color': '#cbd5f5',
+                    'linewidth': getattr(app_state, 'model_age_line_width', 0.7),
+                    'linestyle': '-',
+                    'alpha': 0.7
+                }
+            )
             ax.plot(
                 [x_curve[i], pb206[i]], [y_curve[i], pb207[i]],
-                color='#cbd5f5',
-                linewidth=getattr(app_state, 'model_age_line_width', 0.7),
-                alpha=0.7,
+                color=age_style['color'],
+                linewidth=age_style['linewidth'],
+                linestyle=age_style['linestyle'],
+                alpha=age_style['alpha'],
                 zorder=1,
                 label='_nolegend_'
             )
@@ -764,11 +958,22 @@ def _draw_model_age_lines_86(ax, pb206, pb207, pb208, params):
         for i in idxs:
             if np.isnan(pb206[i]) or np.isnan(pb208[i]) or np.isnan(x_curve[i]) or np.isnan(z_curve[i]):
                 continue
+            age_style = resolve_line_style(
+                app_state,
+                'model_age_line',
+                {
+                    'color': '#cbd5f5',
+                    'linewidth': getattr(app_state, 'model_age_line_width', 0.7),
+                    'linestyle': '-',
+                    'alpha': 0.7
+                }
+            )
             ax.plot(
                 [x_curve[i], pb206[i]], [z_curve[i], pb208[i]],
-                color='#cbd5f5',
-                linewidth=getattr(app_state, 'model_age_line_width', 0.7),
-                alpha=0.7,
+                color=age_style['color'],
+                linewidth=age_style['linewidth'],
+                linestyle=age_style['linestyle'],
+                alpha=age_style['alpha'],
                 zorder=1,
                 label='_nolegend_'
             )
@@ -1875,6 +2080,12 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
         _apply_current_style()
 
         app_state.ax.clear()
+        try:
+            # Reset any prior aspect/scale settings (e.g., ternary plots) for 2D
+            app_state.ax.set_aspect('auto')
+            app_state.ax.set_autoscale_on(True)
+        except Exception:
+            pass
         _enforce_plot_style(app_state.ax)
         app_state.clear_plot_state()
 
@@ -2653,6 +2864,9 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
                 except Exception:
                     pass
 
+        if actual_algorithm != 'TERNARY' and getattr(app_state.ax, 'name', '') != '3d':
+            _draw_equation_overlays(app_state.ax)
+
         app_state.ax.tick_params()
         
         # Adjust layout to prevent overlap
@@ -2794,6 +3008,12 @@ def plot_2d_data(group_col, data_columns, size=60, show_kde=False):
         _apply_current_style()
 
         app_state.ax.clear()
+        try:
+            # Reset any prior aspect/scale settings (e.g., ternary plots) for 2D
+            app_state.ax.set_aspect('auto')
+            app_state.ax.set_autoscale_on(True)
+        except Exception:
+            pass
         _enforce_plot_style(app_state.ax)
         app_state.clear_plot_state()
 
@@ -2887,6 +3107,22 @@ def plot_2d_data(group_col, data_columns, size=60, show_kde=False):
             print("[ERROR] No points were plotted in 2D", flush=True)
             return False
 
+        # Marginal KDE for raw 2D scatter
+        _clear_marginal_axes()
+        if show_marginal_kde:
+            try:
+                _draw_marginal_kde(
+                    app_state.ax,
+                    df_plot,
+                    group_col,
+                    app_state.current_palette,
+                    unique_cats,
+                    x_col=data_columns[0],
+                    y_col=data_columns[1]
+                )
+            except Exception as kde_err:
+                print(f"[WARN] Failed to render marginal KDE: {kde_err}", flush=True)
+
         try:
             # Prepare Legend
             handles = []
@@ -2966,6 +3202,13 @@ def plot_2d_data(group_col, data_columns, size=60, show_kde=False):
         app_state.ax.set_xlabel(data_columns[0])
         app_state.ax.set_ylabel(data_columns[1])
         _apply_axis_text_style(app_state.ax)
+        try:
+            # Ensure data limits drive the initial view for 2D plots
+            app_state.ax.autoscale(enable=True, axis='both')
+        except Exception:
+            pass
+
+        _draw_equation_overlays(app_state.ax)
         
         # Adjust layout to prevent overlap
         try:
