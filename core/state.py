@@ -120,6 +120,7 @@ class AppState:
             'linewidth': 1.0,
             'fill': True
         }
+        self.marginal_kde_max_points = 5000
         self.ellipse_confidence = CONFIG.get('ellipse_confidence', 0.95)
         self.point_size = CONFIG['point_size']
         self.last_group_col = None  # Will be set from data after loading
@@ -203,6 +204,8 @@ class AppState:
         self.legend_columns = 0  # 0 means auto
         self.plot_marker_size = 60
         self.plot_marker_alpha = 0.8
+        self.plot_marker_shape = 'o'
+        self.group_marker_map = {}
         # Common plot styling
         self.plot_figsize = CONFIG.get('figure_size', (13, 9))
         self.plot_dpi = CONFIG.get('figure_dpi', 130)

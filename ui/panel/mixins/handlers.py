@@ -71,6 +71,46 @@ class PanelHandlersMixin:
                     if requested_mode == 'Ternary' and hasattr(self, 'update_ternary_sliders_from_data'):
                         self.update_ternary_sliders_from_data(preserve_existing=True)
 
+                    try:
+                        from data import geochemistry
+                    except Exception:
+                        geochemistry = None
+
+                    if geochemistry is not None:
+                        target_model = 'V1V2 (Zhu 1993)' if requested_mode == 'V1V2' else 'Stacey & Kramers (2nd Stage)'
+                        current_model = getattr(geochemistry.engine, 'current_model_name', '')
+                        if target_model and current_model != target_model:
+                            if geochemistry.engine.load_preset(target_model):
+                                if hasattr(self, 'geo_model_var'):
+                                    try:
+                                        self.geo_model_var.set(target_model)
+                                    except Exception:
+                                        pass
+                                if hasattr(self, 'geo_vars') and isinstance(self.geo_vars, dict) and self.geo_vars:
+                                    try:
+                                        params = geochemistry.engine.get_parameters()
+                                        def _safe_set(key, val):
+                                            if key in self.geo_vars:
+                                                self.geo_vars[key].set(str(val))
+
+                                        _safe_set('T1', params['T1'] / 1e6)
+                                        _safe_set('T2', params['T2'] / 1e6)
+                                        _safe_set('Tsec', params['Tsec'] / 1e6)
+                                        _safe_set('lambda_238', params['lambda_238'])
+                                        _safe_set('lambda_235', params['lambda_235'])
+                                        _safe_set('lambda_232', params['lambda_232'])
+                                        _safe_set('a0', params['a0'])
+                                        _safe_set('b0', params['b0'])
+                                        _safe_set('c0', params['c0'])
+                                        _safe_set('a1', params['a1'])
+                                        _safe_set('b1', params['b1'])
+                                        _safe_set('c1', params['c1'])
+                                        _safe_set('mu_M', params['mu_M'])
+                                        _safe_set('omega_M', params['omega_M'])
+                                        _safe_set('U_ratio', params['U_ratio'])
+                                    except Exception:
+                                        pass
+
             if app_state.render_mode in ('UMAP', 'tSNE', 'PCA', 'RobustPCA'):
                 if app_state.render_mode == 'UMAP':
                     app_state.algorithm = 'UMAP'

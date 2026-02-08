@@ -35,6 +35,9 @@ def draw_marginal_kde(ax, df_plot, group_col, palette, unique_cats, x_col='_emb_
         print(f"[WARN] Failed to import KDE dependencies: {import_err}", flush=True)
         return
 
+    max_points = int(getattr(app_state, 'marginal_kde_max_points', 5000))
+    rng = np.random.default_rng(42)
+
     divider = make_axes_locatable(ax)
     ax_top = divider.append_axes("top", size="15%", pad=0.06, sharex=ax)
     ax_right = divider.append_axes("right", size="15%", pad=0.06, sharey=ax)
@@ -53,26 +56,37 @@ def draw_marginal_kde(ax, df_plot, group_col, palette, unique_cats, x_col='_emb_
         xs = subset[x_col].to_numpy(dtype=float, copy=False)
         ys = subset[y_col].to_numpy(dtype=float, copy=False)
 
+        if max_points > 0 and len(xs) > max_points:
+            sample_idx = rng.choice(len(xs), size=max_points, replace=False)
+            xs = xs[sample_idx]
+            ys = ys[sample_idx]
+
         if len(xs) > 1:
-            sns.kdeplot(
-                x=xs,
-                ax=ax_top,
-                color=palette[cat],
-                fill=kde_fill,
-                alpha=kde_alpha,
-                linewidth=kde_linewidth,
-                warn_singular=False
-            )
+            try:
+                sns.kdeplot(
+                    x=xs,
+                    ax=ax_top,
+                    color=palette[cat],
+                    fill=kde_fill,
+                    alpha=kde_alpha,
+                    linewidth=kde_linewidth,
+                    warn_singular=False
+                )
+            except Exception as kde_err:
+                print(f"[WARN] Marginal KDE X failed for {cat}: {kde_err}", flush=True)
         if len(ys) > 1:
-            sns.kdeplot(
-                y=ys,
-                ax=ax_right,
-                color=palette[cat],
-                fill=kde_fill,
-                alpha=kde_alpha,
-                linewidth=kde_linewidth,
-                warn_singular=False
-            )
+            try:
+                sns.kdeplot(
+                    y=ys,
+                    ax=ax_right,
+                    color=palette[cat],
+                    fill=kde_fill,
+                    alpha=kde_alpha,
+                    linewidth=kde_linewidth,
+                    warn_singular=False
+                )
+            except Exception as kde_err:
+                print(f"[WARN] Marginal KDE Y failed for {cat}: {kde_err}", flush=True)
 
     ax_top.tick_params(axis='x', labelbottom=False)
     ax_top.tick_params(axis='y', left=False, labelleft=False)

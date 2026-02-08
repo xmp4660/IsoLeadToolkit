@@ -506,6 +506,10 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
 
                     marker_size = getattr(app_state, 'plot_marker_size', size)
                     marker_alpha = getattr(app_state, 'plot_marker_alpha', 0.88)
+                    marker_shape = app_state.group_marker_map.get(
+                        cat,
+                        getattr(app_state, 'plot_marker_shape', 'o')
+                    )
                     color = app_state.current_palette[cat]
 
                     sc = app_state.ax.scatter(
@@ -514,6 +518,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
                         label=cat,
                         color=color,
                         s=marker_size,
+                        marker=marker_shape,
                         alpha=marker_alpha,
                         edgecolors=getattr(app_state, 'scatter_edgecolor', '#1e293b'),
                         linewidth=getattr(app_state, 'scatter_edgewidth', 0.4),
@@ -542,6 +547,10 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
 
                     marker_size = getattr(app_state, 'plot_marker_size', size)
                     marker_alpha = getattr(app_state, 'plot_marker_alpha', 0.88)
+                    marker_shape = app_state.group_marker_map.get(
+                        cat,
+                        getattr(app_state, 'plot_marker_shape', 'o')
+                    )
 
                     color = app_state.current_palette[cat]
                     sc = app_state.ax.scatter(
@@ -550,6 +559,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
                         label=cat,
                         color=color,
                         s=marker_size,
+                        marker=marker_shape,
                         alpha=marker_alpha,
                         edgecolors=getattr(app_state, 'scatter_edgecolor', '#1e293b'),
                         linewidth=getattr(app_state, 'scatter_edgewidth', 0.4),
@@ -940,12 +950,17 @@ def plot_2d_data(group_col, data_columns, size=60, show_kde=False):
 
                 marker_size = getattr(app_state, 'plot_marker_size', size)
                 marker_alpha = getattr(app_state, 'plot_marker_alpha', 0.88)
+                marker_shape = app_state.group_marker_map.get(
+                    cat,
+                    getattr(app_state, 'plot_marker_shape', 'o')
+                )
                 sc = app_state.ax.scatter(
                     xs,
                     ys,
                     label=cat,
                     color=color,
                     s=marker_size,
+                    marker=marker_shape,
                     alpha=marker_alpha,
                     edgecolors=getattr(app_state, 'scatter_edgecolor', '#1e293b'),
                     linewidth=getattr(app_state, 'scatter_edgewidth', 0.4),
@@ -1149,6 +1164,10 @@ def plot_3d_data(group_col, data_columns, size=60):
 
             marker_size = getattr(app_state, 'plot_marker_size', size)
             marker_alpha = getattr(app_state, 'plot_marker_alpha', 0.85)
+            marker_shape = app_state.group_marker_map.get(
+                cat,
+                getattr(app_state, 'plot_marker_shape', 'o')
+            )
             sc = app_state.ax.scatter(
                 xs,
                 ys,
@@ -1156,6 +1175,7 @@ def plot_3d_data(group_col, data_columns, size=60):
                 label=cat,
                 color=app_state.current_palette[cat],
                 s=marker_size,
+                marker=marker_shape,
                 alpha=marker_alpha,
                 edgecolors=getattr(app_state, 'scatter_edgecolor', '#1e293b'),
                 linewidth=getattr(app_state, 'scatter_edgewidth', 0.4),
