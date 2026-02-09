@@ -785,11 +785,11 @@ class Qt5ControlPanel(QWidget):
         """更新分组列表"""
         self.group_list.clear()
 
-        if not app_state.group_col or app_state.df_global is None:
+        if not app_state.last_group_col or app_state.df_global is None:
             return
 
         # 获取所有分组
-        groups = app_state.df_global[app_state.group_col].unique()
+        groups = app_state.df_global[app_state.last_group_col].unique()
 
         for group in groups:
             item = QListWidgetItem(str(group))
@@ -823,8 +823,8 @@ class Qt5ControlPanel(QWidget):
 
     def _hide_all_groups(self):
         """隐藏所有分组"""
-        if app_state.group_col and app_state.df_global is not None:
-            groups = app_state.df_global[app_state.group_col].unique()
+        if app_state.last_group_col and app_state.df_global is not None:
+            groups = app_state.df_global[app_state.last_group_col].unique()
             app_state.hidden_groups = set(groups)
             self._update_group_list()
             self._on_change()
