@@ -493,6 +493,10 @@
   "Please define mixture groups first.": "请先定义青铜器组。",
   "No mixing results were produced.": "未生成混合结果。",
   "Mixing calculation failed: {error}": "混合计算失败：{error}",
+  "V1V2 Time Settings": "V1V2 时间设置",
+  "T1 (Ma) - Model Age": "T1 (Ma) - 模型年龄",
+  "T2 (Ma) - Standard Earth Age": "T2 (Ma) - 标准地球年龄",
+  "Show Age Isochrons": "显示年龄等时线",
   "Calculate": "开始计算",
   "Close": "关闭"
 }

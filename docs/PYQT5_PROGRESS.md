@@ -21,6 +21,22 @@
 
 ---
 
+## 📝 变更日志
+
+### 2026-02-09 (第四次更新) - 控制面板完全复刻 🎉
+- ✅ 添加 Ternary Plot 参数控制（Auto-Zoom, Stretch Mode, Stretch to Fill）
+- ✅ 添加 2D Scatter 参数（X/Y Axis 选择下拉框）
+- ✅ 完善 Legend 部分（颜色选择、形状选择、Top 按钮）
+- ✅ 添加 Tools 部分（数据分析、选择工具、导出功能）
+- ✅ 扩展 `_update_algorithm_visibility` 支持 Ternary 和 2D 模式
+- ✅ 添加 `_bring_to_front` 方法支持图例项置顶
+- ✅ 添加 `_on_show_correlation_heatmap`、`_on_show_axis_correlation`、`_on_show_shepard_diagram` 方法
+- ✅ 添加 `_on_toggle_selection`、`_on_toggle_ellipse_selection` 选择工具方法
+- ✅ 添加 `_on_export_csv`、`_on_export_excel` 导出方法
+- ✅ 添加 `_on_analyze_subset`、`_on_reset_data` 分析工具方法
+
+---
+
 ## ✅ 已完成模块
 
 ### 1. 核心架构 (100%)

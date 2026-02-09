@@ -494,6 +494,10 @@
   "Please define mixture groups first.": "Please define mixture groups first.",
   "No mixing results were produced.": "No mixing results were produced.",
   "Mixing calculation failed: {error}": "Mixing calculation failed: {error}",
+  "V1V2 Time Settings": "V1V2 Time Settings",
+  "T1 (Ma) - Model Age": "T1 (Ma) - Model Age",
+  "T2 (Ma) - Standard Earth Age": "T2 (Ma) - Standard Earth Age",
+  "Show Age Isochrons": "Show Age Isochrons",
   "Calculate": "Calculate",
   "Close": "Close"
 }
