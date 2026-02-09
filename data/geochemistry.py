@@ -1086,22 +1086,27 @@ def calculate_model_age(Pb206_204_S, Pb207_204_S, two_stage=False):
 def calculate_isochron_age_from_slope(slope, params=None):
     """
     从 Pb-Pb 等时线斜率计算年龄
-    Slope = (1/U_ratio) * (exp(λ5*t) - 1) / (exp(λ8*t) - 1)
+
+    对于 207Pb/204Pb vs 206Pb/204Pb 图，等时线斜率为：
+    Slope = (235U/238U) * (exp(λ235*t) - 1) / (exp(λ238*t) - 1)
+          = U_ratio * (exp(λ235*t) - 1) / (exp(λ238*t) - 1)
+
+    其中 U_ratio = 235U/238U ≈ 1/137.88 ≈ 0.00725
     """
     if params is None: params = engine.params
-    
+
     if slope <= 0: return 0.0
-    
+
     l238 = params['lambda_238']
     l235 = params['lambda_235']
-    u_inv = 1.0 / params['U_ratio']
-    
+    u_ratio = params['U_ratio']  # 235U/238U ≈ 0.00725
+
     def f(t):
         if t <= 0: return -slope
         num = np.exp(l235 * t) - 1
         den = np.exp(l238 * t) - 1
         if abs(den) < 1e-50: den = 1e-50
-        return (u_inv * num / den) - slope
+        return (u_ratio * num / den) - slope
 
     res = _solve_age_scipy(f, bounds=(1e6, 10e9))
     return res / 1e6 if res else 0.0

@@ -646,11 +646,32 @@ def _draw_isochron_overlays(ax, actual_algorithm):
             )
 
             if mode == 'ISOCHRON1' and calculate_isochron_age_from_slope:
-                age_ma = calculate_isochron_age_from_slope(slope)
-                if age_ma is not None and age_ma > 0:
-                    txt_x = x_max_g
-                    txt_y = slope * txt_x + intercept
-                    ax.text(txt_x, txt_y, f" {age_ma:.0f} Ma", color=color, fontsize=9, va='center', ha='left', fontweight='bold')
+                try:
+                    age_ma = calculate_isochron_age_from_slope(slope)
+                    if age_ma is not None and age_ma > 0:
+                        # Place label at the end of the fitted line, clipped to axes limits
+                        xlim = ax.get_xlim()
+                        ylim = ax.get_ylim()
+
+                        # Try to place at x_max_g, but clip to visible range
+                        txt_x = min(x_max_g, xlim[1] * 0.95)
+                        txt_y = slope * txt_x + intercept
+
+                        # Ensure y is within visible range
+                        if txt_y < ylim[0] or txt_y > ylim[1]:
+                            # If y is out of range, find x where line intersects visible area
+                            if txt_y > ylim[1]:
+                                txt_y = ylim[1] * 0.95
+                                txt_x = (txt_y - intercept) / slope if abs(slope) > 1e-10 else txt_x
+                            else:
+                                txt_y = ylim[0] + (ylim[1] - ylim[0]) * 0.05
+                                txt_x = (txt_y - intercept) / slope if abs(slope) > 1e-10 else txt_x
+
+                        ax.text(txt_x, txt_y, f" {age_ma:.0f} Ma", color=color, fontsize=9, va='center', ha='left', fontweight='bold')
+                    else:
+                        print(f"[INFO] Isochron age calculation returned {age_ma} for slope {slope:.6f} (group: {grp})", flush=True)
+                except Exception as age_err:
+                    print(f"[WARN] Failed to calculate isochron age for slope {slope:.6f}: {age_err}", flush=True)
 
                     if getattr(app_state, 'show_growth_curves', True):
                         growth = geochemistry.calculate_isochron1_growth_curve(

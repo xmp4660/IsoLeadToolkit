@@ -19,3 +19,7 @@ PbIso-master/
 shereea/
 .cursor/
 .vscode/
+.claude/
+reference/
+test_isochron_fix.py
+ISOCHRON_FIX.md
