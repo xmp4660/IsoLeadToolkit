@@ -582,66 +582,153 @@ class Qt5ControlPanel(QWidget):
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(10, 10, 10, 10)
 
-        # 模型曲线
-        model_group = QGroupBox(translate("Model Curves"))
-        model_layout = QVBoxLayout()
+        # 存储地球化学参数的字典
+        self.geo_params = {}
+
+        # 模型选择
+        model_select_group = QGroupBox(translate("Geochemistry Model"))
+        model_select_layout = QVBoxLayout()
+
+        model_label = QLabel(translate("Select Model:"))
+        model_select_layout.addWidget(model_label)
+
+        self.geo_model_combo = QComboBox()
+        # 获取可用模型列表
+        try:
+            from data.geochemistry import engine
+            available_models = engine.get_available_models()
+            self.geo_model_combo.addItems(available_models)
+            # 设置当前模型
+            current_model = getattr(app_state, 'geo_model_name', 'Stacey & Kramers (2nd Stage)')
+            if current_model in available_models:
+                self.geo_model_combo.setCurrentText(current_model)
+        except Exception as e:
+            print(f"[WARN] Failed to load geochemistry models: {e}")
+            self.geo_model_combo.addItem("Default")
+
+        self.geo_model_combo.currentTextChanged.connect(self._on_geo_model_change)
+        model_select_layout.addWidget(self.geo_model_combo)
+
+        model_select_group.setLayout(model_select_layout)
+        layout.addWidget(model_select_group)
+
+        # 时间参数
+        time_group = QGroupBox(translate("Time Parameters (Ma)"))
+        time_layout = QGridLayout()
+
+        self._add_geo_param(time_layout, "T1", translate("T1 (1st Stage):"), 0, 0, 0.0, 10000.0, 4430.0)
+        self._add_geo_param(time_layout, "T2", translate("T2 (Earth Age):"), 0, 2, 0.0, 10000.0, 4570.0)
+        self._add_geo_param(time_layout, "Tsec", translate("Tsec (2nd Stage):"), 1, 0, 0.0, 10000.0, 3700.0)
+
+        time_group.setLayout(time_layout)
+        layout.addWidget(time_group)
+
+        # 衰变常数
+        decay_group = QGroupBox(translate("Decay Constants (a^-1)"))
+        decay_layout = QGridLayout()
+
+        self._add_geo_param(decay_layout, "lambda_238", translate("λ (238U):"), 0, 0, 0.0, 1.0, 1.55125e-10, scientific=True)
+        self._add_geo_param(decay_layout, "lambda_235", translate("λ (235U):"), 0, 2, 0.0, 1.0, 9.8485e-10, scientific=True)
+        self._add_geo_param(decay_layout, "lambda_232", translate("λ (232Th):"), 1, 0, 0.0, 1.0, 4.94752e-11, scientific=True)
+
+        decay_group.setLayout(decay_layout)
+        layout.addWidget(decay_group)
+
+        # 初始铅组成
+        init_group = QGroupBox(translate("Initial Lead Compositions"))
+        init_layout = QVBoxLayout()
+
+        # Primordial
+        prim_label = QLabel(translate("Primordial (T1/T2):"))
+        prim_label.setStyleSheet("font-weight: bold;")
+        init_layout.addWidget(prim_label)
+
+        prim_grid = QGridLayout()
+        self._add_geo_param(prim_grid, "a0", translate("a0 (206/204):"), 0, 0, 0.0, 100.0, 9.307)
+        self._add_geo_param(prim_grid, "b0", translate("b0 (207/204):"), 0, 2, 0.0, 100.0, 10.294)
+        self._add_geo_param(prim_grid, "c0", translate("c0 (208/204):"), 1, 0, 0.0, 100.0, 29.476)
+        init_layout.addLayout(prim_grid)
+
+        # Stacey-Kramers 2nd Stage
+        sk_label = QLabel(translate("Stacey-Kramers 2nd Stage:"))
+        sk_label.setStyleSheet("font-weight: bold; margin-top: 10px;")
+        init_layout.addWidget(sk_label)
+
+        sk_grid = QGridLayout()
+        self._add_geo_param(sk_grid, "a1", translate("a1 (206/204):"), 0, 0, 0.0, 100.0, 11.152)
+        self._add_geo_param(sk_grid, "b1", translate("b1 (207/204):"), 0, 2, 0.0, 100.0, 12.998)
+        self._add_geo_param(sk_grid, "c1", translate("c1 (208/204):"), 1, 0, 0.0, 100.0, 31.23)
+        init_layout.addLayout(sk_grid)
+
+        init_group.setLayout(init_layout)
+        layout.addWidget(init_group)
+
+        # 地幔参数
+        mantle_group = QGroupBox(translate("Mantle & Production"))
+        mantle_layout = QGridLayout()
+
+        self._add_geo_param(mantle_layout, "mu_M", translate("μ (Mantle):"), 0, 0, 0.0, 100.0, 9.74)
+        self._add_geo_param(mantle_layout, "omega_M", translate("ω (Mantle):"), 0, 2, 0.0, 100.0, 36.84)
+        self._add_geo_param(mantle_layout, "U_ratio", translate("U Ratio (235/238):"), 1, 0, 0.0, 1.0, 1.0/137.88, scientific=True)
+
+        mantle_group.setLayout(mantle_layout)
+        layout.addWidget(mantle_group)
+
+        # 按钮组
+        button_layout = QHBoxLayout()
+
+        apply_btn = QPushButton(translate("Apply Changes"))
+        apply_btn.clicked.connect(self._on_apply_geo_params)
+        button_layout.addWidget(apply_btn)
+
+        reset_btn = QPushButton(translate("Reset Defaults"))
+        reset_btn.clicked.connect(self._on_reset_geo_params)
+        button_layout.addWidget(reset_btn)
+
+        layout.addLayout(button_layout)
+
+        # 显示选项
+        display_group = QGroupBox(translate("Display Options"))
+        display_layout = QVBoxLayout()
 
         self.show_model_check = QCheckBox(translate("Show model curves"))
         self.show_model_check.setChecked(app_state.show_model_curves)
         self.show_model_check.stateChanged.connect(self._on_model_curves_change)
-        model_layout.addWidget(self.show_model_check)
-
-        model_group.setLayout(model_layout)
-        layout.addWidget(model_group)
-
-        # 等时线
-        isochron_group = QGroupBox(translate("Isochron"))
-        isochron_layout = QVBoxLayout()
+        display_layout.addWidget(self.show_model_check)
 
         self.show_isochron_check = QCheckBox(translate("Show isochron"))
         self.show_isochron_check.setChecked(app_state.show_isochrons)
         self.show_isochron_check.stateChanged.connect(self._on_isochron_change)
-        isochron_layout.addWidget(self.show_isochron_check)
+        display_layout.addWidget(self.show_isochron_check)
 
         # 计算等时线年龄按钮
         calc_isochron_btn = QPushButton(translate("Calculate Isochron Age"))
         calc_isochron_btn.clicked.connect(self._on_calculate_isochron)
-        isochron_layout.addWidget(calc_isochron_btn)
+        display_layout.addWidget(calc_isochron_btn)
 
-        isochron_group.setLayout(isochron_layout)
-        layout.addWidget(isochron_group)
-
-        # V1V2 参数
-        v1v2_group = QGroupBox(translate("V1V2 Parameters"))
-        v1v2_layout = QVBoxLayout()
-
-        # V1 输入
-        v1_label = QLabel(translate("V1:"))
-        v1v2_layout.addWidget(v1_label)
-
-        self.v1_spin = QDoubleSpinBox()
-        self.v1_spin.setRange(-1000.0, 1000.0)
-        self.v1_spin.setSingleStep(0.1)
-        self.v1_spin.setValue(app_state.v1_value)
-        self.v1_spin.valueChanged.connect(self._on_v1_change)
-        v1v2_layout.addWidget(self.v1_spin)
-
-        # V2 输入
-        v2_label = QLabel(translate("V2:"))
-        v1v2_layout.addWidget(v2_label)
-
-        self.v2_spin = QDoubleSpinBox()
-        self.v2_spin.setRange(-1000.0, 1000.0)
-        self.v2_spin.setSingleStep(0.1)
-        self.v2_spin.setValue(app_state.v2_value)
-        self.v2_spin.valueChanged.connect(self._on_v2_change)
-        v1v2_layout.addWidget(self.v2_spin)
-
-        v1v2_group.setLayout(v1v2_layout)
-        layout.addWidget(v1v2_group)
+        display_group.setLayout(display_layout)
+        layout.addWidget(display_group)
 
         layout.addStretch()
         return widget
+
+    def _add_geo_param(self, grid_layout, param_name, label_text, row, col, min_val, max_val, default_val, scientific=False):
+        """添加地球化学参数控件"""
+        label = QLabel(label_text)
+        grid_layout.addWidget(label, row, col)
+
+        spinbox = QDoubleSpinBox()
+        spinbox.setRange(min_val, max_val)
+        spinbox.setDecimals(6 if scientific else 3)
+        if scientific:
+            spinbox.setDecimals(12)
+        spinbox.setSingleStep(0.001 if not scientific else 1e-11)
+        spinbox.setValue(default_val)
+
+        grid_layout.addWidget(spinbox, row, col + 1)
+
+        # 存储控件引用
+        self.geo_params[param_name] = spinbox
 
     # ========== 事件处理 ==========
 
@@ -907,15 +994,165 @@ class Qt5ControlPanel(QWidget):
             translate("Isochron age calculation will be implemented.")
         )
 
-    def _on_v1_change(self, value):
-        """V1 参数变化"""
-        app_state.v1_value = value
-        self._on_change()
+    def _on_geo_model_change(self, model_name):
+        """地球化学模型选择变化"""
+        if not model_name:
+            return
 
-    def _on_v2_change(self, value):
-        """V2 参数变化"""
-        app_state.v2_value = value
-        self._on_change()
+        try:
+            from data.geochemistry import engine
+
+            # 加载预设模型
+            if engine.load_preset(model_name):
+                # 获取当前参数
+                current_params = engine.get_parameters()
+
+                # 更新 UI 控件
+                if 'T1' in self.geo_params:
+                    self.geo_params['T1'].setValue(current_params['T1'] / 1e6)
+                if 'T2' in self.geo_params:
+                    self.geo_params['T2'].setValue(current_params['T2'] / 1e6)
+                if 'Tsec' in self.geo_params:
+                    self.geo_params['Tsec'].setValue(current_params['Tsec'] / 1e6)
+
+                if 'lambda_238' in self.geo_params:
+                    self.geo_params['lambda_238'].setValue(current_params['lambda_238'])
+                if 'lambda_235' in self.geo_params:
+                    self.geo_params['lambda_235'].setValue(current_params['lambda_235'])
+                if 'lambda_232' in self.geo_params:
+                    self.geo_params['lambda_232'].setValue(current_params['lambda_232'])
+
+                if 'a0' in self.geo_params:
+                    self.geo_params['a0'].setValue(current_params['a0'])
+                if 'b0' in self.geo_params:
+                    self.geo_params['b0'].setValue(current_params['b0'])
+                if 'c0' in self.geo_params:
+                    self.geo_params['c0'].setValue(current_params['c0'])
+
+                if 'a1' in self.geo_params:
+                    self.geo_params['a1'].setValue(current_params['a1'])
+                if 'b1' in self.geo_params:
+                    self.geo_params['b1'].setValue(current_params['b1'])
+                if 'c1' in self.geo_params:
+                    self.geo_params['c1'].setValue(current_params['c1'])
+
+                if 'mu_M' in self.geo_params:
+                    self.geo_params['mu_M'].setValue(current_params['mu_M'])
+                if 'omega_M' in self.geo_params:
+                    self.geo_params['omega_M'].setValue(current_params['omega_M'])
+                if 'U_ratio' in self.geo_params:
+                    self.geo_params['U_ratio'].setValue(current_params['U_ratio'])
+
+                # 保存模型名称到状态
+                app_state.geo_model_name = model_name
+
+                print(f"[INFO] Loaded Geochemistry Model: {model_name}")
+
+                # 如果当前是地球化学渲染模式，自动刷新
+                if app_state.render_mode in ('V1V2', 'PB_EVOL_76', 'PB_EVOL_86', 'PB_MU_AGE', 'PB_KAPPA_AGE'):
+                    self._on_change()
+
+        except Exception as e:
+            print(f"[ERROR] Failed to load geochemistry model: {e}")
+            QMessageBox.warning(
+                self,
+                translate("Error"),
+                translate("Failed to load geochemistry model: {error}").format(error=str(e))
+            )
+
+    def _on_apply_geo_params(self):
+        """应用地球化学参数"""
+        try:
+            from data.geochemistry import engine
+
+            # 收集参数
+            params = {}
+
+            # 时间参数（转换为年）
+            if 'T1' in self.geo_params:
+                params['T1'] = self.geo_params['T1'].value() * 1e6
+            if 'T2' in self.geo_params:
+                params['T2'] = self.geo_params['T2'].value() * 1e6
+            if 'Tsec' in self.geo_params:
+                params['Tsec'] = self.geo_params['Tsec'].value() * 1e6
+
+            # 衰变常数
+            if 'lambda_238' in self.geo_params:
+                params['lambda_238'] = self.geo_params['lambda_238'].value()
+            if 'lambda_235' in self.geo_params:
+                params['lambda_235'] = self.geo_params['lambda_235'].value()
+            if 'lambda_232' in self.geo_params:
+                params['lambda_232'] = self.geo_params['lambda_232'].value()
+
+            # 初始铅组成
+            if 'a0' in self.geo_params:
+                params['a0'] = self.geo_params['a0'].value()
+            if 'b0' in self.geo_params:
+                params['b0'] = self.geo_params['b0'].value()
+            if 'c0' in self.geo_params:
+                params['c0'] = self.geo_params['c0'].value()
+            if 'a1' in self.geo_params:
+                params['a1'] = self.geo_params['a1'].value()
+            if 'b1' in self.geo_params:
+                params['b1'] = self.geo_params['b1'].value()
+            if 'c1' in self.geo_params:
+                params['c1'] = self.geo_params['c1'].value()
+
+            # 地幔参数
+            if 'mu_M' in self.geo_params:
+                params['mu_M'] = self.geo_params['mu_M'].value()
+            if 'omega_M' in self.geo_params:
+                params['omega_M'] = self.geo_params['omega_M'].value()
+            if 'U_ratio' in self.geo_params:
+                params['U_ratio'] = self.geo_params['U_ratio'].value()
+
+            # 更新引擎参数
+            engine.update_parameters(params)
+
+            print(f"[INFO] Applied geochemistry parameters")
+
+            # 如果当前是地球化学渲染模式，刷新绘图
+            if app_state.render_mode in ('V1V2', 'PB_EVOL_76', 'PB_EVOL_86', 'PB_MU_AGE', 'PB_KAPPA_AGE'):
+                self._on_change()
+
+            QMessageBox.information(
+                self,
+                translate("Success"),
+                translate("Geochemistry parameters applied successfully.")
+            )
+
+        except Exception as e:
+            print(f"[ERROR] Failed to apply geochemistry parameters: {e}")
+            QMessageBox.warning(
+                self,
+                translate("Error"),
+                translate("Failed to apply parameters: {error}").format(error=str(e))
+            )
+
+    def _on_reset_geo_params(self):
+        """重置地球化学参数为默认值"""
+        try:
+            from data.geochemistry import engine
+
+            # 重新加载当前模型
+            model_name = self.geo_model_combo.currentText()
+            if engine.load_preset(model_name):
+                # 触发模型变化事件来更新 UI
+                self._on_geo_model_change(model_name)
+
+                QMessageBox.information(
+                    self,
+                    translate("Success"),
+                    translate("Parameters reset to defaults.")
+                )
+
+        except Exception as e:
+            print(f"[ERROR] Failed to reset geochemistry parameters: {e}")
+            QMessageBox.warning(
+                self,
+                translate("Error"),
+                translate("Failed to reset parameters: {error}").format(error=str(e))
+            )
 
 
 def create_control_panel(callback):

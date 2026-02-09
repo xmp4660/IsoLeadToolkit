@@ -32,6 +32,7 @@ class AppState:
         self.show_model_age_lines = True
         self.show_isochrons = False  # Default to False for isochron overlays
         self.show_equation_overlays = False
+        self.geo_model_name = "Stacey & Kramers (2nd Stage)"  # Default geochemistry model
         self.equation_overlays = [
             {
                 'id': 'eq_206_208',
