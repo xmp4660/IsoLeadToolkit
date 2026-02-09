@@ -23,6 +23,7 @@ from visualization.plotting import (
     _find_age_column,
     _draw_model_curves,
     _draw_isochron_overlays,
+    _draw_selected_isochron,
     _draw_paleoisochrons,
     _draw_model_age_lines,
     _draw_model_age_lines_86,
@@ -739,6 +740,10 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
 
             if getattr(app_state, 'show_isochrons', True) or getattr(app_state, 'show_growth_curves', True):
                 _draw_isochron_overlays(app_state.ax, actual_algorithm)
+
+            # Draw selected isochron if isochron tool is active
+            if app_state.selection_tool == 'isochron':
+                _draw_selected_isochron(app_state.ax)
 
             if getattr(app_state, 'show_paleoisochrons', True):
                 ages = getattr(app_state, 'paleoisochron_ages', [3000, 2000, 1000, 0])

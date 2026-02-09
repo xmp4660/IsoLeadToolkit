@@ -771,6 +771,77 @@ def _draw_isochron_overlays(ax, actual_algorithm):
         print(f"[WARN] Failed to draw isochron overlays: {err}", flush=True)
 
 
+def _draw_selected_isochron(ax):
+    """Draw isochron line for box-selected data points."""
+    try:
+        # Check if we have selected isochron data
+        if app_state.selected_isochron_data is None:
+            return
+
+        data = app_state.selected_isochron_data
+        x_range = data['x_range']
+        y_range = data['y_range']
+        age = data['age']
+        r_squared = data['r_squared']
+        n_points = data['n_points']
+
+        # Get line style from style system
+        from visualization.line_styles import resolve_line_style
+        fallback_style = {
+            'color': '#ef4444',
+            'linewidth': 2.0,
+            'linestyle': '-',
+            'alpha': 0.9
+        }
+        line_style = resolve_line_style(app_state, 'selected_isochron', fallback_style)
+
+        # Draw the isochron line with style from line_styles
+        ax.plot(
+            x_range,
+            y_range,
+            color=line_style['color'],
+            linewidth=line_style['linewidth'],
+            linestyle=line_style['linestyle'],
+            alpha=line_style['alpha'],
+            zorder=100,  # Draw on top
+            label=f'Selected Isochron ({age:.1f} Ma)'
+        )
+
+        # Add label with age, n, and R²
+        # Position label at the midpoint of the line
+        x_mid = (x_range[0] + x_range[1]) / 2
+        y_mid = (y_range[0] + y_range[1]) / 2
+
+        # Offset label slightly above the line
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+        y_offset = (ylim[1] - ylim[0]) * 0.02
+
+        label_text = f'{age:.1f} Ma (n={n_points}, R²={r_squared:.3f})'
+
+        ax.text(
+            x_mid,
+            y_mid + y_offset,
+            label_text,
+            color=line_style['color'],
+            fontsize=10,
+            fontweight='bold',
+            ha='center',
+            va='bottom',
+            bbox=dict(
+                boxstyle='round,pad=0.4',
+                facecolor='white',
+                edgecolor=line_style['color'],
+                alpha=0.9,
+                linewidth=1.5
+            ),
+            zorder=101
+        )
+
+    except Exception as err:
+        print(f"[WARN] Failed to draw selected isochron: {err}", flush=True)
+
+
 def _label_angle_for_slope(ax, x0, y0, slope, dx):
     """Compute label angle (deg) for a line in display coords."""
     try:

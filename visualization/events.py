@@ -152,6 +152,16 @@ def _handle_rectangle_select(eclick, erelease):
 
         refresh_selection_overlay()
         _notify_selection_ui()
+
+        # If isochron tool is active, calculate isochron age
+        if app_state.selection_tool == 'isochron':
+            calculate_selected_isochron()
+            # Trigger plot refresh to show the isochron
+            try:
+                from visualization.events import on_slider_change
+                on_slider_change()
+            except Exception as e:
+                print(f"[WARN] Failed to refresh plot after isochron calculation: {e}", flush=True)
     except Exception as err:
         print(f"[WARN] Rectangle selection failed: {err}", flush=True)
 
@@ -241,6 +251,105 @@ def refresh_selection_overlay():
         print(f"[WARN] Unable to refresh selection overlay: {err}", flush=True)
 
 
+def calculate_selected_isochron():
+    """Calculate isochron age for selected data points."""
+    try:
+        # Check if we have selected points
+        if not app_state.selected_indices or len(app_state.selected_indices) < 2:
+            print("[WARN] Isochron calculation requires at least 2 selected points.", flush=True)
+            app_state.selected_isochron_data = None
+            return
+
+        # Check if we're in a Pb evolution mode
+        if app_state.render_mode not in ['PB_EVOL_76', 'PB_EVOL_86']:
+            print("[WARN] Isochron calculation is only available for Pb evolution plots (PB_EVOL_76 or PB_EVOL_86).", flush=True)
+            app_state.selected_isochron_data = None
+            return
+
+        # Determine isochron mode
+        if app_state.render_mode == 'PB_EVOL_76':
+            mode = 'ISOCHRON1'
+            x_col = "206Pb/204Pb"
+            y_col = "207Pb/204Pb"
+        else:  # PB_EVOL_86
+            mode = 'ISOCHRON2'
+            x_col = "206Pb/204Pb"
+            y_col = "208Pb/204Pb"
+
+        # Get data
+        df = app_state.df_global
+        if df is None or x_col not in df.columns or y_col not in df.columns:
+            print(f"[WARN] Required columns {x_col} and {y_col} not found in data.", flush=True)
+            app_state.selected_isochron_data = None
+            return
+
+        # Extract selected points
+        selected_list = list(app_state.selected_indices)
+        df_selected = df.iloc[selected_list]
+
+        x_data = df_selected[x_col].values.astype(float)
+        y_data = df_selected[y_col].values.astype(float)
+
+        # Remove NaN values
+        valid = ~np.isnan(x_data) & ~np.isnan(y_data)
+        x_data = x_data[valid]
+        y_data = y_data[valid]
+
+        if len(x_data) < 2:
+            print("[WARN] Not enough valid data points for isochron calculation.", flush=True)
+            app_state.selected_isochron_data = None
+            return
+
+        # Perform linear regression
+        try:
+            slope, intercept = np.polyfit(x_data, y_data, 1)
+        except Exception as e:
+            print(f"[WARN] Linear regression failed: {e}", flush=True)
+            app_state.selected_isochron_data = None
+            return
+
+        # Calculate R² value
+        y_pred = slope * x_data + intercept
+        ss_res = np.sum((y_data - y_pred) ** 2)
+        ss_tot = np.sum((y_data - np.mean(y_data)) ** 2)
+        r_squared = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0.0
+
+        # Calculate age from slope
+        try:
+            from data.geochemistry import calculate_isochron_age_from_slope, engine
+            params = engine.get_parameters()
+            age_ma = calculate_isochron_age_from_slope(slope, params)
+        except Exception as e:
+            print(f"[WARN] Age calculation failed: {e}", flush=True)
+            age_ma = 0.0
+
+        # Store results
+        x_min, x_max = np.min(x_data), np.max(x_data)
+        span = x_max - x_min
+        x_range = [x_min - span * 0.1, x_max + span * 0.1]
+        y_range = [slope * x_range[0] + intercept, slope * x_range[1] + intercept]
+
+        app_state.selected_isochron_data = {
+            'slope': slope,
+            'intercept': intercept,
+            'age': age_ma,
+            'r_squared': r_squared,
+            'n_points': len(x_data),
+            'mode': mode,
+            'x_range': x_range,
+            'y_range': y_range,
+            'x_col': x_col,
+            'y_col': y_col
+        }
+
+        print(f"[INFO] Isochron calculated: Age = {age_ma:.1f} Ma, n = {len(x_data)}, R² = {r_squared:.4f}", flush=True)
+        print(f"[INFO] Slope = {slope:.6f}, Intercept = {intercept:.6f}", flush=True)
+
+    except Exception as err:
+        print(f"[WARN] Isochron calculation failed: {err}", flush=True)
+        app_state.selected_isochron_data = None
+
+
 def _resolve_sample_index(event):
     """Attempt to map a Matplotlib event to a sample index."""
     try:
@@ -277,7 +386,7 @@ def _resolve_sample_index(event):
 def toggle_selection_mode(tool_type='export'):
     """
     Toggle interactive selection mode.
-    tool_type: 'export' or 'ellipse'
+    tool_type: 'export', 'ellipse', or 'isochron'
     """
     try:
         # If switching to the same tool that is already active, toggle it off
@@ -296,6 +405,9 @@ def toggle_selection_mode(tool_type='export'):
              # Clear selection if we are switching tools or turning off
              if app_state.selected_indices:
                  app_state.selected_indices.clear()
+             # Clear isochron data if switching away from isochron tool
+             if app_state.selection_tool == 'isochron':
+                 app_state.selected_isochron_data = None
         
         app_state.selection_tool = new_tool
         app_state.selection_mode = (new_tool is not None) # Keep legacy flag in sync
@@ -325,6 +437,14 @@ def toggle_selection_mode(tool_type='export'):
 
         _notify_selection_ui()
         refresh_selection_overlay()
+
+        # If we just disabled isochron tool, refresh plot to remove the isochron line
+        if new_tool is None and app_state.selection_tool is None:
+            try:
+                from visualization.events import on_slider_change
+                on_slider_change()
+            except Exception as e:
+                print(f"[WARN] Failed to refresh plot after disabling selection tool: {e}", flush=True)
     except Exception as err:
         print(f"[WARN] Failed to toggle selection mode: {err}", flush=True)
 

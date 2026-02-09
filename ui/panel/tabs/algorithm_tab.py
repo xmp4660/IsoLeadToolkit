@@ -348,7 +348,32 @@ class AlgorithmTabMixin:
             value=getattr(app_state, 'show_model_age_lines', True)
         )
         _add_geochem_toggle("Show Model Age Lines", 'show_model_age_lines', style_key='model_age_line')
-        
+
+        # Calculate Isochron Age Button with style swatch
+        isochron_calc_frame = ttk.Frame(self.geochem_section, style='CardBody.TFrame')
+        isochron_calc_frame.pack(fill=tk.X, pady=(8, 4))
+
+        self.isochron_calc_button = ttk.Button(
+            isochron_calc_frame,
+            text=self._translate("Calculate Isochron Age"),
+            style='Secondary.TButton',
+            command=self._on_toggle_isochron_selection
+        )
+        self.isochron_calc_button.pack(side=tk.LEFT, anchor=tk.W)
+        self._register_translation(self.isochron_calc_button, "Calculate Isochron Age")
+
+        # Add style swatch for selected isochron
+        style = getattr(app_state, 'line_styles', {}).get('selected_isochron', {})
+        swatch_color = style.get('color') if style.get('color') else '#ef4444'
+        isochron_swatch = tk.Label(isochron_calc_frame, width=2, height=1, bg=swatch_color, relief='solid', bd=1)
+        isochron_swatch.pack(side=tk.LEFT, padx=(8, 0))
+        isochron_swatch.bind(
+            "<Button-1>",
+            lambda e: open_line_style_dialog(
+                self.root, self._translate, app_state, 'selected_isochron', isochron_swatch, on_apply=self._on_change
+            )
+        )
+
         # 2D Scatter Parameters
         self.twod_section = self._create_section(
             self.mode_section,

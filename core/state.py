@@ -30,6 +30,7 @@ class AppState:
         self.show_model_curves = True
         self.show_paleoisochrons = True
         self.show_model_age_lines = True
+        self.show_isochrons = False  # Default to False for isochron overlays
         self.show_equation_overlays = False
         self.equation_overlays = [
             {
@@ -89,6 +90,12 @@ class AppState:
                 'linewidth': 1.5,
                 'linestyle': '-',
                 'alpha': 0.8
+            },
+            'selected_isochron': {
+                'color': '#ef4444',
+                'linewidth': 2.0,
+                'linestyle': '-',
+                'alpha': 0.9
             }
         }
         self.paleoisochron_min_age = 0
@@ -140,7 +147,7 @@ class AppState:
         self.selected_3d_confirmed = False
         self.selected_ternary_confirmed = False
         self.selection_mode = False # Deprecated in favor of selection_tool, but kept for compatibility if needed
-        self.selection_tool = None # None, 'export', 'ellipse'
+        self.selection_tool = None # None, 'export', 'ellipse', 'isochron'
         self.draw_selection_ellipse = False
         self.selected_indices = set()
         self.selection_button = None
@@ -149,6 +156,7 @@ class AppState:
         self.artist_to_sample = {}
         self.selection_overlay = None
         self.selection_ellipse = None  # Store the confidence ellipse for selected points
+        self.selected_isochron_data = None  # Stores {slope, intercept, age, r_squared, n_points, mode, x_range, y_range}
         self.marginal_axes = None  # (top_ax, right_ax) for marginal KDE
         self.paleoisochron_label_data = []  # Track paleoisochron labels for updates
         self.paleo_label_refreshing = False

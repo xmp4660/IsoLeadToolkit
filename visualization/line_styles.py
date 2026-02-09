@@ -110,6 +110,8 @@ def open_line_style_dialog(parent, translate, app_state, style_key, swatch=None,
             app_state.model_age_line_width = style_ref['linewidth']
         elif style_key == 'isochron':
             app_state.isochron_line_width = style_ref['linewidth']
+        elif style_key == 'selected_isochron':
+            app_state.selected_isochron_line_width = style_ref['linewidth']
 
         if swatch is not None:
             swatch.configure(bg=style_ref['color'] or '#e2e8f0')

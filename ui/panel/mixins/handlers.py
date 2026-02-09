@@ -427,6 +427,29 @@ class PanelHandlersMixin:
         except Exception:
             pass
 
+        # Update isochron calculation button if it exists
+        isochron_btn = getattr(self, 'isochron_calc_button', None)
+        if isochron_btn is not None:
+            try:
+                if app_state.selection_tool == 'isochron':
+                    isochron_btn.config(
+                        text=self._translate("Cancel Isochron Calculation"),
+                        style='Accent.TButton'
+                    )
+                else:
+                    isochron_btn.config(
+                        text=self._translate("Calculate Isochron Age"),
+                        style='Secondary.TButton'
+                    )
+
+                # Disable button if not in Pb evolution mode
+                if app_state.render_mode not in ['PB_EVOL_76', 'PB_EVOL_86']:
+                    isochron_btn.state(['disabled'])
+                else:
+                    isochron_btn.state(['!disabled'])
+            except Exception:
+                pass
+
         # Update mixing group controls
         if hasattr(self, 'mixing_group_status'):
             try:
@@ -591,7 +614,7 @@ class PanelHandlersMixin:
     def _on_toggle_ellipse_selection(self):
         """Toggle ellipse selection mode from the control panel."""
         from visualization.events import toggle_selection_mode
-        
+
         if app_state.render_mode == '3D':
             messagebox.showinfo(
                 self._translate("Selection Mode"),
@@ -603,6 +626,29 @@ class PanelHandlersMixin:
         toggle_selection_mode('ellipse')
         self.update_selection_controls()
 
+    def _on_toggle_isochron_selection(self):
+        """Toggle isochron age calculation mode from the control panel."""
+        from visualization.events import toggle_selection_mode
+
+        if app_state.render_mode == '3D':
+            messagebox.showinfo(
+                self._translate("Isochron Age Calculation"),
+                self._translate("Isochron calculation is only available in 2D views"),
+                parent=self.root
+            )
+            return
+
+        if app_state.render_mode not in ['PB_EVOL_76', 'PB_EVOL_86']:
+            messagebox.showinfo(
+                self._translate("Isochron Age Calculation"),
+                self._translate("Isochron calculation is only available for Pb evolution plots"),
+                parent=self.root
+            )
+            return
+
+        toggle_selection_mode('isochron')
+        self.update_selection_controls()
+
     def _reset_v1v2_defaults(self):
         """Reset V1V2 parameters to their default values."""
         defaults = {
@@ -611,17 +657,17 @@ class PanelHandlersMixin:
             'v1v2_b': 2.0367,
             'v1v2_c': -6.143
         }
-        
+
         for key, value in defaults.items():
             if key in self.sliders:
                 self.sliders[key].set(value)
-        
+
         # Update state directly
         app_state.v1v2_params['scale'] = defaults['v1v2_scale']
         app_state.v1v2_params['a'] = defaults['v1v2_a']
         app_state.v1v2_params['b'] = defaults['v1v2_b']
         app_state.v1v2_params['c'] = defaults['v1v2_c']
-        
+
         # Update labels
         if 'v1v2_scale' in self.labels:
             self.labels['v1v2_scale'].config(text=f"{defaults['v1v2_scale']:.1f}")
