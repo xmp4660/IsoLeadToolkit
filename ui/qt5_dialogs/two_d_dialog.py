@@ -41,7 +41,7 @@ class Qt5TwoDDialog(QDialog):
 
     def _setup_ui(self):
         """设置 UI"""
-        self.setWindowTitle(translate("Select 2D Columns"))
+        self.setWindowTitle(translate("Select 2D Axes"))
         self.resize(600, 500)
         self.setMinimumSize(500, 400)
 
@@ -55,7 +55,7 @@ class Qt5TwoDDialog(QDialog):
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(20, 0, 20, 0)
 
-        title = QLabel(translate("Select 2D Columns"))
+        title = QLabel(translate("Select 2D Axes"))
         title.setStyleSheet("font-size: 20px; font-weight: bold; color: #1a202c;")
         header_layout.addWidget(title)
 
@@ -68,7 +68,7 @@ class Qt5TwoDDialog(QDialog):
         content_layout.setContentsMargins(24, 20, 24, 20)
 
         subtitle = QLabel(translate(
-            "Select exactly 2 numeric columns for X and Y axes."
+            "Select one column for each axis. Columns must be unique."
         ))
         subtitle.setStyleSheet("color: #4a5568; font-size: 12px;")
         subtitle.setWordWrap(True)
@@ -80,7 +80,7 @@ class Qt5TwoDDialog(QDialog):
         selection_layout = QVBoxLayout(selection_card)
         selection_layout.setContentsMargins(15, 15, 15, 15)
 
-        selection_header = QLabel(translate("Current Selection"))
+        selection_header = QLabel(translate("Current selection"))
         selection_header.setStyleSheet("font-size: 14px; font-weight: bold;")
         selection_layout.addWidget(selection_header)
 
@@ -217,7 +217,7 @@ class Qt5TwoDDialog(QDialog):
             QMessageBox.warning(
                 self,
                 translate("Validation Error"),
-                translate("Please select exactly 2 columns.")
+                translate("Please choose a column for each axis.")
             )
             return
 

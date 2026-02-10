@@ -587,7 +587,7 @@ def _draw_isochron_overlays(ax, actual_algorithm):
             calculate_source_kappa_from_slope = None
 
         for grp in unique_groups:
-            if app_state.visible_groups and grp not in app_state.visible_groups and grp != 'All Data':
+            if app_state.visible_groups is not None and grp not in app_state.visible_groups and grp != 'All Data':
                 continue
 
             mask = (group_labels == grp)

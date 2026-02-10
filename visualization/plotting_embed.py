@@ -352,10 +352,12 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
         app_state.available_groups = all_groups
 
         visible_groups = app_state.visible_groups
-        if visible_groups:
+        if visible_groups is not None:
             allowed = set(visible_groups)
             mask = df_plot[group_col].isin(allowed)
-            if not mask.any():
+            if not allowed:
+                df_plot = df_plot[mask].copy()
+            elif not mask.any():
                 print("[INFO] No data matches the selected legend filter; showing all groups instead.", flush=True)
                 app_state.visible_groups = None
             else:
@@ -884,10 +886,12 @@ def plot_2d_data(group_col, data_columns, size=60, show_kde=False):
         app_state.available_groups = all_groups
 
         visible_groups = app_state.visible_groups
-        if visible_groups:
+        if visible_groups is not None:
             allowed = set(visible_groups)
             mask = df_plot[group_col].isin(allowed)
-            if not mask.any():
+            if not allowed:
+                df_plot = df_plot[mask].copy()
+            elif not mask.any():
                 print("[INFO] No 2D data matches the selected legend filter; reverting to all groups.", flush=True)
                 app_state.visible_groups = None
             else:

@@ -41,7 +41,7 @@ class Qt5ThreeDDialog(QDialog):
 
     def _setup_ui(self):
         """设置 UI"""
-        self.setWindowTitle(translate("Select 3D Columns"))
+        self.setWindowTitle(translate("Select 3D Axes"))
         self.resize(600, 550)
         self.setMinimumSize(500, 450)
 
@@ -55,7 +55,7 @@ class Qt5ThreeDDialog(QDialog):
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(20, 0, 20, 0)
 
-        title = QLabel(translate("Select 3D Columns"))
+        title = QLabel(translate("Select 3D Axes"))
         title.setStyleSheet("font-size: 20px; font-weight: bold; color: #1a202c;")
         header_layout.addWidget(title)
 
@@ -68,7 +68,7 @@ class Qt5ThreeDDialog(QDialog):
         content_layout.setContentsMargins(24, 20, 24, 20)
 
         subtitle = QLabel(translate(
-            "Select exactly 3 numeric columns for X, Y, and Z axes."
+            "Select one column for each axis. Columns must be unique."
         ))
         subtitle.setStyleSheet("color: #4a5568; font-size: 12px;")
         subtitle.setWordWrap(True)
@@ -80,7 +80,7 @@ class Qt5ThreeDDialog(QDialog):
         selection_layout = QVBoxLayout(selection_card)
         selection_layout.setContentsMargins(15, 15, 15, 15)
 
-        selection_header = QLabel(translate("Current Selection"))
+        selection_header = QLabel(translate("Current selection"))
         selection_header.setStyleSheet("font-size: 14px; font-weight: bold;")
         selection_layout.addWidget(selection_header)
 
@@ -229,7 +229,7 @@ class Qt5ThreeDDialog(QDialog):
             QMessageBox.warning(
                 self,
                 translate("Validation Error"),
-                translate("Please select exactly 3 columns.")
+                translate("Please choose a column for each axis.")
             )
             return
 

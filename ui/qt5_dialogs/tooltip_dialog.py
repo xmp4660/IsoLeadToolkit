@@ -41,7 +41,7 @@ class TooltipConfigDialog(QDialog):
         layout = QVBoxLayout(self)
 
         # 说明文本
-        info_label = QLabel(translate("Select columns to display in tooltip:"))
+        info_label = QLabel(translate("Select columns to display:"))
         layout.addWidget(info_label)
 
         # 列列表
@@ -58,7 +58,7 @@ class TooltipConfigDialog(QDialog):
         # 按钮
         button_layout = QHBoxLayout()
 
-        select_all_btn = QPushButton(translate("Select All"))
+        select_all_btn = QPushButton(translate("Select all"))
         select_all_btn.clicked.connect(self._select_all)
         button_layout.addWidget(select_all_btn)
 

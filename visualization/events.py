@@ -6,9 +6,10 @@ import pandas as pd
 import numpy as np
 import matplotlib
 from matplotlib.patches import Ellipse
+from matplotlib.path import Path
 from core.state import app_state
 from core import state as state_module
-from matplotlib.widgets import RectangleSelector
+from matplotlib.widgets import RectangleSelector, LassoSelector
 
 
 import scipy.stats
@@ -77,8 +78,22 @@ def _disable_rectangle_selector():
         pass
 
 
+def _disable_lasso_selector():
+    selector = getattr(app_state, 'lasso_selector', None)
+    if selector is None:
+        return
+    try:
+        selector.set_active(False)
+    except Exception:
+        pass
+
+
 def _ensure_rectangle_selector():
     if not app_state.selection_mode or app_state.render_mode == '3D':
+        _disable_rectangle_selector()
+        return
+
+    if app_state.selection_tool == 'lasso':
         _disable_rectangle_selector()
         return
 
@@ -116,6 +131,47 @@ def _ensure_rectangle_selector():
         except Exception as err:
             print(f"[WARN] Unable to initialize rectangle selector: {err}", flush=True)
             app_state.rectangle_selector = None
+
+
+def _ensure_lasso_selector():
+    if not app_state.selection_mode or app_state.render_mode == '3D':
+        _disable_lasso_selector()
+        return
+
+    if app_state.selection_tool != 'lasso':
+        _disable_lasso_selector()
+        return
+
+    if app_state.ax is None:
+        return
+
+    selector = getattr(app_state, 'lasso_selector', None)
+
+    if selector is not None:
+        try:
+            if getattr(selector, 'ax', None) is not app_state.ax:
+                try:
+                    selector.disconnect_events()
+                except Exception:
+                    pass
+                app_state.lasso_selector = None
+                selector = None
+            else:
+                selector.set_active(True)
+        except Exception:
+            app_state.lasso_selector = None
+            selector = None
+
+    if selector is None:
+        try:
+            app_state.lasso_selector = LassoSelector(
+                app_state.ax,
+                _handle_lasso_select,
+                button=[1]
+            )
+        except Exception as err:
+            print(f"[WARN] Unable to initialize lasso selector: {err}", flush=True)
+            app_state.lasso_selector = None
 
 
 def _handle_rectangle_select(eclick, erelease):
@@ -164,6 +220,40 @@ def _handle_rectangle_select(eclick, erelease):
                 print(f"[WARN] Failed to refresh plot after isochron calculation: {e}", flush=True)
     except Exception as err:
         print(f"[WARN] Rectangle selection failed: {err}", flush=True)
+
+
+def _handle_lasso_select(vertices):
+    try:
+        if not app_state.selection_mode or app_state.render_mode == '3D':
+            return
+
+        if not vertices:
+            return
+
+        path = Path(vertices)
+
+        indices_in_shape = [
+            idx for idx, (x_val, y_val) in app_state.sample_coordinates.items()
+            if path.contains_point((x_val, y_val))
+        ]
+
+        if not indices_in_shape:
+            return
+
+        current = app_state.selected_indices
+        if all(idx in current for idx in indices_in_shape):
+            for idx in indices_in_shape:
+                current.discard(idx)
+            print(f"[INFO] Deselected {len(indices_in_shape)} samples via custom shape.", flush=True)
+        else:
+            for idx in indices_in_shape:
+                current.add(idx)
+            print(f"[INFO] Selected {len(indices_in_shape)} samples via custom shape.", flush=True)
+
+        refresh_selection_overlay()
+        _notify_selection_ui()
+    except Exception as err:
+        print(f"[WARN] Custom shape selection failed: {err}", flush=True)
 
 
 def refresh_selection_overlay():
@@ -386,7 +476,7 @@ def _resolve_sample_index(event):
 def toggle_selection_mode(tool_type='export'):
     """
     Toggle interactive selection mode.
-    tool_type: 'export', 'ellipse', or 'isochron'
+    tool_type: 'export', 'ellipse', 'lasso', or 'isochron'
     """
     try:
         # If switching to the same tool that is already active, toggle it off
@@ -402,6 +492,7 @@ def toggle_selection_mode(tool_type='export'):
         # Disable existing tool if any
         if app_state.selection_tool:
              _disable_rectangle_selector()
+             _disable_lasso_selector()
              # Clear selection if we are switching tools or turning off
              if app_state.selected_indices:
                  app_state.selected_indices.clear()
@@ -414,7 +505,10 @@ def toggle_selection_mode(tool_type='export'):
 
         if app_state.selection_tool:
             print(f"[INFO] Selection tool '{new_tool}' enabled.", flush=True)
-            _ensure_rectangle_selector()
+            if new_tool == 'lasso':
+                _ensure_lasso_selector()
+            else:
+                _ensure_rectangle_selector()
             
             # Disable Matplotlib toolbar zoom/pan if active
             try:
@@ -434,6 +528,7 @@ def toggle_selection_mode(tool_type='export'):
             print("[INFO] Selection tool disabled.", flush=True)
             app_state.draw_selection_ellipse = False
             _disable_rectangle_selector()
+            _disable_lasso_selector()
 
         _notify_selection_ui()
         refresh_selection_overlay()
@@ -451,10 +546,15 @@ def toggle_selection_mode(tool_type='export'):
 
 def sync_selection_tools():
     """Ensure selection helpers stay in sync with current axes."""
-    if app_state.selection_tool:
+    if app_state.selection_tool == 'lasso':
+        _ensure_lasso_selector()
+        _disable_rectangle_selector()
+    elif app_state.selection_tool:
         _ensure_rectangle_selector()
+        _disable_lasso_selector()
     else:
         _disable_rectangle_selector()
+        _disable_lasso_selector()
 
 
 def on_hover(event):

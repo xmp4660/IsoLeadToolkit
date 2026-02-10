@@ -156,7 +156,11 @@ class MixingCalculatorDialog(QDialog):
             self,
             translate("Export Mixing Results"),
             "",
-            "CSV Files (*.csv);;Excel Files (*.xlsx);;All Files (*.*)"
+            ";;".join([
+                f"{translate('CSV files')} (*.csv)",
+                f"{translate('Excel files')} (*.xlsx *.xls)",
+                f"{translate('All files')} (*.*)"
+            ])
         )
 
         if file_path:

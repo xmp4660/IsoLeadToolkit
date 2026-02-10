@@ -5,13 +5,39 @@ Qt5 应用程序类
 import sys
 import warnings
 import traceback
-from PyQt5.QtWidgets import QApplication, QMessageBox
-from PyQt5.QtCore import Qt, QSettings, QTranslator, QLocale
+from PyQt5.QtWidgets import QApplication, QMessageBox, QWidget, QStyleFactory
+from PyQt5.QtCore import Qt, QSettings, QTranslator, QLocale, QObject, QEvent
 from PyQt5.QtGui import QFont, QIcon
 
 from core import (CONFIG, app_state, load_session_params, save_session_params,
                   translate, set_language, validate_language)
 from ui.qt5_main_window import Qt5MainWindow
+
+
+def _clear_widget_styles(widget):
+    if widget is None:
+        return
+
+    def _clear(target):
+        if not isinstance(target, QWidget):
+            return
+        if target.property("keepStyle"):
+            return
+        if target.styleSheet():
+            target.setStyleSheet("")
+
+    _clear(widget)
+    for child in widget.findChildren(QWidget):
+        _clear(child)
+
+
+class _NativeStyleFilter(QObject):
+    """Clear per-widget stylesheets on show to keep native Qt styling."""
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.Show:
+            _clear_widget_styles(obj)
+        return False
 
 
 def _configure_matplotlib_fonts():
@@ -73,6 +99,19 @@ class Qt5Application:
         """配置应用字体"""
         default_font = QFont("Microsoft YaHei UI", 9)
         QApplication.setFont(default_font)
+
+    def _configure_native_style(self):
+        """Use native Qt style and clear custom stylesheets."""
+        preferred = None
+        for name in ("WindowsVista", "Windows", "Fusion"):
+            style = QStyleFactory.create(name)
+            if style is not None:
+                preferred = style
+                break
+        if preferred is not None:
+            self.app.setStyle(preferred)
+        self.app.setStyleSheet("")
+        self.app.installEventFilter(_NativeStyleFilter())
 
     def _setup_translator(self, language):
         """设置翻译"""
@@ -253,19 +292,11 @@ class Qt5Application:
 
     def _setup_control_panel(self):
         """创建并设置控制面板"""
-        from ui.qt5_control_panel import create_control_panel
-        from visualization.events import on_slider_change
-
-        print("[INFO] Creating control panel...", flush=True)
-        self.control_panel = create_control_panel(on_slider_change)
-
-        # 存储引用
+        print("[INFO] Control panel disabled; using top menu dialogs.", flush=True)
+        self.control_panel = None
         import core.state as state
-        state.control_panel = self.control_panel
-        app_state.control_panel_ref = self.control_panel
-
-        # 设置到主窗口
-        self.main_window.control_panel = self.control_panel
+        state.control_panel = None
+        app_state.control_panel_ref = None
 
     def _connect_event_handlers(self):
         """连接事件处理器"""
@@ -306,6 +337,7 @@ class Qt5Application:
             # 创建应用
             self.app = QApplication(sys.argv)
             self._configure_fonts()
+            self._configure_native_style()
 
             # 加载会话
             session_data = self._load_session()

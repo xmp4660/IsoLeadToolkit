@@ -60,7 +60,7 @@ class Qt5DataConfigDialog(QDialog):
         self._build_column_section(
             content_layout,
             translate("Grouping Columns"),
-            translate("Pick one or more categorical columns to color and organize."),
+            translate("Pick one or more categorical columns to color and organize the scatter plot."),
             'group'
         )
 
@@ -68,7 +68,7 @@ class Qt5DataConfigDialog(QDialog):
         self._build_column_section(
             content_layout,
             translate("Data Columns"),
-            translate("Choose numeric measurements for UMAP or t-SNE embeddings."),
+            translate("Choose numeric measurements that feed into UMAP or t-SNE embeddings."),
             'data'
         )
 
@@ -157,7 +157,10 @@ class Qt5DataConfigDialog(QDialog):
                 continue
 
             dtype_label = translate("numeric") if is_numeric else translate("text")
-            display_text = f"{col} ({dtype_label})"
+            display_text = translate("{column} ({dtype})").format(
+                column=col,
+                dtype=dtype_label
+            )
 
             item = QListWidgetItem(display_text)
             item.setData(Qt.UserRole, col)

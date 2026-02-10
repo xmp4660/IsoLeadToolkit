@@ -3,7 +3,7 @@ Qt5 控制面板
 提供算法参数调整和可视化设置
 """
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout,
-                              QStackedWidget, QPushButton, QLabel,
+                              QPushButton, QLabel,
                               QFrame, QScrollArea, QToolButton,
                               QComboBox, QCheckBox, QRadioButton,
                               QSlider, QProgressBar, QGroupBox,
@@ -28,7 +28,7 @@ class Qt5ControlPanel(QWidget):
     # 信号定义
     parameter_changed = pyqtSignal(str, object)
 
-    def __init__(self, callback=None, parent=None):
+    def __init__(self, callback=None, parent=None, build_ui=True):
         super().__init__(parent)
         self.callback = callback
         self._translations = {}
@@ -46,15 +46,16 @@ class Qt5ControlPanel(QWidget):
         self._slider_timers = {}
         self._ternary_stretch_modes = ['power', 'minmax', 'hybrid']
 
-        self._setup_ui()
-        self._setup_styles()
-        self._update_data_count_label()
-        self.update_selection_controls()
-        self._is_initialized = True
-        try:
-            app_state.register_language_listener(self._refresh_language)
-        except Exception:
-            pass
+        if build_ui:
+            self._setup_ui()
+            self._setup_styles()
+            self._update_data_count_label()
+            self.update_selection_controls()
+            self._is_initialized = True
+            try:
+                app_state.register_language_listener(self._refresh_language)
+            except Exception:
+                pass
 
     def _setup_ui(self):
         """初始化控制面板 UI"""
@@ -80,7 +81,7 @@ class Qt5ControlPanel(QWidget):
         self.data_count_label = QLabel("")
         header_layout.addWidget(self.data_count_label)
 
-        lang_label = QLabel(translate("Language:"))
+        lang_label = QLabel(f"{translate('Language')}:")
         header_layout.addWidget(lang_label)
 
         self.lang_combo = QComboBox()
@@ -103,55 +104,79 @@ class Qt5ControlPanel(QWidget):
         divider.setFrameShadow(QFrame.Sunken)
         root_layout.addWidget(divider)
 
-        content_row = QHBoxLayout()
-        content_row.setSpacing(12)
-        root_layout.addLayout(content_row, 1)
+        status_group = QGroupBox(translate("Status"))
+        status_layout = QHBoxLayout(status_group)
+        status_layout.setContentsMargins(12, 8, 12, 8)
+        status_layout.setSpacing(16)
 
-        nav_frame = QFrame()
-        nav_frame.setFixedWidth(170)
-        nav_layout = QVBoxLayout(nav_frame)
-        nav_layout.setContentsMargins(0, 0, 0, 0)
-        nav_layout.setSpacing(6)
+        status_summary = QVBoxLayout()
+        status_summary.setSpacing(6)
 
-        nav_label = QLabel(translate("Sections"))
-        nav_label.setStyleSheet("font-weight: bold;")
-        nav_layout.addWidget(nav_label)
+        self.status_data_label = QLabel("")
+        self.status_render_label = QLabel("")
+        self.status_algo_label = QLabel("")
+        self.status_group_label = QLabel("")
+        self.status_selected_label = QLabel("")
 
-        self.section_buttons = {}
+        for lbl in (
+            self.status_data_label,
+            self.status_render_label,
+            self.status_algo_label,
+            self.status_group_label,
+            self.status_selected_label,
+        ):
+            lbl.setWordWrap(True)
+            status_summary.addWidget(lbl)
 
-        def _add_section_button(label, index):
-            btn = QPushButton(label)
-            btn.setMinimumHeight(30)
-            btn.setCheckable(True)
-            btn.clicked.connect(lambda: self._switch_section(index))
-            nav_layout.addWidget(btn)
-            self.section_buttons[index] = btn
+        status_layout.addLayout(status_summary, 1)
 
-        self.stacked_widget = QStackedWidget()
+        status_actions = QGroupBox(translate("Quick Actions"))
+        actions_layout = QVBoxLayout()
+
+        clear_btn = QPushButton(translate("Clear Selection"))
+        clear_btn.setFixedWidth(170)
+        clear_btn.clicked.connect(self._clear_selection_only)
+        actions_layout.addWidget(clear_btn, 0, Qt.AlignHCenter)
+
+        self.status_export_button = QPushButton(translate("Export Selected"))
+        self.status_export_button.setFixedWidth(170)
+        self.status_export_button.clicked.connect(self._on_export_clicked)
+        actions_layout.addWidget(self.status_export_button, 0, Qt.AlignHCenter)
+
+        refresh_btn = QPushButton(translate("Replot"))
+        refresh_btn.setFixedWidth(170)
+        refresh_btn.clicked.connect(self._on_change)
+        actions_layout.addWidget(refresh_btn, 0, Qt.AlignHCenter)
+
+        status_actions.setLayout(actions_layout)
+        status_layout.addWidget(status_actions, 0)
+
+        root_layout.addWidget(status_group)
+
+        self.tab_widget = QTabWidget()
+        self.tab_widget.setTabPosition(QTabWidget.North)
+        self.tab_widget.setMovable(False)
 
         sections = [
-            (translate("Modeling"), self._build_modeling_section),
+            (translate("Data"), self._build_data_section),
             (translate("Display"), self._build_display_section),
+            (translate("Analysis"), self._build_analysis_section),
+            (translate("Export"), self._build_export_section),
             (translate("Legend"), self._build_legend_section),
-            (translate("Tools"), self._build_tools_section),
             (translate("Geochemistry"), self._build_geo_section),
         ]
 
-        for idx, (label, builder) in enumerate(sections):
-            _add_section_button(label, idx)
+        for label, builder in sections:
             content = builder()
             scroll = QScrollArea()
             scroll.setWidgetResizable(True)
             scroll.setFrameShape(QFrame.NoFrame)
             scroll.setWidget(content)
-            self.stacked_widget.addWidget(scroll)
+            self.tab_widget.addTab(scroll, label)
 
-        nav_layout.addStretch()
+        root_layout.addWidget(self.tab_widget, 1)
 
-        content_row.addWidget(nav_frame, 0)
-        content_row.addWidget(self.stacked_widget, 1)
-
-        self._switch_section(0)
+        self._update_status_panel()
 
     def _setup_styles(self):
         """应用基础样式"""
@@ -160,12 +185,18 @@ class Qt5ControlPanel(QWidget):
             "QGroupBox { margin-top: 10px; }"
             "QGroupBox::title { subcontrol-origin: margin; left: 8px; padding: 0 6px; }"
             "QScrollArea { border: none; }"
+            "QTabWidget::pane { border: 1px solid #e2e8f0; border-radius: 6px; }"
+            "QTabBar::tab { padding: 6px 12px; margin-right: 2px; }"
+            "QTabBar::tab:selected { background-color: #e2e8f0; }"
             "QPushButton { text-align: left; padding: 6px 10px; }"
-            "QPushButton:checked { background-color: #dbeafe; }"
         )
 
     def _switch_section(self, index):
         """切换到指定分区"""
+        tab_widget = getattr(self, 'tab_widget', None)
+        if tab_widget is not None:
+            tab_widget.setCurrentIndex(index)
+            return
         if not hasattr(self, 'stacked_widget'):
             return
         self.stacked_widget.setCurrentIndex(index)
@@ -239,17 +270,32 @@ class Qt5ControlPanel(QWidget):
         self.ternary_scale_label = None
         self.ternary_scale_slider = None
         self.section_buttons = {}
+        self.tab_widget = None
         self.selection_button = None
         self.ellipse_selection_button = None
+        self.lasso_selection_button = None
         self.selection_status_label = None
         self.export_csv_button = None
         self.export_excel_button = None
         self.export_selected_button = None
+        self.status_data_label = None
+        self.status_render_label = None
+        self.status_algo_label = None
+        self.status_group_label = None
+        self.status_selected_label = None
+        self.status_export_button = None
+        self.status_data_label = None
+        self.status_render_label = None
+        self.status_algo_label = None
+        self.status_group_label = None
+        self.status_selected_label = None
+        self.status_export_button = None
         self.tools_kde_check = None
         self.tools_marginal_kde_check = None
         self.tools_equation_overlays_check = None
         self.equation_overlays_container = None
         self.equation_overlays_layout = None
+        self.tooltip_check = None
         self.ui_theme_combo = None
         self.theme_name_edit = None
         self.theme_load_combo = None
@@ -311,9 +357,11 @@ class Qt5ControlPanel(QWidget):
             self.data_count_label.setText(text)
         else:
             self.data_count_label.setText("")
+        self._update_status_panel()
 
     def _on_change(self):
         """参数变化回调"""
+        self._update_status_panel()
         if self.callback:
             self.callback()
 
@@ -766,6 +814,7 @@ class Qt5ControlPanel(QWidget):
                 swatch = QLabel()
                 swatch.setFixedSize(16, 16)
                 swatch.setStyleSheet(f"background-color: {swatch_color}; border: 1px solid #111827;")
+                swatch.setProperty("keepStyle", True)
                 swatch.mousePressEvent = lambda event, k=style_key, s=swatch: self._open_line_style_dialog(k, s)
                 row.addWidget(swatch)
 
@@ -864,6 +913,762 @@ class Qt5ControlPanel(QWidget):
 
         # 根据当前算法显示/隐藏参数组
         self._update_algorithm_visibility()
+
+        layout.addStretch()
+        return widget
+
+    def _build_data_section(self):
+        """构建数据部分"""
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(10, 10, 10, 10)
+
+        group_group = QGroupBox(translate("Coloring / Grouping"))
+        group_layout = QVBoxLayout()
+
+        self.group_radio_group = QButtonGroup(self)
+        self.group_radio_group.setExclusive(True)
+        self.group_radio_group.buttonClicked.connect(self._on_group_col_selected)
+
+        group_container = QWidget()
+        self.group_radio_layout = QVBoxLayout(group_container)
+        self.group_radio_layout.setContentsMargins(0, 0, 0, 0)
+        group_layout.addWidget(group_container)
+
+        group_config_btn = QPushButton(translate("Configure Group Columns"))
+        group_config_btn.clicked.connect(self._on_configure_group_columns)
+        group_layout.addWidget(group_config_btn)
+
+        group_group.setLayout(group_layout)
+        layout.addWidget(group_group)
+
+        self._refresh_group_column_radios()
+
+        tooltip_group = QGroupBox(translate("Tooltip Settings"))
+        tooltip_layout = QVBoxLayout()
+
+        tooltip_check_layout = QHBoxLayout()
+        self.tooltip_check = QCheckBox(translate("Show Tooltip"))
+        self.tooltip_check.setChecked(getattr(app_state, 'show_tooltip', True))
+        self.tooltip_check.stateChanged.connect(self._on_tooltip_change)
+        tooltip_check_layout.addWidget(self.tooltip_check)
+
+        tooltip_config_btn = QPushButton(translate("Configure"))
+        tooltip_config_btn.setFixedWidth(100)
+        tooltip_config_btn.clicked.connect(self._on_configure_tooltip)
+        tooltip_check_layout.addWidget(tooltip_config_btn)
+        tooltip_check_layout.addStretch()
+        tooltip_layout.addLayout(tooltip_check_layout)
+
+        tooltip_group.setLayout(tooltip_layout)
+        layout.addWidget(tooltip_group)
+
+        projection_widget = self._build_projection_section()
+        layout.addWidget(projection_widget)
+
+        layout.addStretch()
+        return widget
+
+    def _build_projection_section(self):
+        """构建投影部分"""
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(10, 10, 10, 10)
+        render_group = QGroupBox(translate("Render Mode"))
+        render_layout = QVBoxLayout()
+
+        self.render_combo = QComboBox()
+        render_modes = [
+            (translate("UMAP"), "UMAP"),
+            (translate("t-SNE"), "tSNE"),
+            (translate("PCA"), "PCA"),
+            (translate("RobustPCA"), "RobustPCA"),
+            (translate("2D"), "2D"),
+            (translate("3D"), "3D"),
+            (translate("Ternary"), "Ternary"),
+            (translate("V1-V2 Diagram"), "V1V2"),
+            (translate("PB_EVOL_76"), "PB_EVOL_76"),
+            (translate("PB_EVOL_86"), "PB_EVOL_86"),
+            (translate("PB_MU_AGE"), "PB_MU_AGE"),
+            (translate("PB_KAPPA_AGE"), "PB_KAPPA_AGE"),
+        ]
+        for label, value in render_modes:
+            self.render_combo.addItem(label, value)
+        self._set_combo_value(self.render_combo, self._normalize_render_mode(app_state.render_mode))
+        self.render_combo.currentIndexChanged.connect(self._on_render_mode_change)
+        render_layout.addWidget(self.render_combo)
+
+        render_group.setLayout(render_layout)
+        layout.addWidget(render_group)
+
+        algo_group = QGroupBox(translate("Algorithm"))
+        algo_layout = QVBoxLayout()
+
+        self.algo_combo = QComboBox()
+        algo_modes = [
+            (translate("UMAP"), "UMAP"),
+            (translate("t-SNE"), "tSNE"),
+            (translate("PCA"), "PCA"),
+            (translate("RobustPCA"), "RobustPCA"),
+        ]
+        for label, value in algo_modes:
+            self.algo_combo.addItem(label, value)
+        self._set_combo_value(self.algo_combo, self._normalize_algorithm(app_state.algorithm))
+        self.algo_combo.currentIndexChanged.connect(self._on_algorithm_change)
+        algo_layout.addWidget(self.algo_combo)
+
+        algo_group.setLayout(algo_layout)
+        layout.addWidget(algo_group)
+        self.algo_group = algo_group
+
+        self.umap_group = QGroupBox(translate("UMAP Parameters"))
+        umap_layout = QVBoxLayout()
+
+        n_label = QLabel(translate("n_neighbors: {value}").format(value=app_state.umap_params['n_neighbors']))
+        umap_layout.addWidget(n_label)
+
+        n_slider = QSlider(Qt.Horizontal)
+        n_slider.setMinimum(2)
+        n_slider.setMaximum(50)
+        n_neighbors = min(app_state.umap_params['n_neighbors'], 50)
+        if app_state.umap_params['n_neighbors'] != n_neighbors:
+            app_state.umap_params['n_neighbors'] = n_neighbors
+        n_slider.setValue(n_neighbors)
+        n_slider.valueChanged.connect(lambda v: self._on_umap_param_change('n_neighbors', v, n_label))
+        umap_layout.addWidget(n_slider)
+
+        self.sliders['umap_n_neighbors'] = n_slider
+        self.labels['umap_n_neighbors'] = n_label
+
+        min_dist_label = QLabel(translate("min_dist: {value:.3f}").format(value=app_state.umap_params['min_dist']))
+        umap_layout.addWidget(min_dist_label)
+
+        min_dist_spin = QDoubleSpinBox()
+        min_dist_spin.setRange(0.0, 1.0)
+        min_dist_spin.setSingleStep(0.01)
+        min_dist_spin.setDecimals(3)
+        min_dist_spin.setValue(app_state.umap_params['min_dist'])
+        min_dist_spin.valueChanged.connect(lambda v: self._on_umap_param_change('min_dist', v, min_dist_label))
+        umap_layout.addWidget(min_dist_spin)
+
+        self.labels['umap_min_dist'] = min_dist_label
+
+        metric_label = QLabel(translate("metric:"))
+        umap_layout.addWidget(metric_label)
+
+        self.metric_combo = QComboBox()
+        metric_options = ['euclidean', 'manhattan', 'cosine']
+        self.metric_combo.addItems(metric_options)
+        current_metric = app_state.umap_params.get('metric', 'euclidean')
+        if current_metric in metric_options:
+            self.metric_combo.setCurrentText(current_metric)
+        self.metric_combo.currentTextChanged.connect(lambda v: self._on_umap_param_change('metric', v, metric_label))
+        umap_layout.addWidget(self.metric_combo)
+
+        self.umap_group.setLayout(umap_layout)
+        layout.addWidget(self.umap_group)
+
+        self.tsne_group = QGroupBox(translate("t-SNE Parameters"))
+        tsne_layout = QVBoxLayout()
+
+        perp_label = QLabel(translate("perplexity: {value}").format(value=app_state.tsne_params['perplexity']))
+        tsne_layout.addWidget(perp_label)
+
+        perp_slider = QSlider(Qt.Horizontal)
+        perp_slider.setMinimum(5)
+        perp_slider.setMaximum(100)
+        perplexity = min(int(app_state.tsne_params['perplexity']), 100)
+        if app_state.tsne_params['perplexity'] != perplexity:
+            app_state.tsne_params['perplexity'] = perplexity
+        perp_slider.setValue(perplexity)
+        perp_slider.valueChanged.connect(lambda v: self._on_tsne_param_change('perplexity', v, perp_label))
+        tsne_layout.addWidget(perp_slider)
+
+        self.sliders['tsne_perplexity'] = perp_slider
+        self.labels['tsne_perplexity'] = perp_label
+
+        lr_label = QLabel(translate("learning_rate: {value}").format(value=app_state.tsne_params['learning_rate']))
+        tsne_layout.addWidget(lr_label)
+
+        lr_spin = QDoubleSpinBox()
+        lr_spin.setRange(10.0, 1000.0)
+        lr_spin.setSingleStep(10.0)
+        lr_spin.setValue(app_state.tsne_params['learning_rate'])
+        lr_spin.valueChanged.connect(lambda v: self._on_tsne_param_change('learning_rate', v, lr_label))
+        tsne_layout.addWidget(lr_spin)
+
+        self.labels['tsne_learning_rate'] = lr_label
+
+        tsne_rs_label = QLabel(translate("random_state: {value}").format(
+            value=app_state.tsne_params.get('random_state', 42)
+        ))
+        tsne_layout.addWidget(tsne_rs_label)
+
+        tsne_rs_spin = QSpinBox()
+        tsne_rs_spin.setRange(0, 200)
+        tsne_rs_spin.setValue(app_state.tsne_params.get('random_state', 42))
+        tsne_rs_spin.valueChanged.connect(lambda v: self._on_tsne_param_change('random_state', v, tsne_rs_label))
+        tsne_layout.addWidget(tsne_rs_spin)
+
+        self.tsne_group.setLayout(tsne_layout)
+        layout.addWidget(self.tsne_group)
+
+        self.pca_group = QGroupBox(translate("PCA Parameters"))
+        pca_layout = QVBoxLayout()
+
+        n_comp_label = QLabel(translate("n_components:"))
+        pca_layout.addWidget(n_comp_label)
+
+        n_comp_spin = QSpinBox()
+        n_comp_spin.setRange(2, 10)
+        n_comp_spin.setValue(app_state.pca_params.get('n_components', 2))
+        n_comp_spin.valueChanged.connect(lambda v: self._on_pca_param_change('n_components', v))
+        pca_layout.addWidget(n_comp_spin)
+
+        pca_rs_label = QLabel(translate("random_state: {value}").format(
+            value=app_state.pca_params.get('random_state', 42)
+        ))
+        pca_layout.addWidget(pca_rs_label)
+
+        pca_rs_spin = QSpinBox()
+        pca_rs_spin.setRange(0, 200)
+        pca_rs_spin.setValue(app_state.pca_params.get('random_state', 42))
+        pca_rs_spin.valueChanged.connect(lambda v: self._on_pca_param_change('random_state', v, pca_rs_label))
+        pca_layout.addWidget(pca_rs_spin)
+
+        standardize_check = QCheckBox(translate("Standardize data"))
+        standardize_check.setChecked(app_state.standardize_data)
+        standardize_check.stateChanged.connect(self._on_standardize_change)
+        pca_layout.addWidget(standardize_check)
+
+        pca_tools_layout = QHBoxLayout()
+
+        scree_btn = QPushButton(translate("Scree Plot"))
+        scree_btn.clicked.connect(self._on_show_scree_plot)
+        pca_tools_layout.addWidget(scree_btn)
+
+        loadings_btn = QPushButton(translate("Loadings"))
+        loadings_btn.clicked.connect(self._on_show_pca_loadings)
+        pca_tools_layout.addWidget(loadings_btn)
+
+        pca_layout.addLayout(pca_tools_layout)
+
+        dim_layout = QHBoxLayout()
+
+        x_label = QLabel(translate("X:"))
+        dim_layout.addWidget(x_label)
+
+        self.pca_x_spin = QSpinBox()
+        self.pca_x_spin.setRange(1, 10)
+        self.pca_x_spin.setValue(app_state.pca_component_indices[0] + 1)
+        self.pca_x_spin.setMaximumWidth(60)
+        self.pca_x_spin.valueChanged.connect(self._on_pca_dim_change)
+        dim_layout.addWidget(self.pca_x_spin)
+
+        y_label = QLabel(translate("Y:"))
+        dim_layout.addWidget(y_label)
+
+        self.pca_y_spin = QSpinBox()
+        self.pca_y_spin.setRange(1, 10)
+        self.pca_y_spin.setValue(app_state.pca_component_indices[1] + 1)
+        self.pca_y_spin.setMaximumWidth(60)
+        self.pca_y_spin.valueChanged.connect(self._on_pca_dim_change)
+        dim_layout.addWidget(self.pca_y_spin)
+
+        dim_layout.addStretch()
+        pca_layout.addLayout(dim_layout)
+
+        self.pca_group.setLayout(pca_layout)
+        layout.addWidget(self.pca_group)
+
+        self.robust_pca_group = QGroupBox(translate("RobustPCA Parameters"))
+        robust_pca_layout = QVBoxLayout()
+
+        robust_n_comp_label = QLabel(translate("n_components:"))
+        robust_pca_layout.addWidget(robust_n_comp_label)
+
+        robust_n_comp_spin = QSpinBox()
+        robust_n_comp_spin.setRange(2, 10)
+        robust_n_comp_spin.setValue(app_state.robust_pca_params.get('n_components', 2))
+        robust_n_comp_spin.valueChanged.connect(lambda v: self._on_robust_pca_param_change('n_components', v))
+        robust_pca_layout.addWidget(robust_n_comp_spin)
+
+        support_label = QLabel(translate("support_fraction: {value:.2f}").format(value=app_state.robust_pca_params.get('support_fraction', 0.75)))
+        robust_pca_layout.addWidget(support_label)
+
+        support_spin = QDoubleSpinBox()
+        support_spin.setRange(0.1, 1.0)
+        support_spin.setSingleStep(0.05)
+        support_spin.setDecimals(2)
+        support_spin.setValue(app_state.robust_pca_params.get('support_fraction', 0.75))
+        support_spin.valueChanged.connect(lambda v: self._on_robust_pca_param_change('support_fraction', v, support_label))
+        robust_pca_layout.addWidget(support_spin)
+
+        self.labels['robust_pca_support'] = support_label
+
+        robust_rs_label = QLabel(translate("random_state:"))
+        robust_pca_layout.addWidget(robust_rs_label)
+
+        robust_rs_spin = QSpinBox()
+        robust_rs_spin.setRange(0, 9999)
+        robust_rs_spin.setValue(app_state.robust_pca_params.get('random_state', 42))
+        robust_rs_spin.valueChanged.connect(lambda v: self._on_robust_pca_param_change('random_state', v))
+        robust_pca_layout.addWidget(robust_rs_spin)
+
+        rpca_tools_layout = QHBoxLayout()
+
+        rpca_scree_btn = QPushButton(translate("Scree Plot"))
+        rpca_scree_btn.clicked.connect(self._on_show_scree_plot)
+        rpca_tools_layout.addWidget(rpca_scree_btn)
+
+        rpca_loadings_btn = QPushButton(translate("Loadings"))
+        rpca_loadings_btn.clicked.connect(self._on_show_pca_loadings)
+        rpca_tools_layout.addWidget(rpca_loadings_btn)
+
+        robust_pca_layout.addLayout(rpca_tools_layout)
+
+        rpca_dim_layout = QHBoxLayout()
+
+        rpca_x_label = QLabel(translate("X:"))
+        rpca_dim_layout.addWidget(rpca_x_label)
+
+        self.rpca_x_spin = QSpinBox()
+        self.rpca_x_spin.setRange(1, 10)
+        self.rpca_x_spin.setValue(app_state.pca_component_indices[0] + 1)
+        self.rpca_x_spin.setMaximumWidth(60)
+        self.rpca_x_spin.valueChanged.connect(self._on_pca_dim_change)
+        rpca_dim_layout.addWidget(self.rpca_x_spin)
+
+        rpca_y_label = QLabel(translate("Y:"))
+        rpca_dim_layout.addWidget(rpca_y_label)
+
+        self.rpca_y_spin = QSpinBox()
+        self.rpca_y_spin.setRange(1, 10)
+        self.rpca_y_spin.setValue(app_state.pca_component_indices[1] + 1)
+        self.rpca_y_spin.setMaximumWidth(60)
+        self.rpca_y_spin.valueChanged.connect(self._on_pca_dim_change)
+        rpca_dim_layout.addWidget(self.rpca_y_spin)
+
+        rpca_dim_layout.addStretch()
+        robust_pca_layout.addLayout(rpca_dim_layout)
+
+        self.robust_pca_group.setLayout(robust_pca_layout)
+        layout.addWidget(self.robust_pca_group)
+
+        self.ternary_group = QGroupBox(translate("Ternary Plot"))
+        ternary_layout = QVBoxLayout()
+
+        info_label = QLabel(translate("Using Standard Ternary Plot.\nData is plotted as relative proportions."))
+        info_label.setWordWrap(True)
+        ternary_layout.addWidget(info_label)
+
+        self.ternary_auto_zoom_check = QCheckBox(translate("Auto-Zoom to Data"))
+        self.ternary_auto_zoom_check.setChecked(getattr(app_state, 'ternary_auto_zoom', False))
+        self.ternary_auto_zoom_check.stateChanged.connect(self._on_ternary_zoom_change)
+        ternary_layout.addWidget(self.ternary_auto_zoom_check)
+
+        stretch_header = QHBoxLayout()
+        stretch_label = QLabel(translate("Stretch Mode"))
+        stretch_header.addWidget(stretch_label)
+        stretch_header.addStretch()
+        self.ternary_scale_label = QLabel()
+        stretch_header.addWidget(self.ternary_scale_label)
+        ternary_layout.addLayout(stretch_header)
+
+        current_mode = getattr(app_state, 'ternary_stretch_mode', 'power')
+        if current_mode not in self._ternary_stretch_modes:
+            current_mode = 'power'
+        current_idx = self._ternary_stretch_modes.index(current_mode)
+        self._update_ternary_scale_label(current_mode)
+
+        self.ternary_scale_slider = QSlider(Qt.Horizontal)
+        self.ternary_scale_slider.setRange(0, 2)
+        self.ternary_scale_slider.setSingleStep(1)
+        self.ternary_scale_slider.setPageStep(1)
+        self.ternary_scale_slider.setTickInterval(1)
+        self.ternary_scale_slider.setValue(current_idx)
+        self.ternary_scale_slider.valueChanged.connect(self._on_ternary_scale_change)
+        ternary_layout.addWidget(self.ternary_scale_slider)
+
+        self.ternary_stretch_check = QCheckBox(translate("Stretch to Fill"))
+        self.ternary_stretch_check.setChecked(getattr(app_state, 'ternary_stretch', False))
+        self.ternary_stretch_check.stateChanged.connect(self._on_ternary_stretch_change)
+        ternary_layout.addWidget(self.ternary_stretch_check)
+
+        self.ternary_group.setLayout(ternary_layout)
+        layout.addWidget(self.ternary_group)
+
+        self.v1v2_group = QGroupBox(translate("V1V2 Time Settings"))
+        v1v2_layout = QVBoxLayout()
+
+        try:
+            from data.geochemistry import engine
+            params = engine.get_parameters()
+        except Exception:
+            params = {}
+
+        t1_val = params.get('T1', 4430e6) / 1e6
+        t2_val = params.get('T2', 4570e6) / 1e6
+
+        t1_layout = QHBoxLayout()
+        t1_layout.addWidget(QLabel(translate("T1 (Ma) - Model Age")))
+        self.v1v2_t1_spin = QDoubleSpinBox()
+        self.v1v2_t1_spin.setRange(0.0, 10000.0)
+        self.v1v2_t1_spin.setDecimals(3)
+        self.v1v2_t1_spin.setValue(t1_val)
+        self.v1v2_t1_spin.valueChanged.connect(self._on_v1v2_param_change)
+        t1_layout.addWidget(self.v1v2_t1_spin)
+        v1v2_layout.addLayout(t1_layout)
+
+        t2_layout = QHBoxLayout()
+        t2_layout.addWidget(QLabel(translate("T2 (Ma) - Standard Earth Age")))
+        self.v1v2_t2_spin = QDoubleSpinBox()
+        self.v1v2_t2_spin.setRange(0.0, 10000.0)
+        self.v1v2_t2_spin.setDecimals(3)
+        self.v1v2_t2_spin.setValue(t2_val)
+        self.v1v2_t2_spin.valueChanged.connect(self._on_v1v2_param_change)
+        t2_layout.addWidget(self.v1v2_t2_spin)
+        v1v2_layout.addLayout(t2_layout)
+
+        self.v1v2_group.setLayout(v1v2_layout)
+        layout.addWidget(self.v1v2_group)
+
+        self.geochem_plot_group = QGroupBox(translate("Geochemistry Plot Controls"))
+        geochem_layout = QVBoxLayout()
+
+        def _add_geochem_toggle(label_text, checked, handler, style_key=None):
+            row = QHBoxLayout()
+            chk = QCheckBox(translate(label_text))
+            chk.setChecked(checked)
+            chk.stateChanged.connect(handler)
+            row.addWidget(chk)
+
+            swatch = None
+            if style_key:
+                style = getattr(app_state, 'line_styles', {}).get(style_key, {}) or {}
+                swatch_color = style.get('color') or '#e2e8f0'
+                swatch = QLabel()
+                swatch.setFixedSize(16, 16)
+                swatch.setStyleSheet(f"background-color: {swatch_color}; border: 1px solid #111827;")
+                swatch.mousePressEvent = lambda event, k=style_key, s=swatch: self._open_line_style_dialog(k, s)
+                row.addWidget(swatch)
+
+            row.addStretch()
+            geochem_layout.addLayout(row)
+            return chk
+
+        self.modeling_show_isochron_check = _add_geochem_toggle(
+            "Show Age Isochrons",
+            getattr(app_state, 'show_isochrons', True),
+            self._on_isochron_change,
+            style_key='isochron'
+        )
+
+        self.modeling_show_model_check = _add_geochem_toggle(
+            "Show Model Curves",
+            getattr(app_state, 'show_model_curves', True),
+            self._on_model_curves_change,
+            style_key='model_curve'
+        )
+
+        self.modeling_show_paleoisochron_check = _add_geochem_toggle(
+            "Show Paleoisochrons",
+            getattr(app_state, 'show_paleoisochrons', True),
+            self._on_paleoisochron_change,
+            style_key='paleoisochron'
+        )
+
+        paleo_step_layout = QHBoxLayout()
+        paleo_step_layout.addWidget(QLabel(translate("Paleoisochron Step (Ma):")))
+        self.paleo_step_spin = QSpinBox()
+        self.paleo_step_spin.setRange(50, 5000)
+        self.paleo_step_spin.setSingleStep(50)
+        self.paleo_step_spin.setValue(getattr(app_state, 'paleoisochron_step', 1000))
+        self.paleo_step_spin.valueChanged.connect(self._on_paleo_step_change)
+        paleo_step_layout.addWidget(self.paleo_step_spin)
+        paleo_step_layout.addStretch()
+        geochem_layout.addLayout(paleo_step_layout)
+
+        self.modeling_show_model_age_check = _add_geochem_toggle(
+            "Show Model Age Lines",
+            getattr(app_state, 'show_model_age_lines', True),
+            self._on_model_age_change,
+            style_key='model_age_line'
+        )
+
+        isochron_row = QHBoxLayout()
+        calc_isochron_btn = QPushButton(translate("Calculate Isochron Age"))
+        calc_isochron_btn.clicked.connect(self._on_calculate_isochron)
+        isochron_row.addWidget(calc_isochron_btn)
+
+        selected_style = getattr(app_state, 'line_styles', {}).get('selected_isochron', {}) or {}
+        selected_color = selected_style.get('color') or '#ef4444'
+        isochron_swatch = QLabel()
+        isochron_swatch.setFixedSize(16, 16)
+        isochron_swatch.setStyleSheet(f"background-color: {selected_color}; border: 1px solid #111827;")
+        isochron_swatch.mousePressEvent = lambda event, s=isochron_swatch: self._open_line_style_dialog('selected_isochron', s)
+        isochron_row.addWidget(isochron_swatch)
+        isochron_row.addStretch()
+        geochem_layout.addLayout(isochron_row)
+
+        self.geochem_plot_group.setLayout(geochem_layout)
+        layout.addWidget(self.geochem_plot_group)
+
+        self.twod_group = QGroupBox(translate("2D Scatter Parameters"))
+        twod_layout = QVBoxLayout()
+
+        twod_grid = QGridLayout()
+
+        x_label = QLabel(translate("X Axis:"))
+        twod_grid.addWidget(x_label, 0, 0)
+
+        self.xaxis_combo = QComboBox()
+        self.xaxis_combo.setEditable(False)
+        self.xaxis_combo.setStyleSheet("QComboBox { combobox-popup: 0; }")
+        self.xaxis_combo.setMinimumWidth(150)
+        twod_grid.addWidget(self.xaxis_combo, 0, 1)
+
+        y_label = QLabel(translate("Y Axis:"))
+        twod_grid.addWidget(y_label, 1, 0)
+
+        self.yaxis_combo = QComboBox()
+        self.yaxis_combo.setEditable(False)
+        self.yaxis_combo.setStyleSheet("QComboBox { combobox-popup: 0; }")
+        self.yaxis_combo.setMinimumWidth(150)
+        twod_grid.addWidget(self.yaxis_combo, 1, 1)
+
+        twod_layout.addLayout(twod_grid)
+
+        self._refresh_2d_axis_combos()
+
+        self.twod_group.setLayout(twod_layout)
+        layout.addWidget(self.twod_group)
+
+        self._update_algorithm_visibility()
+
+        layout.addStretch()
+        return widget
+
+    def _build_analysis_section(self):
+        """构建分析部分"""
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(10, 10, 10, 10)
+
+        kde_group = QGroupBox(translate("Kernel Density"))
+        kde_layout = QVBoxLayout()
+
+        kde_row = QHBoxLayout()
+        self.tools_kde_check = QCheckBox(translate("Show Kernel Density"))
+        self.tools_kde_check.setChecked(getattr(app_state, 'show_kde', False))
+        self.tools_kde_check.stateChanged.connect(self._on_kde_change)
+        kde_row.addWidget(self.tools_kde_check)
+
+        kde_swatch = QLabel()
+        kde_swatch.setFixedSize(16, 16)
+        kde_swatch.setStyleSheet("background-color: #e2e8f0; border: 1px solid #111827;")
+        kde_swatch.setProperty("keepStyle", True)
+        kde_swatch.mousePressEvent = lambda event, s=kde_swatch: self._open_kde_style_dialog('kde', s)
+        kde_row.addWidget(kde_swatch)
+        kde_row.addStretch()
+        kde_layout.addLayout(kde_row)
+
+        mkde_row = QHBoxLayout()
+        self.tools_marginal_kde_check = QCheckBox(translate("Show Marginal KDE"))
+        self.tools_marginal_kde_check.setChecked(getattr(app_state, 'show_marginal_kde', False))
+        self.tools_marginal_kde_check.stateChanged.connect(self._on_marginal_kde_change)
+        mkde_row.addWidget(self.tools_marginal_kde_check)
+
+        mkde_swatch = QLabel()
+        mkde_swatch.setFixedSize(16, 16)
+        mkde_swatch.setStyleSheet("background-color: #e2e8f0; border: 1px solid #111827;")
+        mkde_swatch.setProperty("keepStyle", True)
+        mkde_swatch.mousePressEvent = lambda event, s=mkde_swatch: self._open_kde_style_dialog('marginal_kde', s)
+        mkde_row.addWidget(mkde_swatch)
+        mkde_row.addStretch()
+        kde_layout.addLayout(mkde_row)
+
+        kde_group.setLayout(kde_layout)
+        layout.addWidget(kde_group)
+
+        equation_group = QGroupBox(translate("Equation Overlays"))
+        equation_layout = QVBoxLayout()
+
+        equation_hint = QLabel(translate("Manage equations and visibility."))
+        equation_hint.setWordWrap(True)
+        equation_layout.addWidget(equation_hint)
+
+        add_eq_btn = QPushButton(translate("Add Equation"))
+        add_eq_btn.clicked.connect(self._open_add_equation_dialog)
+        equation_layout.addWidget(add_eq_btn)
+
+        equation_group.setLayout(equation_layout)
+        layout.addWidget(equation_group)
+
+        selection_group = QGroupBox(translate("Selection Tools"))
+        selection_layout = QVBoxLayout()
+
+        self.selection_button = QPushButton(translate("Enable Selection"))
+        self.selection_button.setCheckable(True)
+        self.selection_button.setFixedWidth(200)
+        self.selection_button.clicked.connect(self._on_toggle_selection)
+        selection_layout.addWidget(self.selection_button, 0, Qt.AlignHCenter)
+
+        self.lasso_selection_button = QPushButton(translate("Custom Shape"))
+        self.lasso_selection_button.setCheckable(True)
+        self.lasso_selection_button.setFixedWidth(200)
+        self.lasso_selection_button.clicked.connect(self._on_toggle_lasso_selection)
+        selection_layout.addWidget(self.lasso_selection_button, 0, Qt.AlignHCenter)
+
+        self.selection_status_label = QLabel(translate("Selected Samples: {count}").format(count=0))
+        selection_layout.addWidget(self.selection_status_label)
+
+        selection_group.setLayout(selection_layout)
+        layout.addWidget(selection_group)
+
+        analysis_group = QGroupBox(translate("Data Analysis"))
+        analysis_layout = QVBoxLayout()
+
+        corr_btn = QPushButton(translate("Correlation Heatmap"))
+        corr_btn.setFixedWidth(200)
+        corr_btn.clicked.connect(self._on_show_correlation_heatmap)
+        analysis_layout.addWidget(corr_btn, 0, Qt.AlignHCenter)
+
+        axis_corr_btn = QPushButton(translate("Show Axis Corr."))
+        axis_corr_btn.setFixedWidth(200)
+        axis_corr_btn.clicked.connect(self._on_show_axis_correlation)
+        analysis_layout.addWidget(axis_corr_btn, 0, Qt.AlignHCenter)
+
+        shepard_btn = QPushButton(translate("Show Shepard Plot"))
+        shepard_btn.setFixedWidth(200)
+        shepard_btn.clicked.connect(self._on_show_shepard_diagram)
+        analysis_layout.addWidget(shepard_btn, 0, Qt.AlignHCenter)
+
+        analysis_group.setLayout(analysis_layout)
+        layout.addWidget(analysis_group)
+
+        subset_group = QGroupBox(translate("Subset Analysis"))
+        subset_layout = QVBoxLayout()
+
+        analyze_btn = QPushButton(translate("Analyze Subset"))
+        analyze_btn.setFixedWidth(200)
+        analyze_btn.clicked.connect(self._on_analyze_subset)
+        subset_layout.addWidget(analyze_btn, 0, Qt.AlignHCenter)
+
+        reset_btn = QPushButton(translate("Reset Data"))
+        reset_btn.setFixedWidth(200)
+        reset_btn.clicked.connect(self._on_reset_data)
+        subset_layout.addWidget(reset_btn, 0, Qt.AlignHCenter)
+
+        subset_group.setLayout(subset_layout)
+        layout.addWidget(subset_group)
+
+        mixing_group = QGroupBox(translate("Mixing Groups"))
+        mixing_layout = QVBoxLayout()
+
+        group_name_layout = QHBoxLayout()
+        group_name_layout.addWidget(QLabel(translate("Group Name:")))
+        self.mixing_group_name_edit = QLineEdit()
+        self.mixing_group_name_edit.setPlaceholderText(translate("Enter group name"))
+        group_name_layout.addWidget(self.mixing_group_name_edit)
+        mixing_layout.addLayout(group_name_layout)
+
+        mixing_btn_layout = QHBoxLayout()
+
+        endmember_btn = QPushButton(translate("Set as Endmember"))
+        endmember_btn.setFixedWidth(170)
+        endmember_btn.clicked.connect(self._on_set_endmember)
+        mixing_btn_layout.addWidget(endmember_btn)
+
+        mixture_btn = QPushButton(translate("Set as Mixture"))
+        mixture_btn.setFixedWidth(170)
+        mixture_btn.clicked.connect(self._on_set_mixture)
+        mixing_btn_layout.addWidget(mixture_btn)
+
+        mixing_layout.addLayout(mixing_btn_layout)
+
+        self.mixing_status_label = QLabel(translate("No mixing groups defined"))
+        self.mixing_status_label.setWordWrap(True)
+        mixing_layout.addWidget(self.mixing_status_label)
+
+        mixing_action_layout = QHBoxLayout()
+
+        clear_mixing_btn = QPushButton(translate("Clear Mixing Groups"))
+        clear_mixing_btn.setFixedWidth(170)
+        clear_mixing_btn.clicked.connect(self._on_clear_mixing_groups)
+        mixing_action_layout.addWidget(clear_mixing_btn)
+
+        compute_mixing_btn = QPushButton(translate("Compute Mixing"))
+        compute_mixing_btn.setFixedWidth(170)
+        compute_mixing_btn.clicked.connect(self._on_compute_mixing)
+        mixing_action_layout.addWidget(compute_mixing_btn)
+
+        mixing_layout.addLayout(mixing_action_layout)
+
+        mixing_group.setLayout(mixing_layout)
+        layout.addWidget(mixing_group)
+
+        confidence_group = QGroupBox(translate("Confidence Ellipse"))
+        confidence_layout = QVBoxLayout()
+
+        self.ellipse_selection_button = QPushButton(translate("Draw Ellipse"))
+        self.ellipse_selection_button.setCheckable(True)
+        self.ellipse_selection_button.setFixedWidth(200)
+        self.ellipse_selection_button.clicked.connect(self._on_toggle_ellipse_selection)
+        confidence_layout.addWidget(self.ellipse_selection_button, 0, Qt.AlignHCenter)
+
+        self.confidence_68_radio = QRadioButton(translate("68% (1σ)"))
+        self.confidence_95_radio = QRadioButton(translate("95% (2σ)"))
+        self.confidence_99_radio = QRadioButton(translate("99% (3σ)"))
+
+        current_level = getattr(app_state, 'confidence_level', 0.95)
+        if abs(current_level - 0.68) < 0.01:
+            self.confidence_68_radio.setChecked(True)
+        elif abs(current_level - 0.99) < 0.01:
+            self.confidence_99_radio.setChecked(True)
+        else:
+            self.confidence_95_radio.setChecked(True)
+
+        self.confidence_68_radio.toggled.connect(lambda: self._on_confidence_change(0.68))
+        self.confidence_95_radio.toggled.connect(lambda: self._on_confidence_change(0.95))
+        self.confidence_99_radio.toggled.connect(lambda: self._on_confidence_change(0.99))
+
+        confidence_layout.addWidget(self.confidence_68_radio)
+        confidence_layout.addWidget(self.confidence_95_radio)
+        confidence_layout.addWidget(self.confidence_99_radio)
+
+        confidence_group.setLayout(confidence_layout)
+        layout.addWidget(confidence_group)
+
+        layout.addStretch()
+        return widget
+
+    def _build_export_section(self):
+        """构建导出部分"""
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(10, 10, 10, 10)
+
+        export_group = QGroupBox(translate("Export"))
+        export_layout = QVBoxLayout()
+
+        self.export_csv_button = QPushButton(translate("Export CSV"))
+        self.export_csv_button.setFixedWidth(200)
+        self.export_csv_button.clicked.connect(self._on_export_csv)
+        export_layout.addWidget(self.export_csv_button, 0, Qt.AlignHCenter)
+
+        self.export_excel_button = QPushButton(translate("Export Excel"))
+        self.export_excel_button.setFixedWidth(200)
+        self.export_excel_button.clicked.connect(self._on_export_excel)
+        export_layout.addWidget(self.export_excel_button, 0, Qt.AlignHCenter)
+
+        self.export_selected_button = QPushButton(translate("Export Selected"))
+        self.export_selected_button.setFixedWidth(200)
+        self.export_selected_button.clicked.connect(self._on_export_clicked)
+        export_layout.addWidget(self.export_selected_button, 0, Qt.AlignHCenter)
+
+        export_group.setLayout(export_layout)
+        layout.addWidget(export_group)
 
         layout.addStretch()
         return widget
@@ -1715,36 +2520,105 @@ class Qt5ControlPanel(QWidget):
         """Sync selection button states with active tool."""
         tool = getattr(app_state, 'selection_tool', None)
 
-        if self.selection_button is not None:
-            self.selection_button.blockSignals(True)
-            self.selection_button.setChecked(tool == 'export')
-            self.selection_button.setText(
+        selection_button = getattr(self, 'selection_button', None)
+        if selection_button is not None:
+            selection_button.blockSignals(True)
+            selection_button.setChecked(tool == 'export')
+            selection_button.setText(
                 translate("Disable Selection") if tool == 'export' else translate("Enable Selection")
             )
-            self.selection_button.blockSignals(False)
+            selection_button.blockSignals(False)
 
-        if self.ellipse_selection_button is not None:
-            self.ellipse_selection_button.blockSignals(True)
-            self.ellipse_selection_button.setChecked(tool == 'ellipse')
-            self.ellipse_selection_button.setText(
+        ellipse_button = getattr(self, 'ellipse_selection_button', None)
+        if ellipse_button is not None:
+            ellipse_button.blockSignals(True)
+            ellipse_button.setChecked(tool == 'ellipse')
+            ellipse_button.setText(
                 translate("Disable Ellipse") if tool == 'ellipse' else translate("Draw Ellipse")
             )
-            self.ellipse_selection_button.blockSignals(False)
+            ellipse_button.blockSignals(False)
+
+        lasso_button = getattr(self, 'lasso_selection_button', None)
+        if lasso_button is not None:
+            lasso_button.blockSignals(True)
+            lasso_button.setChecked(tool == 'lasso')
+            lasso_button.setText(
+                translate("Disable Custom Shape") if tool == 'lasso' else translate("Custom Shape")
+            )
+            lasso_button.blockSignals(False)
 
     def update_selection_controls(self):
         """Refresh selection UI state from app_state."""
         count = len(getattr(app_state, 'selected_indices', []))
-        if self.selection_status_label is not None:
+        if getattr(self, 'selection_status_label', None) is not None:
             self.selection_status_label.setText(
                 translate("Selected Samples: {count}").format(count=count)
             )
 
         enable_exports = count > 0
-        for btn in (self.export_csv_button, self.export_excel_button, self.export_selected_button):
+        for btn in (
+            getattr(self, 'export_csv_button', None),
+            getattr(self, 'export_excel_button', None),
+            getattr(self, 'export_selected_button', None),
+        ):
             if btn is not None:
                 btn.setEnabled(enable_exports)
+        status_export = getattr(self, 'status_export_button', None)
+        if status_export is not None:
+            status_export.setEnabled(enable_exports)
 
-        self._sync_selection_buttons()
+        if hasattr(self, '_sync_selection_buttons'):
+            self._sync_selection_buttons()
+        self._update_status_panel()
+
+    def _update_status_panel(self):
+        """Refresh right-side status panel."""
+        status_data_label = getattr(self, 'status_data_label', None)
+        status_render_label = getattr(self, 'status_render_label', None)
+        status_algo_label = getattr(self, 'status_algo_label', None)
+        status_group_label = getattr(self, 'status_group_label', None)
+        status_selected_label = getattr(self, 'status_selected_label', None)
+        if any(label is None for label in (
+            status_data_label,
+            status_render_label,
+            status_algo_label,
+            status_group_label,
+            status_selected_label,
+        )):
+            return
+
+        data_count = len(app_state.df_global) if app_state.df_global is not None else 0
+        render_mode = getattr(app_state, 'render_mode', '')
+        algorithm = getattr(app_state, 'algorithm', '')
+        group_col = getattr(app_state, 'last_group_col', '')
+        selected_count = len(getattr(app_state, 'selected_indices', []))
+
+        status_data_label.setText(
+            translate("Loaded Data: {count} rows", count=data_count)
+        )
+        status_render_label.setText(
+            translate("Render Mode: {mode}").format(mode=render_mode)
+        )
+        status_algo_label.setText(
+            translate("Algorithm: {mode}").format(mode=algorithm)
+        )
+        status_group_label.setText(
+            translate("Group Column: {col}").format(col=group_col)
+        )
+        status_selected_label.setText(
+            translate("Selected Samples: {count}").format(count=selected_count)
+        )
+
+    def _clear_selection_only(self):
+        """Clear selection and refresh overlays."""
+        if app_state.selected_indices:
+            app_state.selected_indices.clear()
+        try:
+            from visualization.events import refresh_selection_overlay
+            refresh_selection_overlay()
+        except Exception:
+            pass
+        self.update_selection_controls()
 
     def _on_toggle_selection(self):
         """切换选择模式"""
@@ -1762,6 +2636,15 @@ class Qt5ControlPanel(QWidget):
             toggle_selection_mode('ellipse')
         except Exception as err:
             print(f"[WARN] Failed to toggle ellipse selection: {err}", flush=True)
+        self._sync_selection_buttons()
+
+    def _on_toggle_lasso_selection(self):
+        """切换自定义图形选择模式"""
+        try:
+            from visualization.events import toggle_selection_mode
+            toggle_selection_mode('lasso')
+        except Exception as err:
+            print(f"[WARN] Failed to toggle custom shape selection: {err}", flush=True)
         self._sync_selection_buttons()
 
     def _on_export_csv(self):
@@ -3035,7 +3918,10 @@ class Qt5ControlPanel(QWidget):
 
     def _update_group_list(self):
         """更新分组列表 - 增强版：包含颜色和形状选择"""
+        if not hasattr(self, 'group_list') or self.group_list is None:
+            return
         self.group_list.clear()
+        self.legend_checkboxes = {}
 
         if not app_state.last_group_col or app_state.df_global is None:
             return
@@ -3047,7 +3933,7 @@ class Qt5ControlPanel(QWidget):
         self._ensure_marker_shape_map()
 
         # 可见分组集合
-        visible = set(app_state.visible_groups) if app_state.visible_groups else set(groups)
+        visible = set(app_state.visible_groups) if app_state.visible_groups is not None else set(groups)
 
         # 限制项目数量以防止UI冻结
         max_items = 100
@@ -3078,6 +3964,7 @@ class Qt5ControlPanel(QWidget):
             checkbox.setChecked(is_visible)
             checkbox.stateChanged.connect(lambda state, g=group: self._on_group_checkbox_change(g, state))
             item_layout.addWidget(checkbox, 1)
+            self.legend_checkboxes[group] = checkbox
 
             # 形状选择下拉框
             shape_combo = QComboBox()
@@ -3106,43 +3993,65 @@ class Qt5ControlPanel(QWidget):
 
     def _on_group_checkbox_change(self, group, state):
         """分组复选框状态变化"""
-        is_checked = (state == Qt.Checked)
-        if is_checked:
-            if group in app_state.hidden_groups:
-                app_state.hidden_groups.discard(group)
+        if not app_state.last_group_col or app_state.df_global is None:
+            return
+
+        groups = list(app_state.available_groups or app_state.df_global[app_state.last_group_col].unique())
+        if app_state.visible_groups is None:
+            current_visible = set(groups)
         else:
-            app_state.hidden_groups.add(group)
+            current_visible = set(app_state.visible_groups)
+
+        if state == Qt.Checked:
+            current_visible.add(group)
+        else:
+            current_visible.discard(group)
+
+        if len(current_visible) == len(groups):
+            app_state.visible_groups = None
+        else:
+            app_state.visible_groups = sorted(current_visible)
+
         self._on_change()
 
     def _on_group_visibility_change(self, item):
         """分组可见性变化"""
         group_name = item.text()
         is_checked = item.checkState() == Qt.Checked
-
-        if is_checked:
-            # 显示分组
-            if group_name in app_state.hidden_groups:
-                app_state.hidden_groups.remove(group_name)
-        else:
-            # 隐藏分组
-            if group_name not in app_state.hidden_groups:
-                app_state.hidden_groups.add(group_name)
-
-        self._on_change()
+        state = Qt.Checked if is_checked else Qt.Unchecked
+        self._on_group_checkbox_change(group_name, state)
 
     def _show_all_groups(self):
         """显示所有分组"""
-        app_state.hidden_groups.clear()
+        app_state.visible_groups = None
         self._update_group_list()
         self._on_change()
 
     def _hide_all_groups(self):
         """隐藏所有分组"""
         if app_state.last_group_col and app_state.df_global is not None:
-            groups = app_state.df_global[app_state.last_group_col].unique()
-            app_state.hidden_groups = set(groups)
+            app_state.visible_groups = []
             self._update_group_list()
             self._on_change()
+
+    def sync_legend_ui(self):
+        """Sync legend checkboxes with app_state.visible_groups."""
+        if not hasattr(self, 'legend_checkboxes'):
+            return
+        if app_state.last_group_col and app_state.df_global is not None:
+            groups = list(app_state.available_groups or app_state.df_global[app_state.last_group_col].unique())
+        else:
+            groups = []
+
+        if app_state.visible_groups is None:
+            visible = set(groups)
+        else:
+            visible = set(app_state.visible_groups)
+
+        for group, checkbox in self.legend_checkboxes.items():
+            checkbox.blockSignals(True)
+            checkbox.setChecked(group in visible)
+            checkbox.blockSignals(False)
 
     def _bring_to_front(self, group):
         """将分组的点置于顶层"""
@@ -3574,28 +4483,152 @@ class Qt5ControlPanel(QWidget):
     def _open_add_equation_dialog(self):
         """打开新增方程对话框"""
         dialog = QDialog(self)
-        dialog.setWindowTitle(translate("Add Equation"))
+        dialog.setWindowTitle(translate("Manage Equations"))
         dialog.setModal(True)
+        dialog.resize(520, 640)
 
         layout = QVBoxLayout(dialog)
+
+        info_label = QLabel(translate("Select equations to display."))
+        info_label.setWordWrap(True)
+        layout.addWidget(info_label)
+
+        presets = [
+            {
+                'label': translate("y=x"),
+                'latex': translate("y=x"),
+                'expression': 'x'
+            },
+            {
+                'label': translate("y=1.0049x+20.259"),
+                'latex': translate("y=1.0049x+20.259"),
+                'expression': '1.0049*x+20.259'
+            }
+        ]
+
+        working_overlays = list(getattr(app_state, 'equation_overlays', []) or [])
+
+        list_group = QGroupBox(translate("Equation Library"))
+        list_layout = QVBoxLayout()
+
+        list_container = QWidget()
+        list_container_layout = QVBoxLayout(list_container)
+        list_container_layout.setContentsMargins(0, 0, 0, 0)
+        list_container_layout.setSpacing(6)
+
+        entries = []
+
+        def _clear_layout(target_layout):
+            while target_layout.count():
+                item = target_layout.takeAt(0)
+                widget = item.widget()
+                if widget is not None:
+                    widget.deleteLater()
+
+        def _find_overlay(expression):
+            for overlay in working_overlays:
+                if overlay.get('expression') == expression:
+                    return overlay
+            return None
+
+        def _add_entry_row(label_text, overlay, checked=False, is_preset=False):
+            row = QWidget()
+            row_layout = QHBoxLayout(row)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+
+            chk = QCheckBox(label_text)
+            chk.setChecked(bool(checked))
+            row_layout.addWidget(chk)
+
+            swatch = QLabel()
+            swatch.setFixedSize(16, 16)
+            swatch_color = overlay.get('color', '#ef4444')
+            swatch.setStyleSheet(f"background-color: {swatch_color}; border: 1px solid #111827;")
+            swatch.setProperty("keepStyle", True)
+            swatch.mousePressEvent = lambda event, ov=overlay, sw=swatch: self._open_equation_style_dialog(ov, sw)
+            row_layout.addWidget(swatch)
+            row_layout.addStretch()
+
+            list_container_layout.addWidget(row)
+            entries.append({
+                'checkbox': chk,
+                'overlay': overlay,
+                'is_preset': is_preset
+            })
+
+        def _rebuild_list():
+            entries.clear()
+            _clear_layout(list_container_layout)
+
+            existing_label = QLabel(translate("Existing Equations"))
+            existing_label.setStyleSheet("font-weight: bold;")
+            list_container_layout.addWidget(existing_label)
+
+            if working_overlays:
+                for overlay in working_overlays:
+                    label_text = overlay.get('label', 'Equation')
+                    _add_entry_row(translate(label_text), overlay, checked=overlay.get('enabled', False))
+            else:
+                empty_label = QLabel(translate("No equations yet."))
+                list_container_layout.addWidget(empty_label)
+
+            preset_label = QLabel(translate("Preset Equations"))
+            preset_label.setStyleSheet("font-weight: bold; margin-top: 6px;")
+            list_container_layout.addWidget(preset_label)
+
+            for preset in presets:
+                existing = _find_overlay(preset['expression'])
+                if existing is not None:
+                    continue
+                preset_overlay = {
+                    'label': preset['label'],
+                    'latex': preset['latex'],
+                    'expression': preset['expression'],
+                    'enabled': False,
+                    'color': '#ef4444',
+                    'linewidth': 1.0,
+                    'linestyle': '--',
+                    'alpha': 0.85
+                }
+                _add_entry_row(preset['label'], preset_overlay, checked=False, is_preset=True)
+
+            list_container_layout.addStretch()
+
+        _rebuild_list()
+
+        list_layout.addWidget(list_container)
+        list_group.setLayout(list_layout)
+        layout.addWidget(list_group)
+
+        custom_group = QGroupBox(translate("Custom Equation"))
+        custom_layout = QVBoxLayout()
 
         name_row = QHBoxLayout()
         name_row.addWidget(QLabel(translate("Equation Name")))
         name_edit = QLineEdit()
         name_row.addWidget(name_edit)
-        layout.addLayout(name_row)
+        custom_layout.addLayout(name_row)
 
         latex_row = QHBoxLayout()
         latex_row.addWidget(QLabel(translate("Equation (LaTeX)")))
         latex_edit = QLineEdit()
         latex_row.addWidget(latex_edit)
-        layout.addLayout(latex_row)
+        custom_layout.addLayout(latex_row)
 
         expr_row = QHBoxLayout()
         expr_row.addWidget(QLabel(translate("Expression (Python, x only)")))
         expr_edit = QLineEdit()
         expr_row.addWidget(expr_edit)
-        layout.addLayout(expr_row)
+        custom_layout.addLayout(expr_row)
+
+        add_custom_row = QHBoxLayout()
+        add_custom_row.addStretch()
+        add_custom_btn = QPushButton(translate("Add to List"))
+        add_custom_row.addWidget(add_custom_btn)
+        custom_layout.addLayout(add_custom_row)
+
+        custom_group.setLayout(custom_layout)
+        layout.addWidget(custom_group)
 
         btn_row = QHBoxLayout()
         btn_row.addStretch()
@@ -3603,44 +4636,67 @@ class Qt5ControlPanel(QWidget):
         cancel_btn.clicked.connect(dialog.reject)
         btn_row.addWidget(cancel_btn)
 
-        def _save():
-            expression = expr_edit.text().strip()
+        def _validate_expression(expression):
+            expression = expression.strip()
             if not expression:
                 QMessageBox.warning(dialog, translate("Warning"), translate("Expression cannot be empty."))
-                return
+                return None
             try:
                 ast.parse(expression, mode='eval')
             except Exception:
                 QMessageBox.warning(dialog, translate("Warning"), translate("Invalid expression."))
-                return
+                return None
+            return expression
 
-            overlay_id = f"eq_custom_{uuid.uuid4().hex[:8]}"
+        def _add_custom_to_list():
+            expression = _validate_expression(expr_edit.text())
+            if expression is None:
+                return
             label_text = name_edit.text().strip() or 'Equation'
             latex_text = latex_edit.text().strip() or label_text
             overlay = {
-                'id': overlay_id,
+                'id': f"eq_custom_{uuid.uuid4().hex[:8]}",
                 'label': label_text,
                 'latex': latex_text,
                 'expression': expression,
-                'enabled': True,
+                'enabled': False,
                 'color': '#ef4444',
                 'linewidth': 1.0,
                 'linestyle': '--',
                 'alpha': 0.85
             }
-            app_state.equation_overlays.append(overlay)
-            app_state.show_equation_overlays = True
-            if self.tools_equation_overlays_check is not None:
-                self.tools_equation_overlays_check.blockSignals(True)
-                self.tools_equation_overlays_check.setChecked(True)
-                self.tools_equation_overlays_check.blockSignals(False)
-            self._refresh_equation_overlays()
+            working_overlays.append(overlay)
+            name_edit.clear()
+            latex_edit.clear()
+            expr_edit.clear()
+            _rebuild_list()
+
+        def _apply_selection():
+            new_overlays = []
+            for entry in entries:
+                overlay = entry['overlay']
+                checked = bool(entry['checkbox'].isChecked())
+                if entry['is_preset']:
+                    if not checked:
+                        continue
+                    overlay = dict(overlay)
+                    overlay['id'] = overlay.get('id') or f"eq_preset_{uuid.uuid4().hex[:8]}"
+                    overlay['enabled'] = True
+                    new_overlays.append(overlay)
+                else:
+                    overlay['enabled'] = checked
+                    new_overlays.append(overlay)
+
+            app_state.equation_overlays = new_overlays
+            app_state.show_equation_overlays = any(ov.get('enabled', False) for ov in new_overlays)
             self._on_change()
             dialog.accept()
 
-        save_btn = QPushButton(translate("Save"))
-        save_btn.clicked.connect(_save)
-        btn_row.addWidget(save_btn)
+        add_custom_btn.clicked.connect(_add_custom_to_list)
+
+        apply_btn = QPushButton(translate("Apply"))
+        apply_btn.clicked.connect(_apply_selection)
+        btn_row.addWidget(apply_btn)
         layout.addLayout(btn_row)
 
         dialog.exec_()
@@ -3745,38 +4801,56 @@ class Qt5ControlPanel(QWidget):
             )
             return
 
-        try:
-            from ui.qt5_dialogs.data_config import get_data_configuration
-        except Exception as e:
-            QMessageBox.warning(
-                self,
-                translate("Error"),
-                translate("Failed to open data configuration: {error}").format(error=str(e))
-            )
-            return
+        dialog = QDialog(self)
+        dialog.setWindowTitle(translate("Group Columns Configuration"))
+        dialog.resize(420, 520)
 
-        result = get_data_configuration(
-            app_state.df_global,
-            default_group_cols=app_state.group_cols,
-            default_data_cols=app_state.data_cols
-        )
-        if not result:
-            return
+        layout = QVBoxLayout(dialog)
+        layout.addWidget(QLabel(translate("Select columns to use for grouping:")))
 
-        app_state.group_cols = result.get('group_cols', [])
-        app_state.data_cols = result.get('data_cols', [])
-        if app_state.group_cols:
+        list_widget = QListWidget()
+        list_widget.setSelectionMode(QListWidget.MultiSelection)
+        layout.addWidget(list_widget, 1)
+
+        current = set(app_state.group_cols or [])
+        for col in list(app_state.df_global.columns):
+            item = QListWidgetItem(str(col))
+            item.setData(Qt.UserRole, col)
+            if col in current:
+                item.setSelected(True)
+            list_widget.addItem(item)
+
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        cancel_btn = QPushButton(translate("Cancel"))
+        cancel_btn.clicked.connect(dialog.reject)
+        btn_row.addWidget(cancel_btn)
+        apply_btn = QPushButton(translate("Apply"))
+
+        def _apply():
+            selected = [item.data(Qt.UserRole) for item in list_widget.selectedItems()]
+            if not selected:
+                QMessageBox.warning(
+                    self,
+                    translate("Validation Error"),
+                    translate("Please select at least one grouping column.")
+                )
+                return
+            app_state.group_cols = selected
             if app_state.last_group_col not in app_state.group_cols:
                 app_state.last_group_col = app_state.group_cols[0]
                 app_state.visible_groups = None
-        else:
-            app_state.last_group_col = None
-            app_state.visible_groups = None
 
-        self._refresh_group_column_radios()
-        self._refresh_2d_axis_combos()
-        self._update_group_list()
-        self._on_change()
+            self._refresh_group_column_radios()
+            self._update_group_list()
+            self._on_change()
+            dialog.accept()
+
+        apply_btn.clicked.connect(_apply)
+        btn_row.addWidget(apply_btn)
+        layout.addLayout(btn_row)
+
+        dialog.exec_()
 
     def _normalize_render_mode(self, mode):
         """规范化渲染模式"""
@@ -4007,3 +5081,118 @@ class Qt5ControlPanel(QWidget):
 def create_control_panel(callback):
     """创建控制面板工厂函数"""
     return Qt5ControlPanel(callback)
+
+
+def create_section_dialog(section_key, callback, parent=None):
+    """Create a dialog that hosts a single control section."""
+    from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout
+    from core.localization import set_language
+
+    section_key = (section_key or '').lower()
+
+    section_map = {
+        'data': ("Data", Qt5ControlPanel._build_data_section),
+        'display': ("Display", Qt5ControlPanel._build_display_section),
+        'analysis': ("Analysis", Qt5ControlPanel._build_analysis_section),
+        'export': ("Export", Qt5ControlPanel._build_export_section),
+        'legend': ("Legend", Qt5ControlPanel._build_legend_section),
+        'geochemistry': ("Geochemistry", Qt5ControlPanel._build_geo_section),
+    }
+
+    if section_key not in section_map:
+        return None
+
+    title_key, builder = section_map[section_key]
+    title = translate(title_key)
+
+    dialog = QDialog(parent)
+    dialog.setWindowTitle(title)
+    dialog.resize(720, 820)
+
+    root = QVBoxLayout(dialog)
+    header = QHBoxLayout()
+    title_label = QLabel(title)
+    header.addWidget(title_label)
+    header.addStretch()
+
+    lang_label = QLabel(translate("Language"))
+    header.addWidget(lang_label)
+
+    lang_combo = QComboBox()
+    lang_combo.setFixedWidth(140)
+    lang_map = dict(available_languages())
+    for code, label in lang_map.items():
+        lang_combo.addItem(label, code)
+    current_lang = getattr(app_state, 'language', None)
+    if current_lang:
+        idx = lang_combo.findData(current_lang)
+        if idx >= 0:
+            lang_combo.setCurrentIndex(idx)
+    header.addWidget(lang_combo)
+    root.addLayout(header)
+
+    panel = Qt5ControlPanel(callback, parent=dialog, build_ui=False)
+    panel._setup_styles()
+
+    content_widget = builder(panel)
+    scroll = QScrollArea()
+    scroll.setWidgetResizable(True)
+    scroll.setFrameShape(QFrame.NoFrame)
+    scroll.setWidget(content_widget)
+    root.addWidget(scroll, 1)
+
+    def _rebuild_section():
+        panel._reset_ui_state()
+        new_content = builder(panel)
+        scroll.takeWidget()
+        scroll.setWidget(new_content)
+
+    def _refresh_titles():
+        new_title = translate(title_key)
+        dialog.setWindowTitle(new_title)
+        title_label.setText(new_title)
+        lang_label.setText(translate("Language"))
+
+    def _on_language_change(_index):
+        code = lang_combo.currentData()
+        if not code:
+            return
+        set_language(code)
+        QTimer.singleShot(0, _refresh_titles)
+        QTimer.singleShot(0, _rebuild_section)
+
+    lang_combo.currentIndexChanged.connect(_on_language_change)
+
+    def _on_show(_event):
+        app_state.control_panel_ref = panel
+        try:
+            panel.update_selection_controls()
+        except Exception:
+            pass
+
+    def _on_language_refresh():
+        current_lang = getattr(app_state, 'language', None)
+        if current_lang:
+            idx = lang_combo.findData(current_lang)
+            if idx >= 0 and lang_combo.currentIndex() != idx:
+                lang_combo.blockSignals(True)
+                lang_combo.setCurrentIndex(idx)
+                lang_combo.blockSignals(False)
+        QTimer.singleShot(0, _refresh_titles)
+        QTimer.singleShot(0, _rebuild_section)
+
+    def _on_close(_event):
+        if getattr(app_state, 'control_panel_ref', None) is panel:
+            app_state.control_panel_ref = None
+        listeners = getattr(app_state, 'language_listeners', [])
+        if _on_language_refresh in listeners:
+            listeners.remove(_on_language_refresh)
+
+    dialog.showEvent = _on_show
+    dialog.closeEvent = _on_close
+    try:
+        app_state.register_language_listener(_on_language_refresh)
+    except Exception:
+        pass
+
+    return dialog

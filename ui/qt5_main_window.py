@@ -2,9 +2,11 @@
 Qt5 主窗口基类
 提供标准的应用程序窗口框架
 """
+from pathlib import Path
+
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout,
                               QHBoxLayout, QDockWidget, QToolBar,
-                              QStatusBar, QMenuBar, QAction)
+                              QStatusBar, QMenuBar, QAction, QStyle)
 from PyQt5.QtCore import Qt, QSize, QSettings
 from PyQt5.QtGui import QIcon, QFont, QKeySequence
 
@@ -59,45 +61,111 @@ class Qt5MainWindow(QMainWindow):
     def _setup_menubar(self):
         """设置菜单栏"""
         menubar = self.menuBar()
+        self.menubar = menubar
 
         # 文件菜单
-        file_menu = menubar.addMenu(translate("File"))
+        self.file_menu = menubar.addMenu(translate("File"))
 
         reload_action = QAction(translate("Reload Data"), self)
         reload_action.setShortcut(QKeySequence("Ctrl+R"))
         reload_action.triggered.connect(self._reload_data)
-        file_menu.addAction(reload_action)
+        self.file_menu.addAction(reload_action)
 
-        file_menu.addSeparator()
+        self.file_menu.addSeparator()
 
         exit_action = QAction(translate("Exit"), self)
         exit_action.setShortcut(QKeySequence("Ctrl+Q"))
         exit_action.triggered.connect(self.close)
-        file_menu.addAction(exit_action)
+        self.file_menu.addAction(exit_action)
 
         # 视图菜单
-        view_menu = menubar.addMenu(translate("View"))
+        self.view_menu = menubar.addMenu(translate("View"))
 
-        control_panel_action = QAction(translate("Control Panel"), self)
-        control_panel_action.setShortcut(QKeySequence("Ctrl+P"))
-        control_panel_action.triggered.connect(self._show_control_panel)
-        view_menu.addAction(control_panel_action)
+        self.panels_menu = menubar.addMenu(translate("Panels"))
+
+        data_action = QAction(translate("Data"), self)
+        data_action.triggered.connect(lambda: self._show_section_dialog('data'))
+        self.panels_menu.addAction(data_action)
+
+        display_action = QAction(translate("Display"), self)
+        display_action.triggered.connect(lambda: self._show_section_dialog('display'))
+        self.panels_menu.addAction(display_action)
+
+        analysis_action = QAction(translate("Analysis"), self)
+        analysis_action.triggered.connect(lambda: self._show_section_dialog('analysis'))
+        self.panels_menu.addAction(analysis_action)
+
+        export_action = QAction(translate("Export"), self)
+        export_action.triggered.connect(lambda: self._show_section_dialog('export'))
+        self.panels_menu.addAction(export_action)
+
+        legend_action = QAction(translate("Legend"), self)
+        legend_action.triggered.connect(lambda: self._show_section_dialog('legend'))
+        self.panels_menu.addAction(legend_action)
+
+        geo_action = QAction(translate("Geochemistry"), self)
+        geo_action.triggered.connect(lambda: self._show_section_dialog('geochemistry'))
+        self.panels_menu.addAction(geo_action)
+
+        self._menu_actions = {
+            'reload': reload_action,
+            'exit': exit_action,
+            'data': data_action,
+            'display': display_action,
+            'analysis': analysis_action,
+            'export': export_action,
+            'legend': legend_action,
+            'geochemistry': geo_action,
+        }
+
+        try:
+            app_state.register_language_listener(self._refresh_language)
+        except Exception:
+            pass
 
     def _setup_toolbar(self):
         """设置工具栏"""
         self.toolbar = QToolBar("Main Toolbar")
         self.toolbar.setMovable(False)
         self.toolbar.setIconSize(DEFAULT_TOOLBAR_ICON_SIZE)
+        self.toolbar.setObjectName("MainToolbar")
         self.addToolBar(self.toolbar)
 
-        # 控制面板按钮
-        control_panel_action = QAction(translate("Control Panel"), self)
-        control_panel_action.triggered.connect(self._show_control_panel)
-        self.toolbar.addAction(control_panel_action)
+        # 控制面板按钮已弃用
 
     def _setup_statusbar(self):
         """设置状态栏"""
         self.statusBar().showMessage(translate("Ready"))
+
+    def _refresh_language(self):
+        """刷新菜单与状态栏语言"""
+        if hasattr(self, 'file_menu'):
+            self.file_menu.setTitle(translate("File"))
+        if hasattr(self, 'view_menu'):
+            self.view_menu.setTitle(translate("View"))
+        if hasattr(self, 'panels_menu'):
+            self.panels_menu.setTitle(translate("Panels"))
+
+        actions = getattr(self, '_menu_actions', {})
+        if 'reload' in actions:
+            actions['reload'].setText(translate("Reload Data"))
+        if 'exit' in actions:
+            actions['exit'].setText(translate("Exit"))
+        if 'data' in actions:
+            actions['data'].setText(translate("Data"))
+        if 'display' in actions:
+            actions['display'].setText(translate("Display"))
+        if 'analysis' in actions:
+            actions['analysis'].setText(translate("Analysis"))
+        if 'export' in actions:
+            actions['export'].setText(translate("Export"))
+        if 'legend' in actions:
+            actions['legend'].setText(translate("Legend"))
+        if 'geochemistry' in actions:
+            actions['geochemistry'].setText(translate("Geochemistry"))
+
+        if self.statusBar() is not None:
+            self.statusBar().showMessage(translate("Ready"))
 
     def _restore_state(self):
         """恢复窗口状态"""
@@ -145,6 +213,7 @@ class Qt5MainWindow(QMainWindow):
     def add_dock_widget(self, area, widget, title, allowed_areas=Qt.AllDockWidgetAreas):
         """添加停靠窗口"""
         dock = QDockWidget(title, self)
+        dock.setObjectName(title.replace(" ", ""))
         dock.setWidget(widget)
         dock.setAllowedAreas(allowed_areas)
         self.addDockWidget(area, dock)
@@ -162,6 +231,25 @@ class Qt5MainWindow(QMainWindow):
         # 创建新画布
         canvas = FigureCanvas(fig)
         toolbar = NavigationToolbar(canvas, self)
+        zoom_out_action = QAction(self._get_zoom_out_icon(), translate("Zoom Out"), self)
+        zoom_out_action.setToolTip(translate("Zoom Out"))
+        zoom_out_action.triggered.connect(self._zoom_out_view)
+
+        zoom_action = None
+        actions = toolbar.actions()
+        for action in actions:
+            if 'zoom' in (action.text() or '').lower():
+                zoom_action = action
+                break
+
+        if zoom_action is not None:
+            zoom_index = actions.index(zoom_action)
+            if zoom_index + 1 < len(actions):
+                toolbar.insertAction(actions[zoom_index + 1], zoom_out_action)
+            else:
+                toolbar.addAction(zoom_out_action)
+        else:
+            toolbar.addAction(zoom_out_action)
 
         # 添加到布局
         self.canvas_layout.addWidget(toolbar)
@@ -174,6 +262,39 @@ class Qt5MainWindow(QMainWindow):
         # 连接事件处理器
         self._connect_event_handlers(canvas)
 
+    def _get_zoom_out_icon(self):
+        """Resolve a zoom-out icon, falling back to a standard icon."""
+        base_dir = Path(__file__).resolve().parent.parent
+        svg_path = base_dir / "assets" / "icons" / "zoom_out.svg"
+        if svg_path.exists():
+            icon = QIcon(str(svg_path))
+            if not icon.isNull():
+                return icon
+        for name in ("zoom-out", "view-zoom-out", "magnifier-zoom-out"):
+            icon = QIcon.fromTheme(name)
+            if not icon.isNull():
+                return icon
+        return self.style().standardIcon(QStyle.SP_TitleBarMinButton)
+
+    def _zoom_out_view(self):
+        """Zoom out the current axes view."""
+        ax = getattr(app_state, 'ax', None)
+        if ax is None:
+            return
+        try:
+            xlim = ax.get_xlim()
+            ylim = ax.get_ylim()
+            x_range = xlim[1] - xlim[0]
+            y_range = ylim[1] - ylim[0]
+            if x_range == 0 or y_range == 0:
+                return
+            ax.set_xlim([xlim[0] - x_range * 0.25, xlim[1] + x_range * 0.25])
+            ax.set_ylim([ylim[0] - y_range * 0.25, ylim[1] + y_range * 0.25])
+            if app_state.fig is not None and app_state.fig.canvas is not None:
+                app_state.fig.canvas.draw_idle()
+        except Exception:
+            pass
+
     def _reload_data(self):
         """重新加载数据"""
         from data.qt5_loader import load_data
@@ -185,12 +306,23 @@ class Qt5MainWindow(QMainWindow):
         else:
             self.statusBar().showMessage(translate("Failed to reload data"), 3000)
 
-    def _show_control_panel(self):
-        """显示控制面板"""
-        if self.control_panel:
-            self.control_panel.show()
-            self.control_panel.raise_()
-            self.control_panel.activateWindow()
+    def _show_section_dialog(self, section_key):
+        """打开指定分区对话框"""
+        if not hasattr(self, '_section_dialogs'):
+            self._section_dialogs = {}
+
+        dialog = self._section_dialogs.get(section_key)
+        if dialog is None:
+            from ui.qt5_control_panel import create_section_dialog
+            from visualization.events import on_slider_change
+            dialog = create_section_dialog(section_key, on_slider_change, parent=self)
+            if dialog is None:
+                return
+            self._section_dialogs[section_key] = dialog
+
+        dialog.show()
+        dialog.raise_()
+        dialog.activateWindow()
 
     def _connect_event_handlers(self, canvas):
         """连接事件处理器"""

@@ -27,6 +27,12 @@ class Qt5FileDialog(QDialog):
 
         self._setup_ui()
         self._refresh_language()
+        self._apply_translations()
+
+        try:
+            app_state.register_language_listener(self._apply_translations)
+        except Exception:
+            pass
 
         if default_file and os.path.exists(default_file):
             self.selected_file = default_file
@@ -48,13 +54,13 @@ class Qt5FileDialog(QDialog):
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(20, 0, 20, 0)
 
-        title = QLabel(translate("Select Data File"))
-        title.setStyleSheet("font-size: 20px; font-weight: bold; color: #1a202c;")
-        header_layout.addWidget(title)
+        self.title_label = QLabel(translate("Select Data File"))
+        self.title_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #1a202c;")
+        header_layout.addWidget(self.title_label)
 
         # 语言选择
-        lang_label = QLabel("Language:")
-        header_layout.addWidget(lang_label)
+        self.lang_label = QLabel(f"{translate('Language')}:")
+        header_layout.addWidget(self.lang_label)
 
         self.lang_combo = QComboBox()
         self.lang_combo.setFixedWidth(150)
@@ -69,13 +75,13 @@ class Qt5FileDialog(QDialog):
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(24, 20, 24, 20)
 
-        subtitle = QLabel(translate(
+        self.subtitle_label = QLabel(translate(
             "Choose a CSV or Excel file (.csv, .xlsx, .xls) that contains "
             "the isotope dataset you want to explore."
         ))
-        subtitle.setStyleSheet("color: #4a5568; font-size: 12px;")
-        subtitle.setWordWrap(True)
-        content_layout.addWidget(subtitle)
+        self.subtitle_label.setStyleSheet("color: #4a5568; font-size: 12px;")
+        self.subtitle_label.setWordWrap(True)
+        content_layout.addWidget(self.subtitle_label)
 
         # 文件选择卡片
         card = QFrame()
@@ -83,24 +89,24 @@ class Qt5FileDialog(QDialog):
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(18, 18, 18, 18)
 
-        card_header = QLabel(translate("Current selection"))
-        card_layout.addWidget(card_header)
+        self.card_header_label = QLabel(translate("Current selection"))
+        card_layout.addWidget(self.card_header_label)
 
         self.file_label = QLabel(translate("No file selected"))
         self.file_label.setStyleSheet("color: #94a3b8; font-size: 12px;")
         self.file_label.setWordWrap(True)
         card_layout.addWidget(self.file_label)
 
-        tip_label = QLabel(translate(
+        self.tip_label = QLabel(translate(
             "Tip: For Excel workbooks, you can pick the sheet in the next step."
         ))
-        card_layout.addWidget(tip_label)
+        card_layout.addWidget(self.tip_label)
 
         # 按钮行
         btn_row = QHBoxLayout()
 
-        browse_btn = QPushButton(translate("Browse..."))
-        browse_btn.setStyleSheet("""
+        self.browse_btn = QPushButton(translate("Browse..."))
+        self.browse_btn.setStyleSheet("""
             QPushButton {
                 background-color: #2563eb;
                 color: white;
@@ -111,11 +117,11 @@ class Qt5FileDialog(QDialog):
                 background-color: #1d4ed8;
             }
         """)
-        browse_btn.clicked.connect(self._browse_file)
-        btn_row.addWidget(browse_btn)
+        self.browse_btn.clicked.connect(self._browse_file)
+        btn_row.addWidget(self.browse_btn)
 
-        clear_btn = QPushButton(translate("Clear Selection"))
-        clear_btn.setStyleSheet("""
+        self.clear_btn = QPushButton(translate("Clear Selection"))
+        self.clear_btn.setStyleSheet("""
             QPushButton {
                 background-color: white;
                 color: #2563eb;
@@ -124,8 +130,8 @@ class Qt5FileDialog(QDialog):
                 border-radius: 4px;
             }
         """)
-        clear_btn.clicked.connect(self._clear_file)
-        btn_row.addWidget(clear_btn)
+        self.clear_btn.clicked.connect(self._clear_file)
+        btn_row.addWidget(self.clear_btn)
 
         btn_row.addStretch()
         card_layout.addLayout(btn_row)
@@ -145,12 +151,12 @@ class Qt5FileDialog(QDialog):
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         footer_layout.addWidget(spacer)
 
-        cancel_btn = QPushButton(translate("Cancel"))
-        cancel_btn.clicked.connect(self.reject)
-        footer_layout.addWidget(cancel_btn)
+        self.cancel_btn = QPushButton(translate("Cancel"))
+        self.cancel_btn.clicked.connect(self.reject)
+        footer_layout.addWidget(self.cancel_btn)
 
-        continue_btn = QPushButton(translate("Continue"))
-        continue_btn.setStyleSheet("""
+        self.continue_btn = QPushButton(translate("Continue"))
+        self.continue_btn.setStyleSheet("""
             QPushButton {
                 background-color: #2563eb;
                 color: white;
@@ -158,8 +164,8 @@ class Qt5FileDialog(QDialog):
                 border-radius: 4px;
             }
         """)
-        continue_btn.clicked.connect(self._ok_clicked)
-        footer_layout.addWidget(continue_btn)
+        self.continue_btn.clicked.connect(self._ok_clicked)
+        footer_layout.addWidget(self.continue_btn)
 
         layout.addWidget(footer)
 
@@ -178,13 +184,42 @@ class Qt5FileDialog(QDialog):
         if index >= 0:
             self.lang_combo.setCurrentIndex(index)
         self.lang_combo.blockSignals(False)
+        self._apply_translations()
+
+    def _apply_translations(self):
+        """Apply translations to UI text."""
+        self.setWindowTitle(translate("Select Data File"))
+        self.title_label.setText(translate("Select Data File"))
+        self.lang_label.setText(f"{translate('Language')}:")
+        self.subtitle_label.setText(translate(
+            "Choose a CSV or Excel file (.csv, .xlsx, .xls) that contains "
+            "the isotope dataset you want to explore."
+        ))
+        self.card_header_label.setText(translate("Current selection"))
+        self.tip_label.setText(translate(
+            "Tip: For Excel workbooks, you can pick the sheet in the next step."
+        ))
+        self.browse_btn.setText(translate("Browse..."))
+        self.clear_btn.setText(translate("Clear Selection"))
+        self.cancel_btn.setText(translate("Cancel"))
+        self.continue_btn.setText(translate("Continue"))
+
+        if not self.selected_file:
+            self.file_label.setText(translate("No file selected"))
+            self.file_label.setStyleSheet("color: #94a3b8; font-size: 12px;")
 
     def _on_language_change(self, index):
         """语言变化处理"""
         code = self.lang_combo.currentData()
         if code and set_language(code):
             app_state.language = code
-            # TODO: 刷新所有翻译
+            self._apply_translations()
+
+    def closeEvent(self, event):
+        listeners = getattr(app_state, 'language_listeners', [])
+        if self._apply_translations in listeners:
+            listeners.remove(self._apply_translations)
+        super().closeEvent(event)
 
     def _update_file_display(self, file_path):
         """更新文件显示"""

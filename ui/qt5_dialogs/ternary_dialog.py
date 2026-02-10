@@ -42,7 +42,7 @@ class Qt5TernaryDialog(QDialog):
 
     def _setup_ui(self):
         """设置 UI"""
-        self.setWindowTitle(translate("Select Ternary Columns"))
+        self.setWindowTitle(translate("Select Ternary Axes"))
         self.resize(650, 700)
         self.setMinimumSize(550, 600)
 
@@ -56,7 +56,7 @@ class Qt5TernaryDialog(QDialog):
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(20, 0, 20, 0)
 
-        title = QLabel(translate("Select Ternary Columns"))
+        title = QLabel(translate("Select Ternary Axes"))
         title.setStyleSheet("font-size: 20px; font-weight: bold; color: #1a202c;")
         header_layout.addWidget(title)
 
@@ -69,7 +69,7 @@ class Qt5TernaryDialog(QDialog):
         content_layout.setContentsMargins(24, 20, 24, 20)
 
         subtitle = QLabel(translate(
-            "Select exactly 3 numeric columns for Top, Left, and Right vertices."
+            "Select three columns to map to the vertices of the ternary plot (Top, Left, Right)."
         ))
         subtitle.setStyleSheet("color: #4a5568; font-size: 12px;")
         subtitle.setWordWrap(True)
@@ -81,7 +81,7 @@ class Qt5TernaryDialog(QDialog):
         selection_layout = QVBoxLayout(selection_card)
         selection_layout.setContentsMargins(15, 15, 15, 15)
 
-        selection_header = QLabel(translate("Current Selection"))
+        selection_header = QLabel(translate("Current selection"))
         selection_header.setStyleSheet("font-size: 14px; font-weight: bold;")
         selection_layout.addWidget(selection_header)
 
@@ -151,21 +151,21 @@ class Qt5TernaryDialog(QDialog):
         self.top_factor.setRange(0.1, 10.0)
         self.top_factor.setSingleStep(0.1)
         self.top_factor.setValue(app_state.ternary_factors[0])
-        factors_row.addWidget(QLabel("Top:"))
+        factors_row.addWidget(QLabel(f"{translate('Top')}:"))
         factors_row.addWidget(self.top_factor)
 
         self.left_factor = QDoubleSpinBox()
         self.left_factor.setRange(0.1, 10.0)
         self.left_factor.setSingleStep(0.1)
         self.left_factor.setValue(app_state.ternary_factors[1])
-        factors_row.addWidget(QLabel("Left:"))
+        factors_row.addWidget(QLabel(f"{translate('Left')}:"))
         factors_row.addWidget(self.left_factor)
 
         self.right_factor = QDoubleSpinBox()
         self.right_factor.setRange(0.1, 10.0)
         self.right_factor.setSingleStep(0.1)
         self.right_factor.setValue(app_state.ternary_factors[2])
-        factors_row.addWidget(QLabel("Right:"))
+        factors_row.addWidget(QLabel(f"{translate('Right')}:"))
         factors_row.addWidget(self.right_factor)
 
         params_layout.addLayout(factors_row)
@@ -271,7 +271,7 @@ class Qt5TernaryDialog(QDialog):
             QMessageBox.warning(
                 self,
                 translate("Validation Error"),
-                translate("Please select exactly 3 columns.")
+                translate("Please select columns for all three axes.")
             )
             return
 
