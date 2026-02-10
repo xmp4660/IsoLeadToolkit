@@ -50,6 +50,35 @@ except ImportError:
     calculate_all_parameters = None
 
 
+def _resolve_isochron_errors(df, size):
+    """Resolve sX, sY, rXY arrays from app_state settings."""
+    mode = getattr(app_state, 'isochron_error_mode', 'fixed')
+
+    if mode == 'columns':
+        sx_col = getattr(app_state, 'isochron_sx_col', '')
+        sy_col = getattr(app_state, 'isochron_sy_col', '')
+        rxy_col = getattr(app_state, 'isochron_rxy_col', '')
+
+        if sx_col in df.columns and sy_col in df.columns:
+            sx = df[sx_col].values.astype(float)
+            sy = df[sy_col].values.astype(float)
+            if rxy_col and rxy_col in df.columns:
+                rxy = df[rxy_col].values.astype(float)
+            else:
+                rxy = np.zeros_like(sx)
+            return sx, sy, rxy
+
+        print("[WARN] Isochron error columns not found; using fixed values.", flush=True)
+
+    sx_val = float(getattr(app_state, 'isochron_sx_value', 0.001))
+    sy_val = float(getattr(app_state, 'isochron_sy_value', 0.001))
+    rxy_val = float(getattr(app_state, 'isochron_rxy_value', 0.0))
+    sx = np.full(size, sx_val, dtype=float)
+    sy = np.full(size, sy_val, dtype=float)
+    rxy = np.full(size, rxy_val, dtype=float)
+    return sx, sy, rxy
+
+
 # Lazy-loaded heavy dependencies to speed first render
 umap = None
 Axes3D = None
@@ -535,8 +564,6 @@ def _draw_isochron_overlays(ax, actual_algorithm):
     try:
         if actual_algorithm == 'PB_EVOL_76':
             mode = 'ISOCHRON1'
-        elif actual_algorithm == 'PB_EVOL_86':
-            mode = 'ISOCHRON2'
         else:
             return
 
@@ -559,11 +586,13 @@ def _draw_isochron_overlays(ax, actual_algorithm):
         col_208 = "208Pb/204Pb"
 
         x_col = col_206
-        y_col = col_207 if mode == 'ISOCHRON1' else col_208
+        y_col = col_207
         if x_col not in df.columns or y_col not in df.columns:
             return
 
         df_subset = df.iloc[indices]
+
+        sx_all, sy_all, rxy_all = _resolve_isochron_errors(df_subset, len(df_subset))
 
         group_col = app_state.last_group_col
         current_palette = getattr(app_state, 'current_palette', {})
@@ -577,12 +606,10 @@ def _draw_isochron_overlays(ax, actual_algorithm):
 
         try:
             from data.geochemistry import (
-                calculate_isochron_age_from_slope,
                 calculate_source_mu_from_isochron,
                 calculate_source_kappa_from_slope,
             )
         except ImportError:
-            calculate_isochron_age_from_slope = None
             calculate_source_mu_from_isochron = None
             calculate_source_kappa_from_slope = None
 
@@ -597,19 +624,33 @@ def _draw_isochron_overlays(ax, actual_algorithm):
             if grp == 'All Data':
                 x_grp = df_subset[x_col].values.astype(float)
                 y_grp = df_subset[y_col].values.astype(float)
+                sx_grp = sx_all
+                sy_grp = sy_all
+                rxy_grp = rxy_all
             else:
                 x_grp = df_subset.loc[df_subset.index[mask], x_col].values.astype(float)
                 y_grp = df_subset.loc[df_subset.index[mask], y_col].values.astype(float)
+                sx_grp = sx_all[mask]
+                sy_grp = sy_all[mask]
+                rxy_grp = rxy_all[mask]
 
             valid = ~np.isnan(x_grp) & ~np.isnan(y_grp)
+            valid = valid & np.isfinite(sx_grp) & np.isfinite(sy_grp) & np.isfinite(rxy_grp)
+            valid = valid & (sx_grp > 0) & (sy_grp > 0) & (np.abs(rxy_grp) <= 1)
             x_grp = x_grp[valid]
             y_grp = y_grp[valid]
+            sx_grp = sx_grp[valid]
+            sy_grp = sy_grp[valid]
+            rxy_grp = rxy_grp[valid]
 
             if len(x_grp) < 2:
                 continue
 
             try:
-                slope, intercept = np.polyfit(x_grp, y_grp, 1)
+                fit = geochemistry.york_regression(x_grp, sx_grp, y_grp, sy_grp, rxy_grp)
+                slope = fit['b']
+                intercept = fit['a']
+                slope_err = fit['sb']
             except Exception:
                 continue
 
@@ -645,9 +686,9 @@ def _draw_isochron_overlays(ax, actual_algorithm):
                 zorder=2
             )
 
-            if mode == 'ISOCHRON1' and calculate_isochron_age_from_slope:
+            if mode == 'ISOCHRON1' and geochemistry:
                 try:
-                    age_ma = calculate_isochron_age_from_slope(slope)
+                    age_ma, _ = geochemistry.calculate_pbpb_age_from_ratio(slope, slope_err, params)
                     if age_ma is not None and age_ma > 0:
                         # Place label at the end of the fitted line, clipped to axes limits
                         xlim = ax.get_xlim()
@@ -708,64 +749,7 @@ def _draw_isochron_overlays(ax, actual_algorithm):
                             )
                             ax.text(x_growth[0], y_growth[0], annot_text, fontsize=8, color=color, va='bottom', ha='right', alpha=0.8)
 
-            elif mode == 'ISOCHRON2' and calculate_source_kappa_from_slope and calculate_isochron_age_from_slope:
-                if getattr(app_state, 'show_growth_curves', True):
-                    if col_207 and col_206 in df_subset and col_207 in df_subset:
-                        if grp == 'All Data':
-                            x_iso = df_subset[col_206].values.astype(float)
-                            y_iso = df_subset[col_207].values.astype(float)
-                        else:
-                            x_iso = df_subset.loc[df_subset.index[mask], col_206].values.astype(float)
-                            y_iso = df_subset.loc[df_subset.index[mask], col_207].values.astype(float)
-
-                        valid_iso = ~np.isnan(x_iso) & ~np.isnan(y_iso)
-                        x_iso = x_iso[valid_iso]
-                        y_iso = y_iso[valid_iso]
-
-                        if len(x_iso) >= 2:
-                            try:
-                                slope_iso, intercept_iso = np.polyfit(x_iso, y_iso, 1)
-                                age_ma = calculate_isochron_age_from_slope(slope_iso)
-                                if age_ma is not None and age_ma > 0:
-                                    slope_208 = slope
-                                    growth = geochemistry.calculate_isochron2_growth_curve(
-                                        slope_208,
-                                        slope_iso,
-                                        intercept_iso,
-                                        age_ma,
-                                        params=params,
-                                        steps=100
-                                    )
-
-                                    if growth:
-                                        x_growth = growth['x']
-                                        y_growth = growth['y']
-                                        kappa_source = growth['kappa_source']
-
-                                        growth_style = resolve_line_style(
-                                            app_state,
-                                            'growth_curve',
-                                            {
-                                                'color': None,
-                                                'linewidth': getattr(app_state, 'model_curve_width', 1.2),
-                                                'linestyle': ':',
-                                                'alpha': 0.6
-                                            }
-                                        )
-                                        ax.plot(
-                                            x_growth,
-                                            y_growth,
-                                            linestyle=growth_style['linestyle'],
-                                            color=growth_style['color'] or color,
-                                            alpha=growth_style['alpha'],
-                                            linewidth=growth_style['linewidth'],
-                                            zorder=1.5
-                                        )
-
-                                        label_text = f" κ={kappa_source:.1f}\n ({age_ma:.0f}Ma)"
-                                        ax.text(x_growth[0], y_growth[0], label_text, fontsize=8, color=color, va='bottom', ha='right', alpha=0.8)
-                            except Exception as iso2_err:
-                                print(f"[WARN] ISOCHRON2 Curve Error: {iso2_err}", flush=True)
+            
 
     except Exception as err:
         print(f"[WARN] Failed to draw isochron overlays: {err}", flush=True)

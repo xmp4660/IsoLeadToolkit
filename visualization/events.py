@@ -341,6 +341,35 @@ def refresh_selection_overlay():
         print(f"[WARN] Unable to refresh selection overlay: {err}", flush=True)
 
 
+def _resolve_isochron_errors(df, size):
+    """Resolve sX, sY, rXY arrays from app_state settings."""
+    mode = getattr(app_state, 'isochron_error_mode', 'fixed')
+
+    if mode == 'columns':
+        sx_col = getattr(app_state, 'isochron_sx_col', '')
+        sy_col = getattr(app_state, 'isochron_sy_col', '')
+        rxy_col = getattr(app_state, 'isochron_rxy_col', '')
+
+        if sx_col in df.columns and sy_col in df.columns:
+            sx = df[sx_col].values.astype(float)
+            sy = df[sy_col].values.astype(float)
+            if rxy_col and rxy_col in df.columns:
+                rxy = df[rxy_col].values.astype(float)
+            else:
+                rxy = np.zeros_like(sx)
+            return sx, sy, rxy
+
+        print("[WARN] Isochron error columns not found; using fixed values.", flush=True)
+
+    sx_val = float(getattr(app_state, 'isochron_sx_value', 0.001))
+    sy_val = float(getattr(app_state, 'isochron_sy_value', 0.001))
+    rxy_val = float(getattr(app_state, 'isochron_rxy_value', 0.0))
+    sx = np.full(size, sx_val, dtype=float)
+    sy = np.full(size, sy_val, dtype=float)
+    rxy = np.full(size, rxy_val, dtype=float)
+    return sx, sy, rxy
+
+
 def calculate_selected_isochron():
     """Calculate isochron age for selected data points."""
     try:
@@ -351,20 +380,15 @@ def calculate_selected_isochron():
             return
 
         # Check if we're in a Pb evolution mode
-        if app_state.render_mode not in ['PB_EVOL_76', 'PB_EVOL_86']:
-            print("[WARN] Isochron calculation is only available for Pb evolution plots (PB_EVOL_76 or PB_EVOL_86).", flush=True)
+        if app_state.render_mode != 'PB_EVOL_76':
+            print("[WARN] Isochron calculation is only available for Pb evolution plot (PB_EVOL_76).", flush=True)
             app_state.selected_isochron_data = None
             return
 
         # Determine isochron mode
-        if app_state.render_mode == 'PB_EVOL_76':
-            mode = 'ISOCHRON1'
-            x_col = "206Pb/204Pb"
-            y_col = "207Pb/204Pb"
-        else:  # PB_EVOL_86
-            mode = 'ISOCHRON2'
-            x_col = "206Pb/204Pb"
-            y_col = "208Pb/204Pb"
+        mode = 'ISOCHRON1'
+        x_col = "206Pb/204Pb"
+        y_col = "207Pb/204Pb"
 
         # Get data
         df = app_state.df_global
@@ -380,21 +404,35 @@ def calculate_selected_isochron():
         x_data = df_selected[x_col].values.astype(float)
         y_data = df_selected[y_col].values.astype(float)
 
+        sx_data, sy_data, rxy_data = _resolve_isochron_errors(df_selected, len(x_data))
+
         # Remove NaN values
         valid = ~np.isnan(x_data) & ~np.isnan(y_data)
+        valid = valid & np.isfinite(sx_data) & np.isfinite(sy_data) & np.isfinite(rxy_data)
+        valid = valid & (sx_data > 0) & (sy_data > 0) & (np.abs(rxy_data) <= 1)
         x_data = x_data[valid]
         y_data = y_data[valid]
+        sx_data = sx_data[valid]
+        sy_data = sy_data[valid]
+        rxy_data = rxy_data[valid]
 
         if len(x_data) < 2:
             print("[WARN] Not enough valid data points for isochron calculation.", flush=True)
             app_state.selected_isochron_data = None
             return
 
-        # Perform linear regression
+        # Perform York regression
         try:
-            slope, intercept = np.polyfit(x_data, y_data, 1)
+            from data.geochemistry import york_regression, calculate_pbpb_age_from_ratio, engine
+            fit = york_regression(x_data, sx_data, y_data, sy_data, rxy_data)
+            slope = fit['b']
+            intercept = fit['a']
+            slope_err = fit['sb']
+            intercept_err = fit['sa']
+            mswd = fit['mswd']
+            p_value = fit['p_value']
         except Exception as e:
-            print(f"[WARN] Linear regression failed: {e}", flush=True)
+            print(f"[WARN] Isochron regression failed: {e}", flush=True)
             app_state.selected_isochron_data = None
             return
 
@@ -406,12 +444,12 @@ def calculate_selected_isochron():
 
         # Calculate age from slope
         try:
-            from data.geochemistry import calculate_isochron_age_from_slope, engine
             params = engine.get_parameters()
-            age_ma = calculate_isochron_age_from_slope(slope, params)
+            age_ma, age_err = calculate_pbpb_age_from_ratio(slope, slope_err, params)
         except Exception as e:
             print(f"[WARN] Age calculation failed: {e}", flush=True)
             age_ma = 0.0
+            age_err = None
 
         # Store results
         x_min, x_max = np.min(x_data), np.max(x_data)
@@ -422,8 +460,13 @@ def calculate_selected_isochron():
         app_state.selected_isochron_data = {
             'slope': slope,
             'intercept': intercept,
+            'slope_err': slope_err,
+            'intercept_err': intercept_err,
             'age': age_ma,
+            'age_err': age_err,
             'r_squared': r_squared,
+            'mswd': mswd,
+            'p_value': p_value,
             'n_points': len(x_data),
             'mode': mode,
             'x_range': x_range,

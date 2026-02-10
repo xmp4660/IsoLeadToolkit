@@ -17,6 +17,10 @@
 
 import numpy as np
 from scipy import optimize
+try:
+    from scipy.stats import chi2
+except Exception:
+    chi2 = None
 
 # =============================================================================
 # 1. 物理常数与参考值定义
@@ -1083,6 +1087,128 @@ def calculate_model_age(Pb206_204_S, Pb207_204_S, two_stage=False):
 # 10. 等时线工具函数
 # =============================================================================
 
+def york_regression(x, sx, y, sy, rxy=None, max_iter=50, tol=1e-15):
+    """York (2004) regression with correlated errors.
+
+    Args:
+        x, y: data arrays
+        sx, sy: 1-sigma uncertainties for x and y
+        rxy: correlation coefficients between x and y
+    Returns:
+        dict with slope/intercept, errors, cov, mswd, p_value, df
+    """
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    sx = np.asarray(sx, dtype=float)
+    sy = np.asarray(sy, dtype=float)
+    if rxy is None:
+        rxy = np.zeros_like(x, dtype=float)
+    else:
+        rxy = np.asarray(rxy, dtype=float)
+
+    if x.size < 2:
+        raise ValueError("At least two points are required for York regression.")
+
+    rxy = np.clip(rxy, -0.999999, 0.999999)
+
+    if np.any(sx <= 0) or np.any(sy <= 0):
+        raise ValueError("All uncertainties must be > 0 for York regression.")
+
+    ab = np.polyfit(x, y, 1)
+    b = float(ab[0])
+    if not np.isfinite(b):
+        raise ValueError("Cannot fit a straight line through these data.")
+
+    wX = 1.0 / (sx ** 2)
+    wY = 1.0 / (sy ** 2)
+
+    for _ in range(max_iter):
+        bold = b
+        A = np.sqrt(wX * wY)
+        denom = wX + b * b * wY - 2.0 * b * rxy * A
+        denom = np.where(denom <= 0, np.nan, denom)
+        W = wX * wY / denom
+        if not np.all(np.isfinite(W)):
+            raise ValueError("Invalid weights in York regression.")
+
+        Xbar = np.nansum(W * x) / np.nansum(W)
+        Ybar = np.nansum(W * y) / np.nansum(W)
+        U = x - Xbar
+        V = y - Ybar
+        B = W * (U / wY + b * V / wX - (b * U + V) * rxy / A)
+        b = np.nansum(W * B * V) / np.nansum(W * B * U)
+        if b != 0 and (bold / b - 1) ** 2 < tol:
+            break
+
+    a = Ybar - b * Xbar
+    xadj = Xbar + B
+    xbar = np.nansum(W * xadj) / np.nansum(W)
+    u = xadj - xbar
+    sb = np.sqrt(1.0 / np.nansum(W * u * u))
+    sa = np.sqrt(1.0 / np.nansum(W) + (xbar * sb) ** 2)
+    cov_ab = -xbar * sb ** 2
+
+    chi2_val = np.nansum(W * (y - (b * x + a)) ** 2)
+    df = int(x.size - 2)
+    mswd = chi2_val / df if df > 0 else np.nan
+    p_value = 1.0 - chi2.cdf(chi2_val, df) if chi2 is not None and df > 0 else np.nan
+
+    return {
+        'a': a,
+        'b': b,
+        'sa': sa,
+        'sb': sb,
+        'cov_ab': cov_ab,
+        'mswd': mswd,
+        'p_value': p_value,
+        'df': df,
+    }
+
+
+def calculate_pbpb_age_from_ratio(r76, sr76=None, params=None):
+    """Calculate Pb-Pb age from 207Pb/206Pb ratio and its uncertainty."""
+    if params is None:
+        params = engine.params
+
+    if r76 <= 0:
+        return 0.0, None
+
+    l238 = params['lambda_238']
+    l235 = params['lambda_235']
+    u_ratio = params['U_ratio']
+
+    def f(t):
+        if t <= 0:
+            return -r76
+        num = np.exp(l235 * t) - 1.0
+        den = np.exp(l238 * t) - 1.0
+        if abs(den) < 1e-50:
+            den = 1e-50
+        return (u_ratio * num / den) - r76
+
+    res = _solve_age_scipy(f, bounds=(1e6, 10e9))
+    if not res:
+        return 0.0, None
+
+    age_ma = res / 1e6
+
+    if sr76 is None:
+        return age_ma, None
+
+    e5 = np.exp(l235 * res)
+    e8 = np.exp(l238 * res)
+    den = (e8 - 1.0) ** 2
+    if abs(den) < 1e-50:
+        return age_ma, None
+
+    dRdt = u_ratio * ((l235 * e5 * (e8 - 1.0)) - ((e5 - 1.0) * l238 * e8)) / den
+    if dRdt == 0:
+        return age_ma, None
+
+    dt_dR = 1.0 / dRdt
+    age_err_ma = abs(dt_dR * sr76) / 1e6
+    return age_ma, age_err_ma
+
 def calculate_isochron_age_from_slope(slope, params=None):
     """
     从 Pb-Pb 等时线斜率计算年龄
@@ -1093,23 +1219,8 @@ def calculate_isochron_age_from_slope(slope, params=None):
 
     其中 U_ratio = 235U/238U ≈ 1/137.88 ≈ 0.00725
     """
-    if params is None: params = engine.params
-
-    if slope <= 0: return 0.0
-
-    l238 = params['lambda_238']
-    l235 = params['lambda_235']
-    u_ratio = params['U_ratio']  # 235U/238U ≈ 0.00725
-
-    def f(t):
-        if t <= 0: return -slope
-        num = np.exp(l235 * t) - 1
-        den = np.exp(l238 * t) - 1
-        if abs(den) < 1e-50: den = 1e-50
-        return (u_ratio * num / den) - slope
-
-    res = _solve_age_scipy(f, bounds=(1e6, 10e9))
-    return res / 1e6 if res else 0.0
+    age_ma, _ = calculate_pbpb_age_from_ratio(slope, sr76=None, params=params)
+    return age_ma
 
 
 def calculate_source_mu_from_isochron(slope, intercept, age_ma, params=None):

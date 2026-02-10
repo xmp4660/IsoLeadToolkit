@@ -158,6 +158,14 @@ class AppState:
         self.selection_overlay = None
         self.selection_ellipse = None  # Store the confidence ellipse for selected points
         self.selected_isochron_data = None  # Stores {slope, intercept, age, r_squared, n_points, mode, x_range, y_range}
+        # Isochron regression error configuration
+        self.isochron_error_mode = 'fixed'  # 'fixed' or 'columns'
+        self.isochron_sx_col = ''
+        self.isochron_sy_col = ''
+        self.isochron_rxy_col = ''
+        self.isochron_sx_value = 0.001
+        self.isochron_sy_value = 0.001
+        self.isochron_rxy_value = 0.0
         self.marginal_axes = None  # (top_ax, right_ax) for marginal KDE
         self.paleoisochron_label_data = []  # Track paleoisochron labels for updates
         self.paleo_label_refreshing = False

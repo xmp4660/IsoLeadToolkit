@@ -866,6 +866,10 @@ class Qt5ControlPanel(QWidget):
         calc_isochron_btn.clicked.connect(self._on_calculate_isochron)
         isochron_row.addWidget(calc_isochron_btn)
 
+        isochron_settings_btn = QPushButton(translate("Isochron Settings"))
+        isochron_settings_btn.clicked.connect(self._on_isochron_settings)
+        isochron_row.addWidget(isochron_settings_btn)
+
         selected_style = getattr(app_state, 'line_styles', {}).get('selected_isochron', {}) or {}
         selected_color = selected_style.get('color') or '#ef4444'
         isochron_swatch = QLabel()
@@ -1400,6 +1404,10 @@ class Qt5ControlPanel(QWidget):
         calc_isochron_btn = QPushButton(translate("Calculate Isochron Age"))
         calc_isochron_btn.clicked.connect(self._on_calculate_isochron)
         isochron_row.addWidget(calc_isochron_btn)
+
+        isochron_settings_btn = QPushButton(translate("Isochron Settings"))
+        isochron_settings_btn.clicked.connect(self._on_isochron_settings)
+        isochron_row.addWidget(isochron_settings_btn)
 
         selected_style = getattr(app_state, 'line_styles', {}).get('selected_isochron', {}) or {}
         selected_color = selected_style.get('color') or '#ef4444'
@@ -4721,12 +4729,15 @@ class Qt5ControlPanel(QWidget):
             )
             return
 
-        if app_state.render_mode not in ('PB_EVOL_76', 'PB_EVOL_86'):
+        if app_state.render_mode != 'PB_EVOL_76':
             QMessageBox.information(
                 self,
                 translate("Isochron Age Calculation"),
-                translate("Isochron calculation is only available for Pb evolution plots")
+                translate("Isochron calculation is only available for Pb evolution plot (PB_EVOL_76)")
             )
+            return
+
+        if not self._ensure_isochron_error_settings():
             return
 
         previous_selection = set(getattr(app_state, 'selected_indices', set()) or set())
@@ -4739,6 +4750,55 @@ class Qt5ControlPanel(QWidget):
                 on_slider_change()
             except Exception as refresh_err:
                 print(f"[WARN] Failed to refresh plot after isochron calculation: {refresh_err}", flush=True)
+
+    def _ensure_isochron_error_settings(self):
+        """Ensure isochron error settings are usable before calculation."""
+        mode = getattr(app_state, 'isochron_error_mode', 'fixed')
+        if mode != 'columns':
+            return True
+
+        df = getattr(app_state, 'df_global', None)
+        sx_col = getattr(app_state, 'isochron_sx_col', '')
+        sy_col = getattr(app_state, 'isochron_sy_col', '')
+
+        if df is None or not sx_col or not sy_col:
+            return self._on_isochron_settings()
+
+        if sx_col not in df.columns or sy_col not in df.columns:
+            return self._on_isochron_settings()
+
+        return True
+
+    def _on_isochron_settings(self):
+        """Open isochron regression settings dialog."""
+        try:
+            from ui.qt5_dialogs.isochron_dialog import get_isochron_error_settings
+        except Exception as exc:
+            QMessageBox.warning(
+                self,
+                translate("Error"),
+                translate("Failed to open isochron settings: {error}").format(error=str(exc))
+            )
+            return False
+
+        settings = get_isochron_error_settings(self)
+        if not settings:
+            return False
+
+        mode = settings.get('mode')
+        if mode == 'columns':
+            app_state.isochron_error_mode = 'columns'
+            app_state.isochron_sx_col = settings.get('sx_col', '')
+            app_state.isochron_sy_col = settings.get('sy_col', '')
+            app_state.isochron_rxy_col = settings.get('rxy_col', '')
+        else:
+            app_state.isochron_error_mode = 'fixed'
+            app_state.isochron_sx_value = float(settings.get('sx_value', 0.001))
+            app_state.isochron_sy_value = float(settings.get('sy_value', 0.001))
+            app_state.isochron_rxy_value = float(settings.get('rxy_value', 0.0))
+
+        self._on_change()
+        return True
 
     def _on_paleo_step_change(self, value):
         """古等时线密度变化"""
