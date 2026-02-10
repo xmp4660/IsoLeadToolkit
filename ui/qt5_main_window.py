@@ -231,6 +231,7 @@ class Qt5MainWindow(QMainWindow):
         # 创建新画布
         canvas = FigureCanvas(fig)
         toolbar = NavigationToolbar(canvas, self)
+        toolbar.setVisible(False)
         zoom_out_action = QAction(self._get_zoom_out_icon(), translate("Zoom Out"), self)
         zoom_out_action.setToolTip(translate("Zoom Out"))
         zoom_out_action.triggered.connect(self._zoom_out_view)
@@ -251,8 +252,28 @@ class Qt5MainWindow(QMainWindow):
         else:
             toolbar.addAction(zoom_out_action)
 
-        # 添加到布局
-        self.canvas_layout.addWidget(toolbar)
+        rect_select_action = QAction(self._get_selection_icon("selection_rect.svg"), translate("Box Select"), self)
+        rect_select_action.setToolTip(translate("Box Select"))
+        rect_select_action.setCheckable(True)
+        rect_select_action.triggered.connect(lambda: self._toggle_selection_tool('export'))
+
+        lasso_select_action = QAction(self._get_selection_icon("selection_polygon.svg"), translate("Lasso Select"), self)
+        lasso_select_action.setToolTip(translate("Lasso Select"))
+        lasso_select_action.setCheckable(True)
+        lasso_select_action.triggered.connect(lambda: self._toggle_selection_tool('lasso'))
+
+        toolbar.addSeparator()
+        toolbar.addAction(rect_select_action)
+        toolbar.addAction(lasso_select_action)
+
+        self._selection_tool_actions = {
+            'rect': rect_select_action,
+            'lasso': lasso_select_action,
+        }
+        self._sync_selection_tool_actions()
+
+        self._attach_matplotlib_toolbar_actions(toolbar)
+        self.canvas_layout.addWidget(canvas)
         self.canvas_layout.addWidget(canvas)
 
         # 保存引用
@@ -261,6 +282,27 @@ class Qt5MainWindow(QMainWindow):
 
         # 连接事件处理器
         self._connect_event_handlers(canvas)
+
+    def _attach_matplotlib_toolbar_actions(self, toolbar):
+        self._clear_matplotlib_toolbar_actions()
+        self._mpl_toolbar = toolbar
+        actions = list(toolbar.actions())
+        if not actions:
+            return
+        for action in actions:
+            self.toolbar.addAction(action)
+        self._mpl_toolbar_actions = actions
+
+    def _clear_matplotlib_toolbar_actions(self):
+        actions = getattr(self, '_mpl_toolbar_actions', [])
+        if not actions:
+            return
+        for action in actions:
+            try:
+                self.toolbar.removeAction(action)
+            except Exception:
+                pass
+        self._mpl_toolbar_actions = []
 
     def _get_zoom_out_icon(self):
         """Resolve a zoom-out icon, falling back to a standard icon."""
@@ -275,6 +317,38 @@ class Qt5MainWindow(QMainWindow):
             if not icon.isNull():
                 return icon
         return self.style().standardIcon(QStyle.SP_TitleBarMinButton)
+
+    def _get_selection_icon(self, filename):
+        """Resolve selection tool icon from assets."""
+        base_dir = Path(__file__).resolve().parent.parent
+        svg_path = base_dir / "assets" / "icons" / filename
+        if svg_path.exists():
+            icon = QIcon(str(svg_path))
+            if not icon.isNull():
+                return icon
+        return self.style().standardIcon(QStyle.SP_ArrowCursor)
+
+    def _toggle_selection_tool(self, tool_type):
+        try:
+            from visualization.events import toggle_selection_mode
+            toggle_selection_mode(tool_type)
+        except Exception as exc:
+            print(f"[WARN] Failed to toggle selection tool: {exc}", flush=True)
+        self._sync_selection_tool_actions()
+
+    def _sync_selection_tool_actions(self):
+        actions = getattr(self, '_selection_tool_actions', None)
+        if not actions:
+            return
+        current_tool = getattr(app_state, 'selection_tool', None)
+        rect_checked = current_tool == 'export'
+        lasso_checked = current_tool == 'lasso'
+        actions['rect'].blockSignals(True)
+        actions['lasso'].blockSignals(True)
+        actions['rect'].setChecked(rect_checked)
+        actions['lasso'].setChecked(lasso_checked)
+        actions['rect'].blockSignals(False)
+        actions['lasso'].blockSignals(False)
 
     def _zoom_out_view(self):
         """Zoom out the current axes view."""

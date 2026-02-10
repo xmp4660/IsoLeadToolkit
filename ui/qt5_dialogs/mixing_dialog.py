@@ -36,6 +36,8 @@ class MixingCalculatorDialog(QDialog):
     def _setup_ui(self):
         """设置 UI"""
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(8)
 
         # 说明文本
         info_label = QLabel(translate("Mixing proportions calculated using least squares:"))
@@ -51,10 +53,11 @@ class MixingCalculatorDialog(QDialog):
             translate("Residual")
         ])
         self.result_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        layout.addWidget(self.result_table)
+        layout.addWidget(self.result_table, 1)
 
         # 按钮
         button_layout = QHBoxLayout()
+        button_layout.setSpacing(8)
         button_layout.addStretch()
 
         export_btn = QPushButton(translate("Export Results"))

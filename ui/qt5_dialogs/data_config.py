@@ -34,27 +34,26 @@ class Qt5DataConfigDialog(QDialog):
         self.setMinimumSize(900, 620)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(8)
 
         # 标题
         header = QFrame()
-        header.setStyleSheet("background-color: #edf2f7;")
-        header.setFixedHeight(60)
+        header.setFixedHeight(48)
         header_layout = QHBoxLayout(header)
-        header_layout.setContentsMargins(20, 0, 20, 0)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(8)
 
         title = QLabel(translate("Select Columns"))
-        title.setStyleSheet("font-size: 20px; font-weight: bold;")
         header_layout.addWidget(title)
 
         layout.addWidget(header)
 
         # 内容
         content = QFrame()
-        content.setStyleSheet("background-color: #edf2f7;")
         content_layout = QHBoxLayout(content)
-        content_layout.setContentsMargins(20, 20, 20, 20)
-        content_layout.setSpacing(20)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(12)
 
         # 分组列选择
         self._build_column_section(
@@ -76,9 +75,9 @@ class Qt5DataConfigDialog(QDialog):
 
         # 底部
         footer = QFrame()
-        footer.setStyleSheet("background-color: #edf2f7;")
         footer_layout = QHBoxLayout(footer)
-        footer_layout.setContentsMargins(20, 10, 20, 10)
+        footer_layout.setContentsMargins(0, 0, 0, 0)
+        footer_layout.setSpacing(8)
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
@@ -89,14 +88,6 @@ class Qt5DataConfigDialog(QDialog):
         footer_layout.addWidget(cancel_btn)
 
         apply_btn = QPushButton(translate("Apply"))
-        apply_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #2563eb;
-                color: white;
-                padding: 8px 24px;
-                border-radius: 4px;
-            }
-        """)
         apply_btn.clicked.connect(self._ok_clicked)
         footer_layout.addWidget(apply_btn)
 
@@ -105,21 +96,20 @@ class Qt5DataConfigDialog(QDialog):
     def _build_column_section(self, parent, title, description, selection_type):
         """构建列选择区域"""
         card = QFrame()
-        card.setStyleSheet("background-color: white; border-radius: 8px;")
         card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(15, 15, 15, 15)
+        card_layout.setContentsMargins(12, 12, 12, 12)
+        card_layout.setSpacing(8)
 
         header = QLabel(title)
-        header.setStyleSheet("font-size: 14px; font-weight: bold;")
         card_layout.addWidget(header)
 
         desc = QLabel(description)
-        desc.setStyleSheet("font-size: 11px; color: #4a5568;")
         desc.setWordWrap(True)
         card_layout.addWidget(desc)
 
         # 工具栏
         toolbar = QHBoxLayout()
+        toolbar.setSpacing(6)
 
         select_all_btn = QPushButton(translate("Select all"))
         select_all_btn.clicked.connect(lambda: self._select_all(selection_type))
@@ -135,19 +125,6 @@ class Qt5DataConfigDialog(QDialog):
         # 列列表
         list_widget = QListWidget()
         list_widget.setSelectionMode(QListWidget.MultiSelection)
-        list_widget.setStyleSheet("""
-            QListWidget {
-                border: 1px solid #e2e8f0;
-                border-radius: 4px;
-            }
-            QListWidget::item {
-                padding: 4px;
-            }
-            QListWidget::item:selected {
-                background-color: #2563eb;
-                color: white;
-            }
-        """)
 
         # 填充列
         for col in self.all_columns:

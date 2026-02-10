@@ -39,6 +39,8 @@ class TooltipConfigDialog(QDialog):
     def _setup_ui(self):
         """设置 UI"""
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(8)
 
         # 说明文本
         info_label = QLabel(translate("Select columns to display:"))
@@ -47,7 +49,7 @@ class TooltipConfigDialog(QDialog):
         # 列列表
         self.column_list = QListWidget()
         self.column_list.setSelectionMode(QListWidget.MultiSelection)
-        layout.addWidget(self.column_list)
+        layout.addWidget(self.column_list, 1)
 
         # 填充列列表
         if app_state.df_global is not None:
@@ -57,6 +59,7 @@ class TooltipConfigDialog(QDialog):
 
         # 按钮
         button_layout = QHBoxLayout()
+        button_layout.setSpacing(8)
 
         select_all_btn = QPushButton(translate("Select all"))
         select_all_btn.clicked.connect(self._select_all)

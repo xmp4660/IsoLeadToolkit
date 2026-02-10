@@ -4704,7 +4704,7 @@ class Qt5ControlPanel(QWidget):
     def _on_calculate_isochron(self):
         """计算等时线年龄"""
         try:
-            from visualization.events import toggle_selection_mode
+            from visualization.events import toggle_selection_mode, calculate_selected_isochron, on_slider_change
         except Exception as e:
             QMessageBox.warning(
                 self,
@@ -4729,7 +4729,16 @@ class Qt5ControlPanel(QWidget):
             )
             return
 
+        previous_selection = set(getattr(app_state, 'selected_indices', set()) or set())
         toggle_selection_mode('isochron')
+
+        if app_state.selection_tool == 'isochron' and previous_selection:
+            app_state.selected_indices = set(previous_selection)
+            calculate_selected_isochron()
+            try:
+                on_slider_change()
+            except Exception as refresh_err:
+                print(f"[WARN] Failed to refresh plot after isochron calculation: {refresh_err}", flush=True)
 
     def _on_paleo_step_change(self, value):
         """古等时线密度变化"""

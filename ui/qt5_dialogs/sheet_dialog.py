@@ -40,50 +40,35 @@ class Qt5SheetDialog(QDialog):
         self.setMinimumSize(560, 420)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(8)
 
         # 标题
         header = QFrame()
-        header.setStyleSheet("background-color: #edf2f7;")
-        header.setFixedHeight(60)
+        header.setFixedHeight(48)
         header_layout = QHBoxLayout(header)
-        header_layout.setContentsMargins(20, 0, 20, 0)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(8)
 
         title = QLabel(translate("Choose a Sheet"))
-        title.setStyleSheet("font-size: 20px; font-weight: bold; color: #1a202c;")
         header_layout.addWidget(title)
 
         layout.addWidget(header)
 
         # 内容
         content = QFrame()
-        content.setStyleSheet("background-color: #edf2f7;")
         content_layout = QVBoxLayout(content)
-        content_layout.setContentsMargins(24, 20, 24, 20)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(8)
 
         subtitle = QLabel(translate(
             "Select the worksheet that contains the measurements you want to analyze."
         ))
-        subtitle.setStyleSheet("color: #4a5568; font-size: 12px;")
         subtitle.setWordWrap(True)
         content_layout.addWidget(subtitle)
 
         # 工作表列表
         self.sheet_list = QListWidget()
-        self.sheet_list.setStyleSheet("""
-            QListWidget {
-                background-color: white;
-                border: 1px solid #e2e8f0;
-                border-radius: 4px;
-            }
-            QListWidget::item {
-                padding: 8px;
-            }
-            QListWidget::item:selected {
-                background-color: #2563eb;
-                color: white;
-            }
-        """)
 
         for sheet in self.sheets:
             item = QListWidgetItem(sheet)
@@ -102,9 +87,9 @@ class Qt5SheetDialog(QDialog):
 
         # 底部按钮
         footer = QFrame()
-        footer.setStyleSheet("background-color: #edf2f7;")
         footer_layout = QHBoxLayout(footer)
-        footer_layout.setContentsMargins(20, 10, 20, 10)
+        footer_layout.setContentsMargins(0, 0, 0, 0)
+        footer_layout.setSpacing(8)
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
@@ -115,14 +100,6 @@ class Qt5SheetDialog(QDialog):
         footer_layout.addWidget(cancel_btn)
 
         continue_btn = QPushButton(translate("Continue"))
-        continue_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #2563eb;
-                color: white;
-                padding: 8px 24px;
-                border-radius: 4px;
-            }
-        """)
         continue_btn.clicked.connect(self._ok_clicked)
         footer_layout.addWidget(continue_btn)
 

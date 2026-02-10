@@ -16,34 +16,21 @@ class Qt5ProgressDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setModal(True)
-        self.setFixedSize(400, 150)
+        self.setFixedSize(360, 130)
         self.setWindowFlags(Qt.Dialog | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(15)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(8)
 
         # 消息标签
         self.message_label = QLabel(message)
-        self.message_label.setStyleSheet("font-size: 12px; color: #1a202c;")
         self.message_label.setWordWrap(True)
         layout.addWidget(self.message_label)
 
         # 进度条
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 0)  # 不确定模式
-        self.progress_bar.setStyleSheet("""
-            QProgressBar {
-                border: none;
-                border-radius: 4px;
-                background-color: #e2e8f0;
-                text-align: center;
-            }
-            QProgressBar::chunk {
-                background-color: #2563eb;
-                border-radius: 4px;
-            }
-        """)
         layout.addWidget(self.progress_bar)
 
         self.show()

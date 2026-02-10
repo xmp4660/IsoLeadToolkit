@@ -45,17 +45,17 @@ class Qt5FileDialog(QDialog):
         self.setMinimumSize(760, 480)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(8)
 
         # 标题栏（包含语言选择）
         header = QFrame()
-        header.setStyleSheet("background-color: #edf2f7;")
-        header.setFixedHeight(60)
+        header.setFixedHeight(48)
         header_layout = QHBoxLayout(header)
-        header_layout.setContentsMargins(20, 0, 20, 0)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(8)
 
         self.title_label = QLabel(translate("Select Data File"))
-        self.title_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #1a202c;")
         header_layout.addWidget(self.title_label)
 
         # 语言选择
@@ -71,29 +71,27 @@ class Qt5FileDialog(QDialog):
 
         # 内容区域
         content = QFrame()
-        content.setStyleSheet("background-color: #edf2f7;")
         content_layout = QVBoxLayout(content)
-        content_layout.setContentsMargins(24, 20, 24, 20)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(8)
 
         self.subtitle_label = QLabel(translate(
             "Choose a CSV or Excel file (.csv, .xlsx, .xls) that contains "
             "the isotope dataset you want to explore."
         ))
-        self.subtitle_label.setStyleSheet("color: #4a5568; font-size: 12px;")
         self.subtitle_label.setWordWrap(True)
         content_layout.addWidget(self.subtitle_label)
 
         # 文件选择卡片
         card = QFrame()
-        card.setStyleSheet("background-color: white; border-radius: 8px;")
         card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(18, 18, 18, 18)
+        card_layout.setContentsMargins(12, 12, 12, 12)
+        card_layout.setSpacing(8)
 
         self.card_header_label = QLabel(translate("Current selection"))
         card_layout.addWidget(self.card_header_label)
 
         self.file_label = QLabel(translate("No file selected"))
-        self.file_label.setStyleSheet("color: #94a3b8; font-size: 12px;")
         self.file_label.setWordWrap(True)
         card_layout.addWidget(self.file_label)
 
@@ -106,30 +104,10 @@ class Qt5FileDialog(QDialog):
         btn_row = QHBoxLayout()
 
         self.browse_btn = QPushButton(translate("Browse..."))
-        self.browse_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #2563eb;
-                color: white;
-                padding: 8px 16px;
-                border-radius: 4px;
-            }
-            QPushButton:hover {
-                background-color: #1d4ed8;
-            }
-        """)
         self.browse_btn.clicked.connect(self._browse_file)
         btn_row.addWidget(self.browse_btn)
 
         self.clear_btn = QPushButton(translate("Clear Selection"))
-        self.clear_btn.setStyleSheet("""
-            QPushButton {
-                background-color: white;
-                color: #2563eb;
-                border: 1px solid #2563eb;
-                padding: 8px 16px;
-                border-radius: 4px;
-            }
-        """)
         self.clear_btn.clicked.connect(self._clear_file)
         btn_row.addWidget(self.clear_btn)
 
@@ -143,9 +121,9 @@ class Qt5FileDialog(QDialog):
 
         # 底部按钮
         footer = QFrame()
-        footer.setStyleSheet("background-color: #edf2f7;")
         footer_layout = QHBoxLayout(footer)
-        footer_layout.setContentsMargins(20, 10, 20, 10)
+        footer_layout.setContentsMargins(0, 0, 0, 0)
+        footer_layout.setSpacing(8)
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
@@ -156,14 +134,6 @@ class Qt5FileDialog(QDialog):
         footer_layout.addWidget(self.cancel_btn)
 
         self.continue_btn = QPushButton(translate("Continue"))
-        self.continue_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #2563eb;
-                color: white;
-                padding: 8px 24px;
-                border-radius: 4px;
-            }
-        """)
         self.continue_btn.clicked.connect(self._ok_clicked)
         footer_layout.addWidget(self.continue_btn)
 
@@ -206,7 +176,6 @@ class Qt5FileDialog(QDialog):
 
         if not self.selected_file:
             self.file_label.setText(translate("No file selected"))
-            self.file_label.setStyleSheet("color: #94a3b8; font-size: 12px;")
 
     def _on_language_change(self, index):
         """语言变化处理"""
@@ -226,7 +195,6 @@ class Qt5FileDialog(QDialog):
         display_path = os.path.basename(file_path)
         directory = os.path.dirname(file_path)
         self.file_label.setText(f"{display_path}\n{directory}")
-        self.file_label.setStyleSheet("color: #1a202c; font-size: 12px; font-weight: bold;")
 
     def _browse_file(self):
         """浏览文件"""
@@ -251,7 +219,6 @@ class Qt5FileDialog(QDialog):
         """清除文件选择"""
         self.selected_file = None
         self.file_label.setText(translate("No file selected"))
-        self.file_label.setStyleSheet("color: #94a3b8; font-size: 12px;")
 
     def _ok_clicked(self):
         """确定按钮点击"""
