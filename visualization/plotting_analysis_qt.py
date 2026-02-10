@@ -20,6 +20,89 @@ def _create_plot_dialog(title, width=800, height=500, parent=None):
     return dialog, fig, canvas
 
 
+def show_scree_plot(parent_window=None):
+    """Display a scree plot of the explained variance for the last PCA run."""
+    if not hasattr(app_state, 'last_pca_variance') or app_state.last_pca_variance is None:
+        print("[WARN] No PCA variance data available. Run PCA first.", flush=True)
+        return
+
+    variance_ratio = app_state.last_pca_variance
+    n_components = len(variance_ratio)
+    components = range(1, n_components + 1)
+    cumulative_variance = np.cumsum(variance_ratio)
+
+    dialog, fig, canvas = _create_plot_dialog("Scree Plot - Explained Variance", 600, 450, parent_window)
+    ax1 = fig.add_subplot(111)
+
+    ax1.bar(components, variance_ratio, alpha=0.6, color='b', label='Individual Variance')
+    ax1.set_xlabel('Principal Component')
+    ax1.set_ylabel('Explained Variance Ratio', color='b')
+    ax1.tick_params(axis='y', labelcolor='b')
+    ax1.set_xticks(list(components))
+    ax1.set_ylim(0, 1.05)
+
+    ax2 = ax1.twinx()
+    ax2.plot(components, cumulative_variance, marker='o', color='r', label='Cumulative Variance')
+    ax2.set_ylabel('Cumulative Variance Ratio', color='r')
+    ax2.tick_params(axis='y', labelcolor='r')
+    ax2.set_ylim(0, 1.05)
+
+    ax1.grid(True, axis='x', alpha=0.3)
+    ax2.grid(True, axis='y', alpha=0.3)
+
+    ax1.set_title('Scree Plot')
+    fig.tight_layout()
+    canvas.draw()
+    dialog.exec_()
+
+
+def show_pca_loadings(parent_window=None):
+    """Display a heatmap of PCA loadings (components)."""
+    if not hasattr(app_state, 'last_pca_components') or app_state.last_pca_components is None:
+        print("[WARN] No PCA components data available. Run PCA first.", flush=True)
+        return
+
+    components = app_state.last_pca_components
+    feature_names = app_state.current_feature_names
+
+    if not feature_names or len(feature_names) != components.shape[1]:
+        print("[WARN] Feature names mismatch or missing.", flush=True)
+        feature_names = [f"Feature {i + 1}" for i in range(components.shape[1])]
+
+    n_comps = components.shape[0]
+    comp_names = [f"PC{i + 1}" for i in range(n_comps)]
+
+    dialog, fig, canvas = _create_plot_dialog("PCA Loadings", 800, 600, parent_window)
+    ax = fig.add_subplot(111)
+
+    im = ax.imshow(components, cmap='RdBu_r', vmin=-1, vmax=1, aspect='auto')
+
+    cbar = fig.colorbar(im, ax=ax)
+    cbar.set_label('Loading Value')
+
+    ax.set_xticks(np.arange(len(feature_names)))
+    ax.set_yticks(np.arange(len(comp_names)))
+
+    ax.set_xticklabels(feature_names, rotation=45, ha="right")
+    ax.set_yticklabels(comp_names)
+
+    for i in range(len(comp_names)):
+        for j in range(len(feature_names)):
+            ax.text(
+                j,
+                i,
+                f"{components[i, j]:.2f}",
+                ha="center",
+                va="center",
+                color="k" if abs(components[i, j]) < 0.5 else "w",
+            )
+
+    ax.set_title("PCA Loadings (Feature Contribution to Components)")
+    fig.tight_layout()
+    canvas.draw()
+    dialog.exec_()
+
+
 def show_embedding_correlation(parent_window=None):
     """Display correlation between original features and embedding dimensions."""
     if not hasattr(app_state, 'last_embedding') or app_state.last_embedding is None:

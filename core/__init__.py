@@ -1,11 +1,10 @@
 """
-Core module - Configuration, state, session, localization, and application
+Core module - Configuration, state, session, and localization
 """
 from .config import CONFIG
 from .state import app_state
 from .session import load_session_params, save_session_params, clear_session_params, get_temp_dir_size
 from .localization import translate, set_language, available_languages, validate_language
-from .app import Application
 
 __all__ = [
     'CONFIG',
@@ -18,5 +17,4 @@ __all__ = [
     'set_language',
     'available_languages',
     'validate_language',
-    'Application',
 ]

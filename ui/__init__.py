@@ -1,20 +1,15 @@
 """
 UI module - User interface components
 """
-from .dialogs import (
-    FileSelectionDialog,
-    get_file_sheet_selection,
-    SheetSelectionDialog,
-    get_sheet_selection,
-    DataConfigDialog,
-    get_data_configuration,
-)
+from .qt5_dialogs.file_dialog import Qt5FileDialog, get_file_sheet_selection
+from .qt5_dialogs.sheet_dialog import Qt5SheetDialog, get_sheet_selection
+from .qt5_dialogs.data_config import Qt5DataConfigDialog, get_data_configuration
 
 __all__ = [
-    'FileSelectionDialog',
+    'Qt5FileDialog',
     'get_file_sheet_selection',
-    'SheetSelectionDialog',
+    'Qt5SheetDialog',
     'get_sheet_selection',
-    'DataConfigDialog',
+    'Qt5DataConfigDialog',
     'get_data_configuration',
 ]

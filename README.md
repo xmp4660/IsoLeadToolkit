@@ -101,7 +101,7 @@ uv sync
 ### 启动应用
 
 ```bash
-python main.py
+python main_qt5.py
 ```
 
 ### 工作流程

@@ -31,7 +31,7 @@ from visualization.plotting_data import (
     _lazy_import_ml,
     _get_analysis_data,
 )
-from visualization.plotting_analysis import (
+from visualization.plotting_analysis_qt import (
     show_scree_plot,
     show_pca_loadings,
     show_embedding_correlation,

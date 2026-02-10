@@ -787,7 +787,7 @@ def on_legend_click(event):
 
 
 def on_slider_change(val=None):
-    """Handle slider and radio button changes from tkinter control panel"""
+    """Handle slider and radio button changes from the control panel."""
     try:
         print(f"[DEBUG] on_slider_change called, val={val}", flush=True)
         from .plotting import plot_embedding, plot_3d_data, plot_2d_data
