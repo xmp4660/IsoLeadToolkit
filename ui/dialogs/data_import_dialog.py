@@ -26,7 +26,8 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
-from core.localization import translate
+from core.localization import translate, available_languages, set_language
+from core.state import app_state
 from data.loader import read_data_frame
 
 
@@ -42,6 +43,7 @@ class Qt5DataImportDialog(QDialog):
         self.result = None
         self.selected_file = default_file
         self.selected_sheet = default_sheet
+        self._language_labels = dict(available_languages())
         self.default_group_cols = set(default_group_cols or [])
         self.default_data_cols = set(default_data_cols or [])
         self.df = None
@@ -59,20 +61,54 @@ class Qt5DataImportDialog(QDialog):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(10)
 
+        header_row = QHBoxLayout()
+        header_row.setSpacing(8)
+
         title = QLabel(translate("Data Import Wizard"))
         title_font = QFont(title.font())
         title_font.setPointSize(title_font.pointSize() + 2)
         title_font.setBold(True)
         title.setFont(title_font)
-        layout.addWidget(title)
+        self.title_label = title
+        header_row.addWidget(title)
+
+        header_row.addStretch()
+
+        self.lang_label = QLabel()
+        header_row.addWidget(self.lang_label)
+
+        self.lang_combo = QComboBox()
+        self.lang_combo.setMinimumWidth(140)
+        self.lang_combo.currentIndexChanged.connect(self._on_language_change)
+        header_row.addWidget(self.lang_combo)
+
+        layout.addLayout(header_row)
 
         subtitle = QLabel(translate("Select a file, worksheet, and columns in one step."))
         subtitle.setWordWrap(True)
+        self.subtitle_label = subtitle
         layout.addWidget(subtitle)
 
-        layout.addWidget(self._build_file_section())
-        layout.addWidget(self._build_sheet_section())
-        layout.addWidget(self._build_columns_section(), 1)
+        top_container = QWidget()
+        top_layout = QHBoxLayout(top_container)
+        top_layout.setContentsMargins(0, 0, 0, 0)
+        top_layout.setSpacing(12)
+
+        self.file_group = self._build_file_section()
+        self.file_group.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
+        self.file_group.setMinimumWidth(260)
+
+        self.sheet_group = self._build_sheet_section()
+        self.sheet_group.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
+        self.sheet_group.setMinimumWidth(220)
+
+        self.columns_group = self._build_columns_section()
+
+        top_layout.addWidget(self.file_group)
+        top_layout.addWidget(self.sheet_group)
+        top_layout.addWidget(self.columns_group, 1)
+
+        layout.addWidget(top_container, 1)
         layout.addWidget(self._build_preview_section())
 
         footer_layout = QHBoxLayout()
@@ -81,16 +117,22 @@ class Qt5DataImportDialog(QDialog):
 
         cancel_btn = QPushButton(translate("Cancel"))
         cancel_btn.clicked.connect(self.reject)
+        self.cancel_btn = cancel_btn
         footer_layout.addWidget(cancel_btn)
 
         apply_btn = QPushButton(translate("Apply"))
         apply_btn.clicked.connect(self._ok_clicked)
+        self.apply_btn = apply_btn
         footer_layout.addWidget(apply_btn)
 
         layout.addLayout(footer_layout)
 
+        self._refresh_language()
+        self._apply_translations()
+
     def _build_file_section(self):
         group = QGroupBox(translate("File"))
+        self.file_group = group
         group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         group_layout = QVBoxLayout(group)
         group_layout.setContentsMargins(12, 10, 12, 12)
@@ -105,28 +147,41 @@ class Qt5DataImportDialog(QDialog):
 
         browse_btn = QPushButton(translate("Browse..."))
         browse_btn.clicked.connect(self._browse_file)
+        self.browse_btn = browse_btn
         btn_row.addWidget(browse_btn)
 
         clear_btn = QPushButton(translate("Clear Selection"))
         clear_btn.clicked.connect(self._clear_file)
+        self.clear_btn = clear_btn
         btn_row.addWidget(clear_btn)
 
         btn_row.addStretch()
         group_layout.addLayout(btn_row)
 
+        recent_label = QLabel(translate("Recent Files"))
+        recent_label.setStyleSheet("font-weight: bold;")
+        self.recent_label = recent_label
+        group_layout.addWidget(recent_label)
+
+        self.recent_list = QListWidget()
+        self.recent_list.setSelectionMode(QListWidget.SingleSelection)
+        self.recent_list.itemDoubleClicked.connect(self._on_recent_file_selected)
+        group_layout.addWidget(self.recent_list, 1)
+
         return group
 
     def _build_sheet_section(self):
         group = QGroupBox(translate("Sheet"))
+        self.sheet_group = group
         group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         group_layout = QVBoxLayout(group)
         group_layout.setContentsMargins(12, 10, 12, 12)
         group_layout.setSpacing(8)
 
-        self.sheet_combo = QComboBox()
-        self.sheet_combo.setEditable(False)
-        self.sheet_combo.currentIndexChanged.connect(self._on_sheet_change)
-        group_layout.addWidget(self.sheet_combo)
+        self.sheet_list = QListWidget()
+        self.sheet_list.setSelectionMode(QListWidget.SingleSelection)
+        self.sheet_list.itemSelectionChanged.connect(self._on_sheet_selected)
+        group_layout.addWidget(self.sheet_list, 1)
 
         return group
 
@@ -155,6 +210,7 @@ class Qt5DataImportDialog(QDialog):
 
     def _build_preview_section(self):
         group = QGroupBox(translate("Data Preview"))
+        self.preview_group = group
         group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         group_layout = QVBoxLayout(group)
         group_layout.setContentsMargins(12, 10, 12, 12)
@@ -178,6 +234,90 @@ class Qt5DataImportDialog(QDialog):
         group_layout.addWidget(self.preview_table)
 
         return group
+
+    def _refresh_language(self):
+        current_lang = getattr(app_state, 'language', None) or 'en'
+        self.lang_combo.blockSignals(True)
+        self.lang_combo.clear()
+        for code, name in self._language_labels.items():
+            self.lang_combo.addItem(name, code)
+        idx = self.lang_combo.findData(current_lang)
+        if idx >= 0:
+            self.lang_combo.setCurrentIndex(idx)
+        self.lang_combo.blockSignals(False)
+        self._update_language_label(current_lang)
+
+    def _apply_translations(self):
+        self.setWindowTitle(translate("Data Import Wizard"))
+        if self.title_label is not None:
+            self.title_label.setText(translate("Data Import Wizard"))
+        if self.subtitle_label is not None:
+            self.subtitle_label.setText(translate("Select a file, worksheet, and columns in one step."))
+        if self.file_group is not None:
+            self.file_group.setTitle(translate("File"))
+        if self.sheet_group is not None:
+            self.sheet_group.setTitle(translate("Sheet"))
+        if self.preview_group is not None:
+            self.preview_group.setTitle(translate("Data Preview"))
+        if self.recent_label is not None:
+            self.recent_label.setText(translate("Recent Files"))
+        if self.browse_btn is not None:
+            self.browse_btn.setText(translate("Browse..."))
+        if self.clear_btn is not None:
+            self.clear_btn.setText(translate("Clear Selection"))
+        if self.cancel_btn is not None:
+            self.cancel_btn.setText(translate("Cancel"))
+        if self.apply_btn is not None:
+            self.apply_btn.setText(translate("Apply"))
+        if self.group_card is not None:
+            self.group_card.setTitle(translate("Grouping Columns"))
+        if self.data_card is not None:
+            self.data_card.setTitle(translate("Data Columns"))
+        if self.group_desc_label is not None:
+            self.group_desc_label.setText(
+                translate("Pick one or more categorical columns to color and organize the scatter plot.")
+            )
+        if self.data_desc_label is not None:
+            self.data_desc_label.setText(
+                translate("Choose numeric measurements that feed into UMAP or t-SNE embeddings.")
+            )
+        if self.group_select_all_btn is not None:
+            self.group_select_all_btn.setText(translate("Select all"))
+        if self.group_clear_btn is not None:
+            self.group_clear_btn.setText(translate("Clear"))
+        if self.data_select_all_btn is not None:
+            self.data_select_all_btn.setText(translate("Select all"))
+        if self.data_clear_btn is not None:
+            self.data_clear_btn.setText(translate("Clear"))
+        if self.preview_label is not None:
+            self.preview_label.setText(
+                translate("Showing first {rows} rows and {cols} columns.").format(
+                    rows=self.PREVIEW_ROWS,
+                    cols=self.PREVIEW_COLS
+                )
+            )
+        if self.file_label is not None and not self.selected_file:
+            self.file_label.setText(translate("No file selected"))
+        if self.sheet_list is not None and not self.sheet_list.isEnabled():
+            if self.sheet_list.count() == 1:
+                item = self.sheet_list.item(0)
+                if item is not None:
+                    item.setText(translate("No sheet"))
+
+    def _update_language_label(self, current_lang):
+        if current_lang == 'zh':
+            self.lang_label.setText("language:")
+        else:
+            self.lang_label.setText("语言:")
+
+    def _on_language_change(self, _index):
+        code = self.lang_combo.currentData()
+        if not code:
+            return
+        if set_language(code):
+            app_state.language = code
+            self._update_language_label(code)
+            self._apply_translations()
 
     def _build_column_section(self, title, description, selection_type):
         card = QGroupBox(title)
@@ -215,8 +355,14 @@ class Qt5DataImportDialog(QDialog):
 
         if selection_type == 'group':
             self.group_list = list_widget
+            self.group_desc_label = desc
+            self.group_select_all_btn = select_all_btn
+            self.group_clear_btn = clear_btn
         else:
             self.data_list = list_widget
+            self.data_desc_label = desc
+            self.data_select_all_btn = select_all_btn
+            self.data_clear_btn = clear_btn
 
         return card
 
@@ -233,13 +379,14 @@ class Qt5DataImportDialog(QDialog):
         self._update_columns_layout()
 
     def _refresh_from_defaults(self):
+        self._refresh_recent_files()
         if self.selected_file and os.path.exists(self.selected_file):
             self._update_file_display(self.selected_file)
             self._load_sheets()
             self._load_dataframe()
         else:
             self._update_file_display(None)
-            self._reset_sheet_combo()
+            self._reset_sheet_list()
             self._clear_columns()
 
     def _update_file_display(self, file_path):
@@ -250,13 +397,12 @@ class Qt5DataImportDialog(QDialog):
         directory = os.path.dirname(file_path)
         self.file_label.setText(f"{display_path}\n{directory}")
 
-    def _reset_sheet_combo(self):
-        self.sheet_combo.blockSignals(True)
-        self.sheet_combo.clear()
-        self.sheet_combo.addItem(translate("No sheet"), '')
-        self.sheet_combo.setCurrentIndex(0)
-        self.sheet_combo.setEnabled(False)
-        self.sheet_combo.blockSignals(False)
+    def _reset_sheet_list(self):
+        self.sheet_list.blockSignals(True)
+        self.sheet_list.clear()
+        self.sheet_list.addItem(translate("No sheet"))
+        self.sheet_list.setEnabled(False)
+        self.sheet_list.blockSignals(False)
 
     def _browse_file(self):
         file_types = ";;".join([
@@ -276,6 +422,7 @@ class Qt5DataImportDialog(QDialog):
             self.selected_file = file_path
             self.selected_sheet = None
             self._update_file_display(file_path)
+            self._add_recent_file(file_path)
             self._load_sheets()
             self._load_dataframe()
 
@@ -283,17 +430,17 @@ class Qt5DataImportDialog(QDialog):
         self.selected_file = None
         self.selected_sheet = None
         self._update_file_display(None)
-        self._reset_sheet_combo()
+        self._reset_sheet_list()
         self._clear_columns()
 
     def _load_sheets(self):
         if not self.selected_file:
-            self._reset_sheet_combo()
+            self._reset_sheet_list()
             return
 
         is_excel = self.selected_file.lower().endswith(('.xlsx', '.xls'))
         if not is_excel:
-            self._reset_sheet_combo()
+            self._reset_sheet_list()
             return
 
         try:
@@ -304,27 +451,39 @@ class Qt5DataImportDialog(QDialog):
                 translate("Error"),
                 translate("Failed to load Excel file: {error}").format(error=str(exc))
             )
-            self._reset_sheet_combo()
+            self._reset_sheet_list()
             return
 
-        self.sheet_combo.blockSignals(True)
-        self.sheet_combo.clear()
+        self.sheet_list.blockSignals(True)
+        self.sheet_list.clear()
         for sheet in sheets:
-            self.sheet_combo.addItem(sheet, sheet)
+            item = QListWidgetItem(sheet)
+            item.setData(Qt.UserRole, sheet)
+            self.sheet_list.addItem(item)
 
         if self.selected_sheet and self.selected_sheet in sheets:
-            self.sheet_combo.setCurrentText(self.selected_sheet)
+            self._select_sheet_item(self.selected_sheet)
         elif sheets:
-            self.sheet_combo.setCurrentIndex(0)
-            self.selected_sheet = self.sheet_combo.currentData()
+            self.sheet_list.setCurrentRow(0)
+            self.selected_sheet = sheets[0]
 
-        self.sheet_combo.setEnabled(True)
-        self.sheet_combo.blockSignals(False)
+        self.sheet_list.setEnabled(True)
+        self.sheet_list.blockSignals(False)
 
-    def _on_sheet_change(self, index):
-        if not self.sheet_combo.isEnabled():
+    def _select_sheet_item(self, sheet_name):
+        for idx in range(self.sheet_list.count()):
+            item = self.sheet_list.item(idx)
+            if item.data(Qt.UserRole) == sheet_name:
+                self.sheet_list.setCurrentRow(idx)
+                break
+
+    def _on_sheet_selected(self):
+        if not self.sheet_list.isEnabled():
             return
-        self.selected_sheet = self.sheet_combo.currentData()
+        items = self.sheet_list.selectedItems()
+        if not items:
+            return
+        self.selected_sheet = items[0].data(Qt.UserRole)
         self._load_dataframe()
 
     def _load_dataframe(self):
@@ -333,7 +492,7 @@ class Qt5DataImportDialog(QDialog):
             self._clear_columns()
             return
 
-        sheet_name = self.selected_sheet if self.sheet_combo.isEnabled() else None
+        sheet_name = self.selected_sheet if self.sheet_list.isEnabled() else None
         try:
             self.df = read_data_frame(self.selected_file, sheet_name)
         except Exception as exc:
@@ -357,6 +516,43 @@ class Qt5DataImportDialog(QDialog):
         self.group_list.clear()
         self.data_list.clear()
         self._clear_preview()
+
+    def _refresh_recent_files(self):
+        self.recent_list.clear()
+        recent_files = getattr(app_state, 'recent_files', [])
+        for path in recent_files:
+            if not path:
+                continue
+            item = QListWidgetItem(os.path.basename(path))
+            item.setData(Qt.UserRole, path)
+            item.setToolTip(path)
+            self.recent_list.addItem(item)
+
+    def _add_recent_file(self, file_path):
+        recent_files = list(getattr(app_state, 'recent_files', []))
+        recent_files = [p for p in recent_files if p and p != file_path]
+        recent_files.insert(0, file_path)
+        recent_files = recent_files[:8]
+        app_state.recent_files = recent_files
+        self._refresh_recent_files()
+
+    def _on_recent_file_selected(self, item):
+        if item is None:
+            return
+        file_path = item.data(Qt.UserRole)
+        if not file_path or not os.path.exists(file_path):
+            QMessageBox.warning(
+                self,
+                translate("Warning"),
+                translate("File not found: {path}").format(path=file_path)
+            )
+            return
+        self.selected_file = file_path
+        self.selected_sheet = None
+        self._update_file_display(file_path)
+        self._add_recent_file(file_path)
+        self._load_sheets()
+        self._load_dataframe()
 
     def _clear_preview(self):
         self.preview_table.clear()

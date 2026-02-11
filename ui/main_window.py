@@ -7,13 +7,12 @@ from pathlib import Path
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout,
                               QHBoxLayout, QDockWidget, QToolBar,
                               QStatusBar, QMenuBar, QAction, QStyle,
-                              QSplitter)
+                              QSplitter, QSizePolicy)
 from PyQt5.QtCore import Qt, QSize, QSettings
 from PyQt5.QtGui import QIcon, QFont, QKeySequence
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-import matplotlib.pyplot as plt
 
 from core import app_state, translate
 
@@ -142,6 +141,13 @@ class Qt5MainWindow(QMainWindow):
     def _setup_statusbar(self):
         """设置状态栏"""
         self.statusBar().showMessage(translate("Ready"))
+
+    def _refresh_plot(self):
+        try:
+            from visualization.events import on_slider_change
+            on_slider_change()
+        except Exception:
+            pass
 
     def _refresh_language(self):
         """刷新菜单与状态栏语言"""

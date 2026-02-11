@@ -11,11 +11,12 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout,
                               QTabWidget, QGridLayout, QListWidget,
                               QListWidgetItem, QSizePolicy, QMessageBox,
                               QButtonGroup, QDialog)
-from PyQt5.QtCore import Qt, QSize, pyqtSignal, QTimer, pyqtSlot, QTimer
-from PyQt5.QtGui import QIcon, QFont, QPalette, QColor, QCursor
+from PyQt5.QtCore import Qt, QSize, QPointF, pyqtSignal, QTimer, pyqtSlot
+from PyQt5.QtGui import QIcon, QFont, QPalette, QColor, QCursor, QPainter, QPen, QBrush, QPixmap, QPolygonF
 
 import ast
 import json
+import math
 import uuid
 
 from core import translate, app_state, CONFIG
@@ -1736,10 +1737,6 @@ class Qt5ControlPanel(QWidget):
         # General Settings
         general_group = QGroupBox(translate("General Settings"))
         general_layout = QVBoxLayout()
-        self.grid_check = QCheckBox(translate("Show Grid"))
-        self.grid_check.setChecked(getattr(app_state, 'plot_style_grid', False))
-        self.grid_check.stateChanged.connect(self._on_style_change)
-        general_layout.addWidget(self.grid_check)
 
         palette_row = QHBoxLayout()
         palette_row.addWidget(QLabel(translate("Palette")))
@@ -1843,263 +1840,200 @@ class Qt5ControlPanel(QWidget):
         auto_layout_btn.clicked.connect(self._apply_auto_layout)
         axes_layout.addWidget(auto_layout_btn)
 
-        axes_grid = QGridLayout()
+        def add_row(grid, label_key, widget, row_idx):
+            grid.addWidget(QLabel(translate(label_key)), row_idx, 0)
+            grid.addWidget(widget, row_idx, 1)
+            return row_idx + 1
+
+        def make_group(title_key):
+            group = QGroupBox(translate(title_key))
+            grid = QGridLayout()
+            grid.setColumnStretch(0, 1)
+            grid.setColumnStretch(1, 2)
+            group.setLayout(grid)
+            axes_layout.addWidget(group)
+            return grid
+
+        figure_grid = make_group("Figure")
         row = 0
-
-        def add_row(label_key, widget):
-            nonlocal row
-            axes_grid.addWidget(QLabel(translate(label_key)), row, 0)
-            axes_grid.addWidget(widget, row, 1)
-            row += 1
-
         self.figure_dpi_spin = QSpinBox()
         self.figure_dpi_spin.setRange(50, 600)
         self.figure_dpi_spin.setValue(int(getattr(app_state, 'plot_dpi', 130)))
         self.figure_dpi_spin.valueChanged.connect(self._on_style_change)
-        add_row("Figure DPI", self.figure_dpi_spin)
+        row = add_row(figure_grid, "Figure DPI", self.figure_dpi_spin, row)
 
         self.figure_bg_edit = QLineEdit(getattr(app_state, 'plot_facecolor', '#ffffff'))
         self.figure_bg_edit.editingFinished.connect(self._on_style_change)
-        add_row("Figure Background", self.figure_bg_edit)
+        row = add_row(figure_grid, "Figure Background", self.figure_bg_edit, row)
 
         self.axes_bg_edit = QLineEdit(getattr(app_state, 'axes_facecolor', '#ffffff'))
         self.axes_bg_edit.editingFinished.connect(self._on_style_change)
-        add_row("Axes Background", self.axes_bg_edit)
+        row = add_row(figure_grid, "Axes Background", self.axes_bg_edit, row)
+
+        grid_grid = make_group("Grid")
+        row = 0
+        self.grid_check = QCheckBox(translate("Show Grid"))
+        self.grid_check.setChecked(getattr(app_state, 'plot_style_grid', False))
+        self.grid_check.stateChanged.connect(self._on_style_change)
+        row = add_row(grid_grid, "Show Grid", self.grid_check, row)
 
         self.grid_color_edit = QLineEdit(getattr(app_state, 'grid_color', '#e2e8f0'))
         self.grid_color_edit.editingFinished.connect(self._on_style_change)
-        add_row("Grid Color", self.grid_color_edit)
+        row = add_row(grid_grid, "Grid Color", self.grid_color_edit, row)
 
         self.grid_width_spin = QDoubleSpinBox()
         self.grid_width_spin.setRange(0.1, 3.0)
         self.grid_width_spin.setSingleStep(0.1)
         self.grid_width_spin.setValue(float(getattr(app_state, 'grid_linewidth', 0.6)))
         self.grid_width_spin.valueChanged.connect(self._on_style_change)
-        add_row("Grid Linewidth", self.grid_width_spin)
+        row = add_row(grid_grid, "Grid Linewidth", self.grid_width_spin, row)
 
         self.grid_alpha_spin = QDoubleSpinBox()
         self.grid_alpha_spin.setRange(0.0, 1.0)
         self.grid_alpha_spin.setSingleStep(0.05)
         self.grid_alpha_spin.setValue(float(getattr(app_state, 'grid_alpha', 0.7)))
         self.grid_alpha_spin.valueChanged.connect(self._on_style_change)
-        add_row("Grid Alpha", self.grid_alpha_spin)
+        row = add_row(grid_grid, "Grid Alpha", self.grid_alpha_spin, row)
 
         self.grid_style_combo = QComboBox()
         self.grid_style_combo.addItems(['-', '--', '-.', ':'])
         self.grid_style_combo.setCurrentText(getattr(app_state, 'grid_linestyle', '--'))
         self.grid_style_combo.currentTextChanged.connect(self._on_style_change)
-        add_row("Grid Style", self.grid_style_combo)
-
-        self.tick_dir_combo = QComboBox()
-        self.tick_dir_combo.addItems(['out', 'in', 'inout'])
-        self.tick_dir_combo.setCurrentText(getattr(app_state, 'tick_direction', 'out'))
-        self.tick_dir_combo.currentTextChanged.connect(self._on_style_change)
-        add_row("Tick Direction", self.tick_dir_combo)
-
-        self.tick_color_edit = QLineEdit(getattr(app_state, 'tick_color', '#1f2937'))
-        self.tick_color_edit.editingFinished.connect(self._on_style_change)
-        add_row("Tick Color", self.tick_color_edit)
-
-        self.tick_length_spin = QDoubleSpinBox()
-        self.tick_length_spin.setRange(0.0, 12.0)
-        self.tick_length_spin.setSingleStep(0.5)
-        self.tick_length_spin.setValue(float(getattr(app_state, 'tick_length', 4.0)))
-        self.tick_length_spin.valueChanged.connect(self._on_style_change)
-        add_row("Tick Length", self.tick_length_spin)
-
-        self.tick_width_spin = QDoubleSpinBox()
-        self.tick_width_spin.setRange(0.2, 3.0)
-        self.tick_width_spin.setSingleStep(0.1)
-        self.tick_width_spin.setValue(float(getattr(app_state, 'tick_width', 0.8)))
-        self.tick_width_spin.valueChanged.connect(self._on_style_change)
-        add_row("Tick Width", self.tick_width_spin)
-
-        self.minor_ticks_check = QCheckBox()
-        self.minor_ticks_check.setChecked(getattr(app_state, 'minor_ticks', False))
-        self.minor_ticks_check.stateChanged.connect(self._on_style_change)
-        add_row("Minor Ticks", self.minor_ticks_check)
-
-        self.minor_tick_length_spin = QDoubleSpinBox()
-        self.minor_tick_length_spin.setRange(0.0, 8.0)
-        self.minor_tick_length_spin.setSingleStep(0.5)
-        self.minor_tick_length_spin.setValue(float(getattr(app_state, 'minor_tick_length', 2.5)))
-        self.minor_tick_length_spin.valueChanged.connect(self._on_style_change)
-        add_row("Minor Tick Length", self.minor_tick_length_spin)
-
-        self.minor_tick_width_spin = QDoubleSpinBox()
-        self.minor_tick_width_spin.setRange(0.2, 2.0)
-        self.minor_tick_width_spin.setSingleStep(0.1)
-        self.minor_tick_width_spin.setValue(float(getattr(app_state, 'minor_tick_width', 0.6)))
-        self.minor_tick_width_spin.valueChanged.connect(self._on_style_change)
-        add_row("Minor Tick Width", self.minor_tick_width_spin)
-
-        self.axis_linewidth_spin = QDoubleSpinBox()
-        self.axis_linewidth_spin.setRange(0.2, 3.0)
-        self.axis_linewidth_spin.setSingleStep(0.1)
-        self.axis_linewidth_spin.setValue(float(getattr(app_state, 'axis_linewidth', 1.0)))
-        self.axis_linewidth_spin.valueChanged.connect(self._on_style_change)
-        add_row("Axis Line Width", self.axis_linewidth_spin)
-
-        self.axis_line_color_edit = QLineEdit(getattr(app_state, 'axis_line_color', '#1f2937'))
-        self.axis_line_color_edit.editingFinished.connect(self._on_style_change)
-        add_row("Axis Line Color", self.axis_line_color_edit)
-
-        self.show_top_spine_check = QCheckBox()
-        self.show_top_spine_check.setChecked(getattr(app_state, 'show_top_spine', True))
-        self.show_top_spine_check.stateChanged.connect(self._on_style_change)
-        add_row("Show Top Spine", self.show_top_spine_check)
-
-        self.show_right_spine_check = QCheckBox()
-        self.show_right_spine_check.setChecked(getattr(app_state, 'show_right_spine', True))
-        self.show_right_spine_check.stateChanged.connect(self._on_style_change)
-        add_row("Show Right Spine", self.show_right_spine_check)
+        row = add_row(grid_grid, "Grid Style", self.grid_style_combo, row)
 
         self.minor_grid_check = QCheckBox()
         self.minor_grid_check.setChecked(getattr(app_state, 'minor_grid', False))
         self.minor_grid_check.stateChanged.connect(self._on_style_change)
-        add_row("Minor Grid", self.minor_grid_check)
+        row = add_row(grid_grid, "Minor Grid", self.minor_grid_check, row)
 
         self.minor_grid_color_edit = QLineEdit(getattr(app_state, 'minor_grid_color', '#e2e8f0'))
         self.minor_grid_color_edit.editingFinished.connect(self._on_style_change)
-        add_row("Minor Grid Color", self.minor_grid_color_edit)
+        row = add_row(grid_grid, "Minor Grid Color", self.minor_grid_color_edit, row)
 
         self.minor_grid_width_spin = QDoubleSpinBox()
         self.minor_grid_width_spin.setRange(0.1, 2.0)
         self.minor_grid_width_spin.setSingleStep(0.1)
         self.minor_grid_width_spin.setValue(float(getattr(app_state, 'minor_grid_linewidth', 0.4)))
         self.minor_grid_width_spin.valueChanged.connect(self._on_style_change)
-        add_row("Minor Grid Linewidth", self.minor_grid_width_spin)
+        row = add_row(grid_grid, "Minor Grid Linewidth", self.minor_grid_width_spin, row)
 
         self.minor_grid_alpha_spin = QDoubleSpinBox()
         self.minor_grid_alpha_spin.setRange(0.0, 1.0)
         self.minor_grid_alpha_spin.setSingleStep(0.05)
         self.minor_grid_alpha_spin.setValue(float(getattr(app_state, 'minor_grid_alpha', 0.4)))
         self.minor_grid_alpha_spin.valueChanged.connect(self._on_style_change)
-        add_row("Minor Grid Alpha", self.minor_grid_alpha_spin)
+        row = add_row(grid_grid, "Minor Grid Alpha", self.minor_grid_alpha_spin, row)
 
         self.minor_grid_style_combo = QComboBox()
         self.minor_grid_style_combo.addItems(['-', '--', '-.', ':'])
         self.minor_grid_style_combo.setCurrentText(getattr(app_state, 'minor_grid_linestyle', ':'))
         self.minor_grid_style_combo.currentTextChanged.connect(self._on_style_change)
-        add_row("Minor Grid Style", self.minor_grid_style_combo)
+        row = add_row(grid_grid, "Minor Grid Style", self.minor_grid_style_combo, row)
 
-        self.scatter_edgecolor_edit = QLineEdit(getattr(app_state, 'scatter_edgecolor', '#1e293b'))
-        self.scatter_edgecolor_edit.editingFinished.connect(self._on_style_change)
-        add_row("Scatter Edge Color", self.scatter_edgecolor_edit)
+        tick_grid = make_group("Ticks")
+        row = 0
+        self.tick_dir_combo = QComboBox()
+        self.tick_dir_combo.addItems(['out', 'in', 'inout'])
+        self.tick_dir_combo.setCurrentText(getattr(app_state, 'tick_direction', 'out'))
+        self.tick_dir_combo.currentTextChanged.connect(self._on_style_change)
+        row = add_row(tick_grid, "Tick Direction", self.tick_dir_combo, row)
 
-        self.scatter_edgewidth_spin = QDoubleSpinBox()
-        self.scatter_edgewidth_spin.setRange(0.0, 2.0)
-        self.scatter_edgewidth_spin.setSingleStep(0.05)
-        self.scatter_edgewidth_spin.setValue(float(getattr(app_state, 'scatter_edgewidth', 0.4)))
-        self.scatter_edgewidth_spin.valueChanged.connect(self._on_style_change)
-        add_row("Scatter Edge Width", self.scatter_edgewidth_spin)
+        self.tick_color_edit = QLineEdit(getattr(app_state, 'tick_color', '#1f2937'))
+        self.tick_color_edit.editingFinished.connect(self._on_style_change)
+        row = add_row(tick_grid, "Tick Color", self.tick_color_edit, row)
 
-        self.model_curve_width_spin = QDoubleSpinBox()
-        self.model_curve_width_spin.setRange(0.2, 6.0)
-        self.model_curve_width_spin.setSingleStep(0.1)
-        self.model_curve_width_spin.setValue(float(getattr(app_state, 'model_curve_width', 1.2)))
-        self.model_curve_width_spin.valueChanged.connect(self._on_style_change)
-        add_row("Model Curve Width", self.model_curve_width_spin)
+        self.tick_length_spin = QDoubleSpinBox()
+        self.tick_length_spin.setRange(0.0, 12.0)
+        self.tick_length_spin.setSingleStep(0.5)
+        self.tick_length_spin.setValue(float(getattr(app_state, 'tick_length', 4.0)))
+        self.tick_length_spin.valueChanged.connect(self._on_style_change)
+        row = add_row(tick_grid, "Tick Length", self.tick_length_spin, row)
 
-        self.paleoisochron_width_spin = QDoubleSpinBox()
-        self.paleoisochron_width_spin.setRange(0.2, 6.0)
-        self.paleoisochron_width_spin.setSingleStep(0.1)
-        self.paleoisochron_width_spin.setValue(float(getattr(app_state, 'paleoisochron_width', 0.9)))
-        self.paleoisochron_width_spin.valueChanged.connect(self._on_style_change)
-        add_row("Paleoisochron Width", self.paleoisochron_width_spin)
+        self.tick_width_spin = QDoubleSpinBox()
+        self.tick_width_spin.setRange(0.2, 3.0)
+        self.tick_width_spin.setSingleStep(0.1)
+        self.tick_width_spin.setValue(float(getattr(app_state, 'tick_width', 0.8)))
+        self.tick_width_spin.valueChanged.connect(self._on_style_change)
+        row = add_row(tick_grid, "Tick Width", self.tick_width_spin, row)
 
-        self.model_age_width_spin = QDoubleSpinBox()
-        self.model_age_width_spin.setRange(0.2, 6.0)
-        self.model_age_width_spin.setSingleStep(0.1)
-        self.model_age_width_spin.setValue(float(getattr(app_state, 'model_age_line_width', 0.7)))
-        self.model_age_width_spin.valueChanged.connect(self._on_style_change)
-        add_row("Model Age Line Width", self.model_age_width_spin)
+        self.minor_ticks_check = QCheckBox()
+        self.minor_ticks_check.setChecked(getattr(app_state, 'minor_ticks', False))
+        self.minor_ticks_check.stateChanged.connect(self._on_style_change)
+        row = add_row(tick_grid, "Minor Ticks", self.minor_ticks_check, row)
 
-        self.isochron_width_spin = QDoubleSpinBox()
-        self.isochron_width_spin.setRange(0.2, 6.0)
-        self.isochron_width_spin.setSingleStep(0.1)
-        self.isochron_width_spin.setValue(float(getattr(app_state, 'isochron_line_width', 1.5)))
-        self.isochron_width_spin.valueChanged.connect(self._on_style_change)
-        add_row("Isochron Width", self.isochron_width_spin)
+        self.minor_tick_length_spin = QDoubleSpinBox()
+        self.minor_tick_length_spin.setRange(0.0, 8.0)
+        self.minor_tick_length_spin.setSingleStep(0.5)
+        self.minor_tick_length_spin.setValue(float(getattr(app_state, 'minor_tick_length', 2.5)))
+        self.minor_tick_length_spin.valueChanged.connect(self._on_style_change)
+        row = add_row(tick_grid, "Minor Tick Length", self.minor_tick_length_spin, row)
 
+        self.minor_tick_width_spin = QDoubleSpinBox()
+        self.minor_tick_width_spin.setRange(0.2, 2.0)
+        self.minor_tick_width_spin.setSingleStep(0.1)
+        self.minor_tick_width_spin.setValue(float(getattr(app_state, 'minor_tick_width', 0.6)))
+        self.minor_tick_width_spin.valueChanged.connect(self._on_style_change)
+        row = add_row(tick_grid, "Minor Tick Width", self.minor_tick_width_spin, row)
+
+        spine_grid = make_group("Spines")
+        row = 0
+        self.axis_linewidth_spin = QDoubleSpinBox()
+        self.axis_linewidth_spin.setRange(0.2, 3.0)
+        self.axis_linewidth_spin.setSingleStep(0.1)
+        self.axis_linewidth_spin.setValue(float(getattr(app_state, 'axis_linewidth', 1.0)))
+        self.axis_linewidth_spin.valueChanged.connect(self._on_style_change)
+        row = add_row(spine_grid, "Axis Line Width", self.axis_linewidth_spin, row)
+
+        self.axis_line_color_edit = QLineEdit(getattr(app_state, 'axis_line_color', '#1f2937'))
+        self.axis_line_color_edit.editingFinished.connect(self._on_style_change)
+        row = add_row(spine_grid, "Axis Line Color", self.axis_line_color_edit, row)
+
+        self.show_top_spine_check = QCheckBox()
+        self.show_top_spine_check.setChecked(getattr(app_state, 'show_top_spine', True))
+        self.show_top_spine_check.stateChanged.connect(self._on_style_change)
+        row = add_row(spine_grid, "Show Top Spine", self.show_top_spine_check, row)
+
+        self.show_right_spine_check = QCheckBox()
+        self.show_right_spine_check.setChecked(getattr(app_state, 'show_right_spine', True))
+        self.show_right_spine_check.stateChanged.connect(self._on_style_change)
+        row = add_row(spine_grid, "Show Right Spine", self.show_right_spine_check, row)
+
+        text_grid = make_group("Text")
+        row = 0
         self.label_color_edit = QLineEdit(getattr(app_state, 'label_color', '#1f2937'))
         self.label_color_edit.editingFinished.connect(self._on_style_change)
-        add_row("Label Color", self.label_color_edit)
+        row = add_row(text_grid, "Label Color", self.label_color_edit, row)
 
         self.label_weight_combo = QComboBox()
         self.label_weight_combo.addItems(['normal', 'bold'])
         self.label_weight_combo.setCurrentText(getattr(app_state, 'label_weight', 'normal'))
         self.label_weight_combo.currentTextChanged.connect(self._on_style_change)
-        add_row("Label Weight", self.label_weight_combo)
+        row = add_row(text_grid, "Label Weight", self.label_weight_combo, row)
 
         self.label_pad_spin = QDoubleSpinBox()
         self.label_pad_spin.setRange(0.0, 30.0)
         self.label_pad_spin.setSingleStep(1.0)
         self.label_pad_spin.setValue(float(getattr(app_state, 'label_pad', 6.0)))
         self.label_pad_spin.valueChanged.connect(self._on_style_change)
-        add_row("Label Pad", self.label_pad_spin)
+        row = add_row(text_grid, "Label Pad", self.label_pad_spin, row)
 
         self.title_color_edit = QLineEdit(getattr(app_state, 'title_color', '#111827'))
         self.title_color_edit.editingFinished.connect(self._on_style_change)
-        add_row("Title Color", self.title_color_edit)
+        row = add_row(text_grid, "Title Color", self.title_color_edit, row)
 
         self.title_weight_combo = QComboBox()
         self.title_weight_combo.addItems(['normal', 'bold'])
         self.title_weight_combo.setCurrentText(getattr(app_state, 'title_weight', 'bold'))
         self.title_weight_combo.currentTextChanged.connect(self._on_style_change)
-        add_row("Title Weight", self.title_weight_combo)
+        row = add_row(text_grid, "Title Weight", self.title_weight_combo, row)
 
         self.title_pad_spin = QDoubleSpinBox()
         self.title_pad_spin.setRange(0.0, 40.0)
         self.title_pad_spin.setSingleStep(1.0)
         self.title_pad_spin.setValue(float(getattr(app_state, 'title_pad', 20.0)))
         self.title_pad_spin.valueChanged.connect(self._on_style_change)
-        add_row("Title Pad", self.title_pad_spin)
+        row = add_row(text_grid, "Title Pad", self.title_pad_spin, row)
 
-        self.legend_location_combo = QComboBox()
-        self.legend_location_map = {
-            translate("Outside Right"): 'outside_right',
-            translate("Upper Left"): 'upper left',
-            translate("Upper Right"): 'upper right',
-            translate("Lower Left"): 'lower left',
-            translate("Lower Right"): 'lower right',
-            translate("Best"): 'best',
-            translate("Center Left"): 'center left',
-            translate("Center Right"): 'center right',
-            translate("Upper Center"): 'upper center',
-            translate("Lower Center"): 'lower center',
-            translate("Center"): 'center',
-        }
-        self.legend_location_combo.addItems(list(self.legend_location_map.keys()))
-        current_loc = getattr(app_state, 'legend_location', 'outside_right')
-        for label, value in self.legend_location_map.items():
-            if value == current_loc:
-                self.legend_location_combo.setCurrentText(label)
-                break
-        self.legend_location_combo.currentTextChanged.connect(self._on_style_change)
-        add_row("Legend Location", self.legend_location_combo)
-
-        self.legend_frame_on_check = QCheckBox()
-        self.legend_frame_on_check.setChecked(getattr(app_state, 'legend_frame_on', True))
-        self.legend_frame_on_check.stateChanged.connect(self._on_style_change)
-        add_row("Legend Frame", self.legend_frame_on_check)
-
-        self.legend_frame_alpha_spin = QDoubleSpinBox()
-        self.legend_frame_alpha_spin.setRange(0.0, 1.0)
-        self.legend_frame_alpha_spin.setSingleStep(0.05)
-        self.legend_frame_alpha_spin.setValue(float(getattr(app_state, 'legend_frame_alpha', 0.95)))
-        self.legend_frame_alpha_spin.valueChanged.connect(self._on_style_change)
-        add_row("Legend Frame Alpha", self.legend_frame_alpha_spin)
-
-        self.legend_frame_face_edit = QLineEdit(getattr(app_state, 'legend_frame_facecolor', '#ffffff'))
-        self.legend_frame_face_edit.editingFinished.connect(self._on_style_change)
-        add_row("Legend Frame Face Color", self.legend_frame_face_edit)
-
-        self.legend_frame_edge_edit = QLineEdit(getattr(app_state, 'legend_frame_edgecolor', '#cbd5f5'))
-        self.legend_frame_edge_edit.editingFinished.connect(self._on_style_change)
-        add_row("Legend Frame Edge Color", self.legend_frame_edge_edit)
-
-        axes_layout.addLayout(axes_grid)
         axes_group.setLayout(axes_layout)
         layout.addWidget(axes_group)
 
@@ -2147,10 +2081,18 @@ class Qt5ControlPanel(QWidget):
 
         self.legend_position_combo = QComboBox()
         self.legend_position_combo.addItems([
-            'best', 'upper right', 'upper left', 'lower left', 'lower right',
+            'best', 'outside right', 'upper right', 'upper left', 'lower left', 'lower right',
             'right', 'center left', 'center right', 'lower center', 'upper center', 'center'
         ])
-        self.legend_position_combo.setCurrentText(app_state.legend_position)
+        initial_location = getattr(app_state, 'legend_location', '') or getattr(app_state, 'legend_position', 'best')
+        if initial_location == 'outside_right':
+            initial_location = 'outside right'
+        if initial_location not in [
+            'best', 'outside right', 'upper right', 'upper left', 'lower left', 'lower right',
+            'right', 'center left', 'center right', 'lower center', 'upper center', 'center'
+        ]:
+            initial_location = 'best'
+        self.legend_position_combo.setCurrentText(initial_location)
         self.legend_position_combo.currentTextChanged.connect(self._on_legend_position_change)
         position_layout.addWidget(self.legend_position_combo)
 
@@ -2213,7 +2155,7 @@ class Qt5ControlPanel(QWidget):
             app_state.current_palette[group] = new_hex
 
             # 更新颜色块
-            swatch.setStyleSheet(f"background-color: {new_hex}; border: 1px solid #111827;")
+            self._update_marker_swatch(group, swatch)
 
             # 如果有对应的scatter，更新颜色
             if hasattr(app_state, 'group_to_scatter') and group in app_state.group_to_scatter:
@@ -2234,22 +2176,78 @@ class Qt5ControlPanel(QWidget):
         app_state.group_marker_map[group] = marker
 
         # 重新绘制颜色块（保持颜色但更新形状）
-        color = app_state.current_palette.get(group, '#cccccc')
-        swatch.setStyleSheet(f"background-color: {color}; border: 1px solid #111827;")
-
-        if hasattr(app_state, 'group_to_scatter') and group in app_state.group_to_scatter:
-            sc = app_state.group_to_scatter[group]
-            try:
-                from matplotlib.markers import MarkerStyle
-                marker_style = MarkerStyle(marker)
-                path = marker_style.get_path().transformed(marker_style.get_transform())
-                sc.set_paths([path])
-                if app_state.fig:
-                    app_state.fig.canvas.draw_idle()
-            except Exception as e:
-                print(f"[WARN] Failed to update marker for {group}: {e}")
+        self._update_marker_swatch(group, swatch)
 
         self._on_change()
+
+    def _update_marker_swatch(self, group, swatch):
+        """Update the legend swatch to reflect marker shape and color."""
+        color = app_state.current_palette.get(group, '#cccccc')
+        marker = app_state.group_marker_map.get(group, getattr(app_state, 'plot_marker_shape', 'o'))
+        icon = self._build_marker_icon(color, marker)
+        swatch.setIcon(icon)
+        swatch.setIconSize(QSize(16, 16))
+        swatch.setStyleSheet("border: 1px solid #111827; border-radius: 3px; background: transparent;")
+
+    def _build_marker_icon(self, color, marker, size=16):
+        """Render a small icon for the marker preview."""
+        pixmap = QPixmap(size, size)
+        pixmap.fill(Qt.transparent)
+
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        pen = QPen(QColor('#111827'))
+        pen.setWidthF(1.0)
+        painter.setPen(pen)
+
+        brush = QBrush(QColor(color))
+        filled_markers = {'o', 's', '^', 'v', 'D', 'P', '*'}
+        painter.setBrush(brush if marker in filled_markers else Qt.NoBrush)
+
+        cx = size / 2.0
+        cy = size / 2.0
+        r = size * 0.35
+
+        if marker == 'o':
+            painter.drawEllipse(QPointF(cx, cy), r, r)
+        elif marker == 's':
+            painter.drawRect(cx - r, cy - r, r * 2, r * 2)
+        elif marker == '^':
+            points = [QPointF(cx, cy - r), QPointF(cx - r, cy + r), QPointF(cx + r, cy + r)]
+            painter.drawPolygon(QPolygonF(points))
+        elif marker == 'v':
+            points = [QPointF(cx - r, cy - r), QPointF(cx + r, cy - r), QPointF(cx, cy + r)]
+            painter.drawPolygon(QPolygonF(points))
+        elif marker == 'D':
+            points = [QPointF(cx, cy - r), QPointF(cx + r, cy), QPointF(cx, cy + r), QPointF(cx - r, cy)]
+            painter.drawPolygon(QPolygonF(points))
+        elif marker == 'P':
+            points = []
+            for i in range(5):
+                angle = (math.pi / 2.0) + (i * 2.0 * math.pi / 5.0)
+                points.append(QPointF(cx + r * math.cos(angle), cy - r * math.sin(angle)))
+            painter.drawPolygon(QPolygonF(points))
+        elif marker == '*':
+            points = []
+            outer = r
+            inner = r * 0.5
+            for i in range(10):
+                angle = (math.pi / 2.0) + (i * math.pi / 5.0)
+                radius = outer if i % 2 == 0 else inner
+                points.append(QPointF(cx + radius * math.cos(angle), cy - radius * math.sin(angle)))
+            painter.drawPolygon(QPolygonF(points))
+        elif marker in {'+', 'x', 'X'}:
+            if marker == '+':
+                painter.drawLine(QPointF(cx - r, cy), QPointF(cx + r, cy))
+                painter.drawLine(QPointF(cx, cy - r), QPointF(cx, cy + r))
+            else:
+                painter.drawLine(QPointF(cx - r, cy - r), QPointF(cx + r, cy + r))
+                painter.drawLine(QPointF(cx - r, cy + r), QPointF(cx + r, cy - r))
+        else:
+            painter.drawEllipse(QPointF(cx, cy), r, r)
+
+        painter.end()
+        return QIcon(pixmap)
 
     def _build_tools_section(self):
         """构建工具部分"""
@@ -3961,7 +3959,7 @@ class Qt5ControlPanel(QWidget):
             color = app_state.current_palette.get(group, '#cccccc')
             color_btn = QPushButton()
             color_btn.setFixedSize(24, 24)
-            color_btn.setStyleSheet(f"background-color: {color}; border: 1px solid #111827; border-radius: 3px;")
+            self._update_marker_swatch(group, color_btn)
             color_btn.setCursor(QCursor(Qt.PointingHandCursor))
             color_btn.clicked.connect(lambda checked=False, g=group, btn=color_btn: self._pick_color(g, btn))
             item_layout.addWidget(color_btn)
@@ -4031,9 +4029,12 @@ class Qt5ControlPanel(QWidget):
 
     def _show_all_groups(self):
         """显示所有分组"""
+        was_empty = app_state.visible_groups == []
         app_state.visible_groups = None
         self._update_group_list()
         self._on_change()
+        if was_empty:
+            QTimer.singleShot(0, self._autoscale_current_axes)
 
     def _hide_all_groups(self):
         """隐藏所有分组"""
@@ -4041,6 +4042,20 @@ class Qt5ControlPanel(QWidget):
             app_state.visible_groups = []
             self._update_group_list()
             self._on_change()
+
+    def _autoscale_current_axes(self):
+        """Autoscale current axes after legend visibility changes."""
+        ax = getattr(app_state, 'ax', None)
+        if ax is None:
+            return
+        try:
+            ax.autoscale(enable=True, axis='both')
+            ax.relim()
+            ax.autoscale_view()
+            if app_state.fig is not None and app_state.fig.canvas is not None:
+                app_state.fig.canvas.draw_idle()
+        except Exception:
+            pass
 
     def sync_legend_ui(self):
         """Sync legend checkboxes with app_state.visible_groups."""
@@ -4081,6 +4096,7 @@ class Qt5ControlPanel(QWidget):
     def _on_legend_position_change(self, position):
         """图例位置变化"""
         app_state.legend_position = position
+        app_state.legend_location = 'outside_right' if position == 'outside right' else position
         self._on_change()
 
     def _on_legend_columns_change(self, columns):
@@ -5154,7 +5170,7 @@ def create_control_panel(callback):
 
 def create_section_dialog(section_key, callback, parent=None):
     """Create a dialog that hosts a single control section."""
-    from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout
+    from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QApplication
     from core.localization import set_language
 
     section_key = (section_key or '').lower()
@@ -5176,7 +5192,6 @@ def create_section_dialog(section_key, callback, parent=None):
 
     dialog = QDialog(parent)
     dialog.setWindowTitle(title)
-    dialog.resize(720, 820)
 
     root = QVBoxLayout(dialog)
     header = QHBoxLayout()
@@ -5210,11 +5225,28 @@ def create_section_dialog(section_key, callback, parent=None):
     scroll.setWidget(content_widget)
     root.addWidget(scroll, 1)
 
+    def _apply_adaptive_size():
+        dialog.adjustSize()
+        hint = dialog.sizeHint()
+        screen = dialog.screen() or QApplication.primaryScreen()
+        if screen is None:
+            dialog.resize(hint)
+            return
+        bounds = screen.availableGeometry()
+        max_w = int(bounds.width() * 0.9)
+        max_h = int(bounds.height() * 0.85)
+        min_w = 420
+        min_h = 280
+        target_w = min(max(hint.width(), min_w), max_w)
+        target_h = min(max(hint.height(), min_h), max_h)
+        dialog.resize(target_w, target_h)
+
     def _rebuild_section():
         panel._reset_ui_state()
         new_content = builder(panel)
         scroll.takeWidget()
         scroll.setWidget(new_content)
+        QTimer.singleShot(0, _apply_adaptive_size)
 
     def _refresh_titles():
         new_title = translate(title_key)
@@ -5238,6 +5270,7 @@ def create_section_dialog(section_key, callback, parent=None):
             panel.update_selection_controls()
         except Exception:
             pass
+        QTimer.singleShot(0, _apply_adaptive_size)
 
     def _on_language_refresh():
         current_lang = getattr(app_state, 'language', None)

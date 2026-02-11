@@ -610,6 +610,13 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
                     handles.append(patch)
                     labels.append(cat)
 
+            legend_handles = handles if handles else list(scatters)
+            legend_labels = labels if labels else list(unique_cats)
+
+            app_state.legend_last_title = group_col
+            app_state.legend_last_handles = legend_handles
+            app_state.legend_last_labels = legend_labels
+
             if len(unique_cats) <= 30:
                 ncol = app_state.legend_columns if getattr(app_state, 'legend_columns', 0) > 0 else (2 if len(unique_cats) > 15 else 1)
                 loc, bbox = _legend_location_config(show_marginal_kde=show_marginal_kde)
@@ -808,8 +815,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
         print(f"[ERROR] Plot update failed: {e}")
         traceback.print_exc()
         return False
-
-
+    
 def plot_umap(group_col, params, size):
     """Deprecated: Use plot_embedding instead"""
     return plot_embedding(group_col, 'UMAP', umap_params=params, size=size)
@@ -1018,6 +1024,13 @@ def plot_2d_data(group_col, data_columns, size=60, show_kde=False):
                     handles.append(patch)
                     labels.append(cat)
 
+            legend_handles = handles if handles else list(scatters)
+            legend_labels = labels if labels else list(unique_cats)
+
+            app_state.legend_last_title = group_col
+            app_state.legend_last_handles = legend_handles
+            app_state.legend_last_labels = legend_labels
+
             if len(unique_cats) <= 30:
                 ncol = app_state.legend_columns if getattr(app_state, 'legend_columns', 0) > 0 else (2 if len(unique_cats) > 15 else 1)
                 loc, bbox = _legend_location_config(show_marginal_kde=show_marginal_kde)
@@ -1191,6 +1204,13 @@ def plot_3d_data(group_col, data_columns, size=60):
                 zorder=2,
             )
             app_state.scatter_collections.append(sc)
+
+        legend_handles = list(app_state.scatter_collections)
+        legend_labels = list(unique_cats)
+
+        app_state.legend_last_title = group_col
+        app_state.legend_last_handles = legend_handles
+        app_state.legend_last_labels = legend_labels
 
         if not app_state.scatter_collections:
             print("[ERROR] No points were plotted in 3D", flush=True)
