@@ -187,6 +187,7 @@ class AppState:
         # File information
         self.file_path = None  # Current data file path
         self.sheet_name = None  # Current sheet name for xlsx
+        self.recent_files = []  # Recent data files
         
         # GUI components
         self.fig = None
@@ -221,6 +222,11 @@ class AppState:
         self.legend_columns = 0  # 0 means auto
         self.legend_position = 'best'  # Legend position
         self.hidden_groups = set()  # Hidden groups in legend
+        self.legend_display_mode = 'inline'  # inline | window
+        self.legend_update_callback = None
+        self.legend_last_title = None
+        self.legend_last_handles = None
+        self.legend_last_labels = None
         self.v1_value = 0.0  # V1 parameter for geochemistry
         self.v2_value = 0.0  # V2 parameter for geochemistry
         self.plot_marker_size = 60
