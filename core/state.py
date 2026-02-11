@@ -3,13 +3,15 @@ Application State Management
 Centralized global state to avoid variable chaos
 """
 from .config import CONFIG
+from .cache import EmbeddingCache
 
 
 class AppState:
     """Centralized application state"""
     def __init__(self):
         self.df_global = None
-        self.embedding_cache = {}
+        self.data_version = 0
+        self.embedding_cache = EmbeddingCache(max_entries=CONFIG.get('embedding_cache_size', 8))
         self.algorithm = 'UMAP'  # Default algorithm: always start with UMAP
         self.umap_params = CONFIG['umap_params'].copy()
         self.tsne_params = CONFIG['tsne_params'].copy()

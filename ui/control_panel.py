@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 """
 Qt5 控制面板
 提供算法参数调整和可视化设置
@@ -2249,7 +2251,7 @@ class Qt5ControlPanel(QWidget):
                     if app_state.fig:
                         app_state.fig.canvas.draw_idle()
                 except Exception as e:
-                    print(f"[WARN] Failed to update color for {group}: {e}")
+                    logger.warning(f"[WARN] Failed to update color for {group}: {e}")
 
     def _apply_marker_shape(self, group, shape_combo, swatch):
         """应用标记形状"""
@@ -2587,7 +2589,7 @@ class Qt5ControlPanel(QWidget):
             from visualization.plotting_analysis_qt import show_correlation_heatmap
             show_correlation_heatmap(self)
         except Exception as e:
-            print(f"[ERROR] Failed to show correlation heatmap: {e}", flush=True)
+            logger.error(f"[ERROR] Failed to show correlation heatmap: {e}")
 
     def _on_show_axis_correlation(self):
         """显示轴相关性"""
@@ -2595,7 +2597,7 @@ class Qt5ControlPanel(QWidget):
             from visualization.plotting_analysis_qt import show_embedding_correlation
             show_embedding_correlation(self)
         except Exception as e:
-            print(f"[ERROR] Failed to show axis correlation: {e}", flush=True)
+            logger.error(f"[ERROR] Failed to show axis correlation: {e}")
 
     def _on_show_shepard_diagram(self):
         """显示Shepard图"""
@@ -2603,7 +2605,7 @@ class Qt5ControlPanel(QWidget):
             from visualization.plotting_analysis_qt import show_shepard_diagram
             show_shepard_diagram(self)
         except Exception as e:
-            print(f"[ERROR] Failed to show Shepard diagram: {e}", flush=True)
+            logger.error(f"[ERROR] Failed to show Shepard diagram: {e}")
 
     def _sync_selection_buttons(self):
         """Sync selection button states with active tool."""
@@ -2715,7 +2717,7 @@ class Qt5ControlPanel(QWidget):
             from visualization.events import toggle_selection_mode
             toggle_selection_mode('export')
         except Exception as err:
-            print(f"[WARN] Failed to toggle selection mode: {err}", flush=True)
+            logger.warning(f"[WARN] Failed to toggle selection mode: {err}")
         self._sync_selection_buttons()
 
     def _on_toggle_ellipse_selection(self):
@@ -2724,7 +2726,7 @@ class Qt5ControlPanel(QWidget):
             from visualization.events import toggle_selection_mode
             toggle_selection_mode('ellipse')
         except Exception as err:
-            print(f"[WARN] Failed to toggle ellipse selection: {err}", flush=True)
+            logger.warning(f"[WARN] Failed to toggle ellipse selection: {err}")
         self._sync_selection_buttons()
 
     def _on_toggle_lasso_selection(self):
@@ -2733,7 +2735,7 @@ class Qt5ControlPanel(QWidget):
             from visualization.events import toggle_selection_mode
             toggle_selection_mode('lasso')
         except Exception as err:
-            print(f"[WARN] Failed to toggle custom shape selection: {err}", flush=True)
+            logger.warning(f"[WARN] Failed to toggle custom shape selection: {err}")
         self._sync_selection_buttons()
 
     def _on_export_csv(self):
@@ -2858,7 +2860,7 @@ class Qt5ControlPanel(QWidget):
             if current_model in available_models:
                 self.geo_model_combo.setCurrentText(current_model)
         except Exception as e:
-            print(f"[WARN] Failed to load geochemistry models: {e}")
+            logger.warning(f"[WARN] Failed to load geochemistry models: {e}")
             self.geo_model_combo.addItem("Default")
 
         self.geo_model_combo.currentTextChanged.connect(self._on_geo_model_change)
@@ -3084,14 +3086,14 @@ class Qt5ControlPanel(QWidget):
 
             # 更新状态
             app_state.pca_component_indices = [x_idx, y_idx]
-            print(f"[INFO] PCA dimensions changed to: PC{x_idx+1} vs PC{y_idx+1}")
+            logger.info(f"[INFO] PCA dimensions changed to: PC{x_idx+1} vs PC{y_idx+1}")
 
             # 如果当前是 PCA 或 RobustPCA 模式，刷新绘图
             if app_state.render_mode in ['PCA', 'RobustPCA']:
                 self._on_change()
 
         except Exception as e:
-            print(f"[ERROR] Failed to change PCA dimensions: {e}")
+            logger.error(f"[ERROR] Failed to change PCA dimensions: {e}")
 
     def _on_show_scree_plot(self):
         """显示 Scree Plot"""
@@ -3099,7 +3101,7 @@ class Qt5ControlPanel(QWidget):
             from visualization import show_scree_plot
             show_scree_plot(None)  # 传入 None，函数内部会创建新窗口
         except Exception as e:
-            print(f"[ERROR] Failed to show scree plot: {e}")
+            logger.error(f"[ERROR] Failed to show scree plot: {e}")
             QMessageBox.warning(
                 self,
                 translate("Error"),
@@ -3112,7 +3114,7 @@ class Qt5ControlPanel(QWidget):
             from visualization import show_pca_loadings
             show_pca_loadings(None)  # 传入 None，函数内部会创建新窗口
         except Exception as e:
-            print(f"[ERROR] Failed to show PCA loadings: {e}")
+            logger.error(f"[ERROR] Failed to show PCA loadings: {e}")
             QMessageBox.warning(
                 self,
                 translate("Error"),
@@ -3167,7 +3169,7 @@ class Qt5ControlPanel(QWidget):
             self._open_kde_style_dialog('kde', None)
             self._on_change()
         except Exception as e:
-            print(f"[ERROR] Failed to open KDE style dialog: {e}")
+            logger.error(f"[ERROR] Failed to open KDE style dialog: {e}")
             QMessageBox.warning(
                 self,
                 translate("Error"),
@@ -3180,7 +3182,7 @@ class Qt5ControlPanel(QWidget):
             self._open_kde_style_dialog('marginal_kde', None)
             self._on_change()
         except Exception as e:
-            print(f"[ERROR] Failed to open marginal KDE style dialog: {e}")
+            logger.error(f"[ERROR] Failed to open marginal KDE style dialog: {e}")
             QMessageBox.warning(
                 self,
                 translate("Error"),
@@ -3224,7 +3226,7 @@ class Qt5ControlPanel(QWidget):
                 with open(theme_file, 'r', encoding='utf-8') as handle:
                     app_state.saved_themes = json.load(handle)
             except Exception as exc:
-                print(f"[WARN] Failed to load themes: {exc}")
+                logger.warning(f"[WARN] Failed to load themes: {exc}")
                 app_state.saved_themes = {}
 
         if self.theme_load_combo is None:
@@ -3686,10 +3688,10 @@ class Qt5ControlPanel(QWidget):
             result = get_tooltip_configuration(self)
             if result:
                 app_state.tooltip_columns = result
-                print(f"[INFO] Tooltip columns configured: {result}")
+                logger.info(f"[INFO] Tooltip columns configured: {result}")
                 self._on_change()
         except Exception as e:
-            print(f"[ERROR] Failed to open tooltip configuration dialog: {e}")
+            logger.error(f"[ERROR] Failed to open tooltip configuration dialog: {e}")
             QMessageBox.warning(
                 self,
                 translate("Error"),
@@ -3812,7 +3814,7 @@ class Qt5ControlPanel(QWidget):
             from ui.dialogs.mixing_dialog import show_mixing_calculator
             show_mixing_calculator(self)
         except Exception as e:
-            print(f"[ERROR] Failed to compute mixing: {e}")
+            logger.error(f"[ERROR] Failed to compute mixing: {e}")
             QMessageBox.warning(
                 self,
                 translate("Error"),
@@ -3837,7 +3839,7 @@ class Qt5ControlPanel(QWidget):
     def _on_confidence_change(self, level):
         """置信水平变化"""
         app_state.confidence_level = level
-        print(f"[INFO] Confidence level changed to: {level}")
+        logger.info(f"[INFO] Confidence level changed to: {level}")
         self._on_change()
 
     def _on_ternary_zoom_change(self, state):
@@ -3913,7 +3915,7 @@ class Qt5ControlPanel(QWidget):
         if x_col and y_col:
             app_state.selected_2d_cols = [x_col, y_col]
             app_state.selected_2d_confirmed = True
-            print(f"[DEBUG] 2D Axes Changed: X={x_col}, Y={y_col}", flush=True)
+            logger.debug(f"[DEBUG] 2D Axes Changed: X={x_col}, Y={y_col}")
             self._on_change()
 
     def _on_export_clicked(self):
@@ -3967,7 +3969,7 @@ class Qt5ControlPanel(QWidget):
         if result:
             app_state.selected_2d_cols = result
             app_state.selected_2d_confirmed = True
-            print(f"[INFO] Selected 2D columns: {result}", flush=True)
+            logger.info(f"[INFO] Selected 2D columns: {result}")
             self._on_change()
 
     def _show_3d_column_dialog(self):
@@ -3978,7 +3980,7 @@ class Qt5ControlPanel(QWidget):
         if result:
             app_state.selected_3d_cols = result
             app_state.selected_3d_confirmed = True
-            print(f"[INFO] Selected 3D columns: {result}", flush=True)
+            logger.info(f"[INFO] Selected 3D columns: {result}")
             self._on_change()
 
     def _show_ternary_column_dialog(self):
@@ -3991,8 +3993,8 @@ class Qt5ControlPanel(QWidget):
             app_state.ternary_stretch = result['stretch']
             app_state.ternary_factors = result['factors']
             app_state.selected_ternary_confirmed = True
-            print(f"[INFO] Selected ternary columns: {result['columns']}", flush=True)
-            print(f"[INFO] Ternary stretch: {result['stretch']}, factors: {result['factors']}", flush=True)
+            logger.info(f"[INFO] Selected ternary columns: {result['columns']}")
+            logger.info(f"[INFO] Ternary stretch: {result['stretch']}, factors: {result['factors']}")
             self._on_change()
 
     def _update_group_list(self):
@@ -4019,7 +4021,7 @@ class Qt5ControlPanel(QWidget):
         groups_to_show = list(groups)[:max_items]
 
         if len(groups) > max_items:
-            print(f"[WARN] Showing first {max_items} groups only.", flush=True)
+            logger.warning(f"[WARN] Showing first {max_items} groups only.")
 
         for group in groups_to_show:
             # 创建自定义widget用于列表项
@@ -4164,7 +4166,7 @@ class Qt5ControlPanel(QWidget):
                 if app_state.fig:
                     app_state.fig.canvas.draw_idle()
             except Exception as e:
-                print(f"[WARN] Failed to bring {group} to front: {e}", flush=True)
+                logger.warning(f"[WARN] Failed to bring {group} to front: {e}")
 
     def _on_legend_position_change(self, position):
         """图例位置变化"""
@@ -4869,7 +4871,7 @@ class Qt5ControlPanel(QWidget):
             try:
                 on_slider_change()
             except Exception as refresh_err:
-                print(f"[WARN] Failed to refresh plot after isochron calculation: {refresh_err}", flush=True)
+                logger.warning(f"[WARN] Failed to refresh plot after isochron calculation: {refresh_err}")
 
     def _ensure_isochron_error_settings(self):
         """Ensure isochron error settings are usable before calculation."""
@@ -5158,14 +5160,14 @@ class Qt5ControlPanel(QWidget):
                 # 保存模型名称到状态
                 app_state.geo_model_name = model_name
 
-                print(f"[INFO] Loaded Geochemistry Model: {model_name}")
+                logger.info(f"[INFO] Loaded Geochemistry Model: {model_name}")
 
                 # 如果当前是地球化学渲染模式，自动刷新
                 if app_state.render_mode in ('V1V2', 'PB_EVOL_76', 'PB_EVOL_86', 'PB_MU_AGE', 'PB_KAPPA_AGE'):
                     self._on_change()
 
         except Exception as e:
-            print(f"[ERROR] Failed to load geochemistry model: {e}")
+            logger.error(f"[ERROR] Failed to load geochemistry model: {e}")
             QMessageBox.warning(
                 self,
                 translate("Error"),
@@ -5221,7 +5223,7 @@ class Qt5ControlPanel(QWidget):
             # 更新引擎参数
             engine.update_parameters(params)
 
-            print(f"[INFO] Applied geochemistry parameters")
+            logger.info(f"[INFO] Applied geochemistry parameters")
 
             # 如果当前是地球化学渲染模式，刷新绘图
             if app_state.render_mode in ('V1V2', 'PB_EVOL_76', 'PB_EVOL_86', 'PB_MU_AGE', 'PB_KAPPA_AGE'):
@@ -5234,7 +5236,7 @@ class Qt5ControlPanel(QWidget):
             )
 
         except Exception as e:
-            print(f"[ERROR] Failed to apply geochemistry parameters: {e}")
+            logger.error(f"[ERROR] Failed to apply geochemistry parameters: {e}")
             QMessageBox.warning(
                 self,
                 translate("Error"),
@@ -5259,7 +5261,7 @@ class Qt5ControlPanel(QWidget):
                 )
 
         except Exception as e:
-            print(f"[ERROR] Failed to reset geochemistry parameters: {e}")
+            logger.error(f"[ERROR] Failed to reset geochemistry parameters: {e}")
             QMessageBox.warning(
                 self,
                 translate("Error"),

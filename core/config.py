@@ -37,6 +37,8 @@ CONFIG = {
     },
     'temp_dir': TEMP_DIR,
     'params_temp_file': PARAMS_TEMP_FILE,
+    'session_version': 2,
+    'embedding_cache_size': 8,
     'locales_dir': LOCALES_DIR,
     'umap_params': {
         'n_neighbors': 10,

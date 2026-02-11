@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 """
 混合计算对话框
 """
@@ -155,7 +157,7 @@ class MixingCalculatorDialog(QDialog):
                     })
 
             except Exception as e:
-                print(f"[ERROR] Failed to calculate mixing for {mixture_name}: {e}")
+                logger.error(f"[ERROR] Failed to calculate mixing for {mixture_name}: {e}")
                 continue
 
         # 显示结果

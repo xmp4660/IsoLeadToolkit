@@ -1,9 +1,10 @@
+import logging
+logger = logging.getLogger(__name__)
 """
 Session Management - Save and Load Algorithm Parameters
 Handles persistence of last used parameters across program sessions
 """
 import json
-import traceback
 from .config import CONFIG
 
 
@@ -16,6 +17,7 @@ def save_session_params(algorithm, umap_params, tsne_params, point_size, group_c
     """
     try:
         session_data = {
+            'session_version': CONFIG.get('session_version', 1),
             'algorithm': algorithm,
             'umap_params': umap_params,
             'tsne_params': tsne_params,
@@ -33,16 +35,15 @@ def save_session_params(algorithm, umap_params, tsne_params, point_size, group_c
             'ui_theme': ui_theme
         }
         
-        print(f"[DEBUG] Saving session params. Tooltip columns: {tooltip_columns}", flush=True)
+        logger.debug(f"[DEBUG] Saving session params. Tooltip columns: {tooltip_columns}")
 
         with open(CONFIG['params_temp_file'], 'w', encoding='utf-8') as f:
             json.dump(session_data, f, indent=2, ensure_ascii=False)
         
-        print(f"[INFO] Session parameters saved to {CONFIG['params_temp_file']}", flush=True)
+        logger.info(f"[INFO] Session parameters saved to {CONFIG['params_temp_file']}")
         return True
     except Exception as e:
-        print(f"[WARN] Failed to save session parameters: {e}", flush=True)
-        traceback.print_exc()
+        logger.exception(f"[WARN] Failed to save session parameters: {e}")
         return False
 
 
@@ -62,28 +63,33 @@ def load_session_params():
             if legacy_params_file is not None and legacy_params_file.exists():
                 params_file = legacy_params_file
             else:
-                print("[INFO] No previous session found", flush=True)
+                logger.info("[INFO] No previous session found")
                 return None
 
         with open(params_file, 'r', encoding='utf-8') as f:
             session_data = json.load(f)
+
+        version = int(session_data.get('session_version', 1))
+        current_version = int(CONFIG.get('session_version', 1))
+        if version < current_version:
+            logger.info(f"[INFO] Session data version {version} -> {current_version}")
+            session_data['session_version'] = current_version
 
         if legacy_params_file and params_file == legacy_params_file:
             # Migrate to preferred location for faster future loads.
             try:
                 with open(CONFIG['params_temp_file'], 'w', encoding='utf-8') as out:
                     json.dump(session_data, out, indent=2, ensure_ascii=False)
-                print(f"[INFO] Migrated session parameters to {CONFIG['params_temp_file']}", flush=True)
+                logger.info(f"[INFO] Migrated session parameters to {CONFIG['params_temp_file']}")
             except Exception:
                 pass
         
-        print(f"[INFO] Session parameters loaded from {params_file}", flush=True)
-        print(f"[INFO] Previous algorithm: {session_data.get('algorithm', 'UMAP')}", flush=True)
-        print(f"[INFO] Previous group: {session_data.get('group_col', 'Province')}", flush=True)
+        logger.info(f"[INFO] Session parameters loaded from {params_file}")
+        logger.info(f"[INFO] Previous algorithm: {session_data.get('algorithm', 'UMAP')}")
+        logger.info(f"[INFO] Previous group: {session_data.get('group_col', 'Province')}")
         return session_data
     except Exception as e:
-        print(f"[WARN] Failed to load session parameters: {e}", flush=True)
-        traceback.print_exc()
+        logger.exception(f"[WARN] Failed to load session parameters: {e}")
         return None
 
 
@@ -93,10 +99,10 @@ def clear_session_params():
         params_file = CONFIG['params_temp_file']
         if params_file.exists():
             params_file.unlink()
-            print("[INFO] Session parameters cleared", flush=True)
+            logger.info("[INFO] Session parameters cleared")
             return True
     except Exception as e:
-        print(f"[WARN] Failed to clear session parameters: {e}", flush=True)
+        logger.exception(f"[WARN] Failed to clear session parameters: {e}")
     return False
 
 
@@ -108,5 +114,5 @@ def get_temp_dir_size():
             if item.is_file():
                 total_size += item.stat().st_size
         return total_size / (1024 * 1024)  # Convert to MB
-    except:
+    except Exception:
         return 0

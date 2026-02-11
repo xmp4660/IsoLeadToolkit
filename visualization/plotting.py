@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 """
 Dimensionality Reduction Visualization
 Handles UMAP and t-SNE embedding computation and plot rendering
@@ -8,6 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib import font_manager
 import itertools
 from core.config import CONFIG
+from core.cache import build_embedding_cache_key
 from core.state import app_state
 # Import events module for selection overlay refresh
 try:
@@ -47,7 +50,7 @@ try:
     from data import geochemistry
     from data.geochemistry import calculate_all_parameters
 except ImportError:
-    print("[WARN] geochemistry module not found. V1V2 algorithm will not be available.", flush=True)
+    logger.warning("[WARN] geochemistry module not found. V1V2 algorithm will not be available.")
     geochemistry = None
     calculate_all_parameters = None
 
@@ -70,7 +73,7 @@ def _resolve_isochron_errors(df, size):
                 rxy = np.zeros_like(sx)
             return sx, sy, rxy
 
-        print("[WARN] Isochron error columns not found; using fixed values.", flush=True)
+        logger.warning("[WARN] Isochron error columns not found; using fixed values.")
 
     sx_val = float(getattr(app_state, 'isochron_sx_value', 0.001))
     sy_val = float(getattr(app_state, 'isochron_sy_value', 0.001))
@@ -142,35 +145,25 @@ def get_umap_embedding(params):
         if app_state.active_subset_indices is not None:
             subset_key = hash(tuple(sorted(list(app_state.active_subset_indices))))
 
-        key = (
-            'umap',
-            params.get('n_neighbors'),
-            params.get('min_dist'),
-            params.get('random_state'),
-            params.get('n_components', 2),
-            subset_key,
-        )
-
-        if key in app_state.embedding_cache:
-            result = app_state.embedding_cache[key]
-            if result is not None:
-                return result
+        key = build_embedding_cache_key(app_state, 'umap', params, subset_key)
+        cached = app_state.embedding_cache.get(key)
+        if cached is not None:
+            return cached
 
         X, _ = _get_analysis_data()
         if X is None or X.shape[0] == 0:
-            print("[ERROR] No data available for UMAP computation", flush=True)
+            logger.error("[ERROR] No data available for UMAP computation")
             return None
 
         reducer = umap.UMAP(**params)
         embedding = reducer.fit_transform(X)
-        app_state.embedding_cache[key] = embedding
+        app_state.embedding_cache.set(key, embedding)
         app_state.last_embedding = embedding
         app_state.last_embedding_type = 'UMAP'
         return embedding
 
     except Exception as e:
-        print(f"[ERROR] UMAP computation failed: {e}", flush=True)
-        traceback.print_exc()
+        logger.exception(f"[ERROR] UMAP computation failed: {e}")
         return None
 
 
@@ -183,29 +176,20 @@ def get_tsne_embedding(params):
         if app_state.active_subset_indices is not None:
             subset_key = hash(tuple(sorted(list(app_state.active_subset_indices))))
 
-        key = (
-            'tsne',
-            params.get('perplexity'),
-            params.get('learning_rate'),
-            params.get('random_state'),
-            params.get('n_components', 2),
-            subset_key,
-        )
-
-        if key in app_state.embedding_cache:
-            result = app_state.embedding_cache[key]
-            if result is not None:
-                return result
+        key = build_embedding_cache_key(app_state, 'tsne', params, subset_key)
+        cached = app_state.embedding_cache.get(key)
+        if cached is not None:
+            return cached
 
         X, _ = _get_analysis_data()
         if X is None or X.shape[0] == 0:
-            print("[ERROR] No data available for t-SNE computation", flush=True)
+            logger.error("[ERROR] No data available for t-SNE computation")
             return None
 
         n_samples = X.shape[0]
         perplexity = float(params.get('perplexity', 30))
         if n_samples <= 1:
-            print("[ERROR] Not enough samples for t-SNE", flush=True)
+            logger.error("[ERROR] Not enough samples for t-SNE")
             return None
         if perplexity >= n_samples:
             perplexity = max(2, n_samples - 1)
@@ -222,14 +206,13 @@ def get_tsne_embedding(params):
         )
 
         embedding = reducer.fit_transform(X)
-        app_state.embedding_cache[key] = embedding
+        app_state.embedding_cache.set(key, embedding)
         app_state.last_embedding = embedding
         app_state.last_embedding_type = 'tSNE'
         return embedding
 
     except Exception as e:
-        print(f"[ERROR] t-SNE computation failed: {e}", flush=True)
-        traceback.print_exc()
+        logger.exception(f"[ERROR] t-SNE computation failed: {e}")
         return None
 
 
@@ -241,15 +224,14 @@ def get_pca_embedding(params):
         if app_state.active_subset_indices is not None:
             subset_key = hash(tuple(sorted(list(app_state.active_subset_indices))))
 
-        key = ('pca', params.get('n_components', 2), params.get('random_state', 42), subset_key)
-        if key in app_state.embedding_cache:
-            result = app_state.embedding_cache[key]
-            if result is not None:
-                return result
+        key = build_embedding_cache_key(app_state, 'pca', params, subset_key)
+        cached = app_state.embedding_cache.get(key)
+        if cached is not None:
+            return cached
 
         X, _ = _get_analysis_data()
         if X is None or X.shape[0] == 0:
-            print("[ERROR] No data available for PCA computation", flush=True)
+            logger.error("[ERROR] No data available for PCA computation")
             return None
 
         scaler = data_utils.StandardScaler()
@@ -270,14 +252,13 @@ def get_pca_embedding(params):
         app_state.last_pca_components = reducer.components_
         app_state.current_feature_names = app_state.data_cols
 
-        app_state.embedding_cache[key] = embedding
+        app_state.embedding_cache.set(key, embedding)
         app_state.last_embedding = embedding
         app_state.last_embedding_type = 'PCA'
         return embedding
 
     except Exception as e:
-        print(f"[ERROR] PCA computation failed: {e}", flush=True)
-        traceback.print_exc()
+        logger.exception(f"[ERROR] PCA computation failed: {e}")
         return None
 
 
@@ -290,22 +271,14 @@ def get_robust_pca_embedding(params):
         if app_state.active_subset_indices is not None:
             subset_key = hash(tuple(sorted(list(app_state.active_subset_indices))))
 
-        key = (
-            'robust_pca',
-            params.get('n_components', 2),
-            params.get('random_state', 42),
-            params.get('support_fraction', 0.75),
-            subset_key
-        )
-
-        if key in app_state.embedding_cache:
-            result = app_state.embedding_cache[key]
-            if result is not None:
-                return result
+        key = build_embedding_cache_key(app_state, 'robust_pca', params, subset_key)
+        cached = app_state.embedding_cache.get(key)
+        if cached is not None:
+            return cached
 
         X, _ = _get_analysis_data()
         if X is None or X.shape[0] == 0:
-            print("[ERROR] No data available for Robust PCA computation", flush=True)
+            logger.error("[ERROR] No data available for Robust PCA computation")
             return None
 
         scaler = data_utils.StandardScaler()
@@ -342,14 +315,13 @@ def get_robust_pca_embedding(params):
             app_state.last_pca_components = components.T
 
         app_state.current_feature_names = app_state.data_cols
-        app_state.embedding_cache[key] = embedding
+        app_state.embedding_cache.set(key, embedding)
         app_state.last_embedding = embedding
         app_state.last_embedding_type = 'RobustPCA'
         return embedding
 
     except Exception as e:
-        print(f"[ERROR] Robust PCA computation failed: {e}", flush=True)
-        traceback.print_exc()
+        logger.exception(f"[ERROR] Robust PCA computation failed: {e}")
         return None
 
 
@@ -556,7 +528,7 @@ def _draw_model_curves(ax, actual_algorithm, params_list):
                 label='_nolegend_'
             )
         except Exception as err:
-            print(f"[WARN] Failed to draw model curve: {err}", flush=True)
+            logger.warning(f"[WARN] Failed to draw model curve: {err}")
 
 
 def _draw_isochron_overlays(ax, actual_algorithm):
@@ -713,9 +685,9 @@ def _draw_isochron_overlays(ax, actual_algorithm):
 
                         ax.text(txt_x, txt_y, f" {age_ma:.0f} Ma", color=color, fontsize=9, va='center', ha='left', fontweight='bold')
                     else:
-                        print(f"[INFO] Isochron age calculation returned {age_ma} for slope {slope:.6f} (group: {grp})", flush=True)
+                        logger.info(f"[INFO] Isochron age calculation returned {age_ma} for slope {slope:.6f} (group: {grp})")
                 except Exception as age_err:
-                    print(f"[WARN] Failed to calculate isochron age for slope {slope:.6f}: {age_err}", flush=True)
+                    logger.warning(f"[WARN] Failed to calculate isochron age for slope {slope:.6f}: {age_err}")
 
                     if getattr(app_state, 'show_growth_curves', True):
                         growth = geochemistry.calculate_isochron1_growth_curve(
@@ -755,7 +727,7 @@ def _draw_isochron_overlays(ax, actual_algorithm):
             
 
     except Exception as err:
-        print(f"[WARN] Failed to draw isochron overlays: {err}", flush=True)
+        logger.warning(f"[WARN] Failed to draw isochron overlays: {err}")
 
 
 def _draw_selected_isochron(ax):
@@ -826,7 +798,7 @@ def _draw_selected_isochron(ax):
         )
 
     except Exception as err:
-        print(f"[WARN] Failed to draw selected isochron: {err}", flush=True)
+        logger.warning(f"[WARN] Failed to draw selected isochron: {err}")
 
 
 def _label_angle_for_slope(ax, x0, y0, slope, dx):
@@ -982,7 +954,7 @@ def _draw_paleoisochrons(ax, actual_algorithm, ages, params):
                 })
                 _position_paleo_label(ax, text_artist, slope, intercept, age=age)
     except Exception as err:
-        print(f"[WARN] Failed to draw paleoisochrons: {err}", flush=True)
+        logger.warning(f"[WARN] Failed to draw paleoisochrons: {err}")
 
 
 def refresh_paleoisochron_labels():
@@ -1049,7 +1021,7 @@ def _draw_model_age_lines(ax, pb206, pb207, params):
             )
             ax.scatter(x_curve[i], y_curve[i], s=10, color='#475569', alpha=0.6, zorder=2, label='_nolegend_')
     except Exception as err:
-        print(f"[WARN] Failed to draw model age lines: {err}", flush=True)
+        logger.warning(f"[WARN] Failed to draw model age lines: {err}")
 
 
 def _draw_model_age_lines_86(ax, pb206, pb207, pb208, params):
@@ -1099,7 +1071,7 @@ def _draw_model_age_lines_86(ax, pb206, pb207, pb208, params):
             )
             ax.scatter(x_curve[i], z_curve[i], s=10, color='#475569', alpha=0.6, zorder=2, label='_nolegend_')
     except Exception as err:
-        print(f"[WARN] Failed to draw model age lines (206-208): {err}", flush=True)
+        logger.warning(f"[WARN] Failed to draw model age lines (206-208): {err}")
 
 
 def _draw_equation_overlays(ax):
@@ -1127,7 +1099,7 @@ def _draw_equation_overlays(ax):
             try:
                 y_vals = eval(expression, {'x': x_vals, 'np': np, 'math': np})
             except Exception as err:
-                print(f"[WARN] Failed to evaluate equation '{expression}': {err}", flush=True)
+                logger.warning(f"[WARN] Failed to evaluate equation '{expression}': {err}")
                 continue
         elif slope is not None:
             y_vals = slope * x_vals + intercept
@@ -1164,7 +1136,7 @@ def calculate_auto_ternary_factors():
     
     try:
         if not hasattr(app_state, 'selected_ternary_cols') or len(app_state.selected_ternary_cols) != 3:
-            print("[WARN] Factors calc: invalid col selection", flush=True)
+            logger.warning("[WARN] Factors calc: invalid col selection")
             return False
 
         # Get data (using global dataset or subset?)
@@ -1195,11 +1167,11 @@ def calculate_auto_ternary_factors():
             factors = factors / min_f
         
         app_state.ternary_factors = factors.tolist()
-        print(f"[INFO] Auto-Calculated Factors: {app_state.ternary_factors}", flush=True)
+        logger.info(f"[INFO] Auto-Calculated Factors: {app_state.ternary_factors}")
         return True
         
     except Exception as e:
-        print(f"[ERROR] Auto factor calculation failed: {e}", flush=True)
+        logger.error(f"[ERROR] Auto factor calculation failed: {e}")
         traceback.print_exc()
         return False
 

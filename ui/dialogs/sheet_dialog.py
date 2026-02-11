@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 """
 Qt5 工作表选择对话框
 """
@@ -27,7 +29,7 @@ class Qt5SheetDialog(QDialog):
         try:
             self.sheets = list(pd.ExcelFile(file_path).sheet_names)
         except Exception as e:
-            print(f"[ERROR] Could not load sheets: {e}", flush=True)
+            logger.error(f"[ERROR] Could not load sheets: {e}")
             QMessageBox.critical(self, translate("Error"),
                                translate("Failed to load Excel file: {error}").format(error=str(e)))
             return

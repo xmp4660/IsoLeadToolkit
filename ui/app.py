@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 """
 Qt5 应用程序类
 管理应用初始化、生命周期和资源清理
@@ -57,9 +59,9 @@ def _configure_matplotlib_fonts():
     if chosen_font:
         matplotlib.rcParams['font.family'] = 'sans-serif'
         matplotlib.rcParams['font.sans-serif'] = [chosen_font, 'Arial', 'sans-serif']
-        print(f"[INFO] Using plot font: {chosen_font}", flush=True)
+        logger.info(f"[INFO] Using plot font: {chosen_font}")
     else:
-        print("[WARN] Preferred plot fonts not found; falling back to default sans-serif font.", flush=True)
+        logger.warning("[WARN] Preferred plot fonts not found; falling back to default sans-serif font.")
 
     matplotlib.rcParams['axes.unicode_minus'] = False
     dpi_value = CONFIG.get('figure_dpi')
@@ -78,9 +80,9 @@ def _configure_matplotlib():
     # 配置 matplotlib 后端为 Qt5Agg
     try:
         matplotlib.use('Qt5Agg')
-        print("[INFO] Using Qt5Agg backend", flush=True)
+        logger.info("[INFO] Using Qt5Agg backend")
     except Exception:
-        print("[WARN] Qt5Agg backend not available, using Agg", flush=True)
+        logger.warning("[WARN] Qt5Agg backend not available, using Agg")
         matplotlib.use('Agg')
 
     _configure_matplotlib_fonts()
@@ -114,22 +116,16 @@ class Qt5Application:
         self.app.installEventFilter(_NativeStyleFilter())
 
     def _install_debug_handlers(self):
-        """Capture Qt and Python errors to log files for crash diagnostics."""
+        """Capture Qt and Python errors to the unified log via stderr."""
         try:
             from PyQt5.QtCore import qInstallMessageHandler
         except Exception:
             return
 
-        try:
-            qt_log = open("isotopes_qt.log", "a", encoding="utf-8", buffering=1)
-        except Exception:
-            qt_log = None
-
         def _qt_handler(msg_type, context, message):
-            if qt_log is None:
-                return
             try:
-                qt_log.write(f"[QT] {message}\n")
+                sys.stderr.write(f"[QT] {message}\n")
+                sys.stderr.flush()
             except Exception:
                 pass
 
@@ -137,9 +133,9 @@ class Qt5Application:
 
         def _excepthook(exc_type, exc, tb):
             try:
-                with open("isotopes_py.log", "a", encoding="utf-8") as handle:
-                    handle.write("[PY] Unhandled exception\n")
-                    traceback.print_exception(exc_type, exc, tb, file=handle)
+                sys.stderr.write("[PY] Unhandled exception\n")
+                traceback.print_exception(exc_type, exc, tb, file=sys.stderr)
+                sys.stderr.flush()
             except Exception:
                 pass
             sys.__excepthook__(exc_type, exc, tb)
@@ -159,7 +155,7 @@ class Qt5Application:
 
     def _load_session(self):
         """加载会话参数"""
-        print("[INFO] Loading session parameters...", flush=True)
+        logger.info("[INFO] Loading session parameters...")
         session_data = load_session_params()
 
         requested_language = None
@@ -178,12 +174,12 @@ class Qt5Application:
         if not session_data:
             app_state.algorithm = 'UMAP'
             app_state.render_mode = 'UMAP'
-            print(f"[INFO] No session data, using default algorithm: UMAP", flush=True)
+            logger.info(f"[INFO] No session data, using default algorithm: UMAP")
             return
 
         # 算法参数
         app_state.algorithm = session_data.get('algorithm', 'UMAP')
-        print(f"[INFO] Algorithm from session: {app_state.algorithm}", flush=True)
+        logger.info(f"[INFO] Algorithm from session: {app_state.algorithm}")
 
         app_state.umap_params.update(session_data.get('umap_params', {}))
         app_state.tsne_params.update(session_data.get('tsne_params', {}))
@@ -207,19 +203,19 @@ class Qt5Application:
         saved_cols = session_data.get('tooltip_columns')
         if saved_cols is not None:
             app_state.tooltip_columns = saved_cols
-            print(f"[DEBUG] Restored tooltip columns from session: {saved_cols}", flush=True)
+            logger.debug(f"[DEBUG] Restored tooltip columns from session: {saved_cols}")
         else:
-            print(f"[DEBUG] No tooltip columns in session, using default: {app_state.tooltip_columns}", flush=True)
+            logger.debug(f"[DEBUG] No tooltip columns in session, using default: {app_state.tooltip_columns}")
 
         # 恢复 UI 主题
         app_state.ui_theme = session_data.get('ui_theme') or 'Modern Light'
-        print(f"[INFO] Restored UI theme: {app_state.ui_theme}", flush=True)
+        logger.info(f"[INFO] Restored UI theme: {app_state.ui_theme}")
 
         # 分组列：从会话恢复
         session_group_col = session_data.get('group_col')
         if session_group_col and session_group_col in app_state.group_cols:
             app_state.last_group_col = session_group_col
-            print(f"[INFO] Group column restored from session: {app_state.last_group_col}", flush=True)
+            logger.info(f"[INFO] Group column restored from session: {app_state.last_group_col}")
 
     def _validate_render_mode(self):
         """验证并调整渲染模式"""
@@ -227,14 +223,14 @@ class Qt5Application:
 
         if app_state.render_mode == '3D' and num_numeric_cols < 3:
             if num_numeric_cols >= 2:
-                print("[INFO] Not enough numeric columns for 3D; switching to 2D scatter.", flush=True)
+                logger.info("[INFO] Not enough numeric columns for 3D; switching to 2D scatter.")
                 app_state.render_mode = '2D'
             else:
-                print("[INFO] Not enough numeric columns for 3D; switching to UMAP.", flush=True)
+                logger.info("[INFO] Not enough numeric columns for 3D; switching to UMAP.")
                 app_state.render_mode = 'UMAP'
 
         if app_state.render_mode == '2D' and num_numeric_cols < 2:
-            print("[INFO] Not enough numeric columns for 2D; switching to UMAP.", flush=True)
+            logger.info("[INFO] Not enough numeric columns for 2D; switching to UMAP.")
             app_state.render_mode = 'UMAP'
 
         if app_state.render_mode == '3D':
@@ -246,7 +242,7 @@ class Qt5Application:
                     app_state.selected_3d_cols = valid_cols
                 else:
                     app_state.selected_3d_cols = []
-                    print("[INFO] Stored 3D column selection invalid or incomplete; will prompt user on demand.", flush=True)
+                    logger.info("[INFO] Stored 3D column selection invalid or incomplete; will prompt user on demand.")
 
         if app_state.render_mode == '2D':
             if num_numeric_cols == 2:
@@ -257,7 +253,7 @@ class Qt5Application:
                     app_state.selected_2d_cols = valid_2d
                 else:
                     app_state.selected_2d_cols = []
-                    print("[INFO] Stored 2D column selection invalid or incomplete; will prompt user on demand.", flush=True)
+                    logger.info("[INFO] Stored 2D column selection invalid or incomplete; will prompt user on demand.")
 
         if app_state.render_mode in ('UMAP', 'tSNE'):
             app_state.algorithm = 'UMAP' if app_state.render_mode == 'UMAP' else 'tSNE'
@@ -265,7 +261,7 @@ class Qt5Application:
     def _create_plot_figure(self):
         """创建主绘图图形"""
         import matplotlib.pyplot as plt
-        print("[INFO] Creating plot figure...", flush=True)
+        logger.info("[INFO] Creating plot figure...")
 
         # 使用 constrained_layout 进行自适应布局
         app_state.fig, app_state.ax = plt.subplots(figsize=CONFIG['figure_size'], constrained_layout=True)
@@ -320,12 +316,12 @@ class Qt5Application:
         except Exception:
             pass
 
-        print("[INFO] Plot figure created.", flush=True)
+        logger.info("[INFO] Plot figure created.")
         plt.ion()
 
     def _setup_control_panel(self):
         """创建并设置控制面板"""
-        print("[INFO] Control panel disabled; using top menu dialogs.", flush=True)
+        logger.info("[INFO] Control panel disabled; using top menu dialogs.")
         self.control_panel = None
         import core.state as state
         state.control_panel = None
@@ -334,33 +330,33 @@ class Qt5Application:
     def _connect_event_handlers(self):
         """连接事件处理器"""
         from visualization.events import on_hover, on_click, on_legend_click
-        print("[INFO] Connecting event handlers...", flush=True)
+        logger.info("[INFO] Connecting event handlers...")
         app_state.fig.canvas.mpl_connect('motion_notify_event', on_hover)
         app_state.fig.canvas.mpl_connect('button_press_event', on_click)
         app_state.fig.canvas.mpl_connect('button_press_event', on_legend_click)
-        print("[INFO] Event handlers connected.", flush=True)
+        logger.info("[INFO] Event handlers connected.")
 
     def _render_initial_plot(self):
         """渲染初始绘图"""
         from visualization.events import on_slider_change
-        print("[INFO] Rendering initial plot...", flush=True)
+        logger.info("[INFO] Rendering initial plot...")
         on_slider_change()
-        print("[INFO] Plot ready.", flush=True)
+        logger.info("[INFO] Plot ready.")
 
     def _print_instructions(self):
         """打印应用使用说明"""
-        print("[INFO] Application Controls:", flush=True)
-        print("  * Use the Control Panel window to adjust parameters", flush=True)
-        print("  * Algorithm selector -> Choose UMAP or t-SNE", flush=True)
-        print("  * Point size -> Adjust marker size", flush=True)
-        print("  * Hover over points -> View Lab No. / Site / Period", flush=True)
-        print("  * Left click point -> Export sample to CSV", flush=True)
-        print("  * Click legend item -> Bring group to front", flush=True)
-        print("[INFO] Application started. Close the windows to exit.", flush=True)
+        logger.info("[INFO] Application Controls:")
+        logger.info("  * Use the Control Panel window to adjust parameters")
+        logger.info("  * Algorithm selector -> Choose UMAP or t-SNE")
+        logger.info("  * Point size -> Adjust marker size")
+        logger.info("  * Hover over points -> View Lab No. / Site / Period")
+        logger.info("  * Left click point -> Export sample to CSV")
+        logger.info("  * Click legend item -> Bring group to front")
+        logger.info("[INFO] Application started. Close the windows to exit.")
 
     def run(self):
         """运行应用程序"""
-        print("[INFO] Initializing Qt5 application...", flush=True)
+        logger.info("[INFO] Initializing Qt5 application...")
 
         try:
             # 高 DPI 设置
@@ -392,18 +388,18 @@ class Qt5Application:
                 app_state.data_cols = session_data.get('data_cols') or []
 
             # 加载数据
-            print("[INFO] Loading data...", flush=True)
+            logger.info("[INFO] Loading data...")
             from data.loader import load_data
             if not load_data(show_file_dialog=True, show_config_dialog=True):
-                print("[ERROR] Failed to load data. Exiting.", flush=True)
+                logger.error("[ERROR] Failed to load data. Exiting.")
                 return False
 
-            print("[INFO] Data loaded successfully.", flush=True)
+            logger.info("[INFO] Data loaded successfully.")
 
             # 确保 last_group_col 已设置
             if not app_state.last_group_col and app_state.group_cols:
                 app_state.last_group_col = app_state.group_cols[0]
-                print(f"[INFO] Set default group column: {app_state.last_group_col}", flush=True)
+                logger.info(f"[INFO] Set default group column: {app_state.last_group_col}")
 
             # 恢复会话参数
             self._restore_session_state(session_data)
@@ -439,18 +435,18 @@ class Qt5Application:
             self._print_instructions()
 
             # 显示窗口
-            print("[INFO] Showing windows...", flush=True)
+            logger.info("[INFO] Showing windows...")
             self.main_window.show()
 
             # 事件循环
             result = self.app.exec_()
 
-            print("[INFO] Application closed normally.", flush=True)
+            logger.info("[INFO] Application closed normally.")
             return result == 0
 
         except Exception as e:
-            print(f"[ERROR] Application error: {e}", flush=True)
+            logger.error(f"[ERROR] Application error: {e}")
             traceback.print_exc()
             return False
         finally:
-            print("[INFO] Cleanup complete.", flush=True)
+            logger.info("[INFO] Cleanup complete.")

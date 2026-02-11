@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 """
 Isotopes Analysis - PyQt5 entry point
 """
@@ -15,19 +17,18 @@ if __name__ == "__main__":
         setup_logging(max_bytes=50 * 1024 * 1024)
 
         try:
-            crash_log = open("isotopes_crash.log", "a", buffering=1)
-            faulthandler.enable(file=crash_log, all_threads=True)
-            faulthandler.dump_traceback_later(5, repeat=True, file=crash_log)
-            print("[INFO] Crash handler enabled (isotopes_crash.log)", flush=True)
+            faulthandler.enable(file=sys.stderr, all_threads=True)
+            faulthandler.dump_traceback_later(5, repeat=True, file=sys.stderr)
+            logger.info("[INFO] Crash handler enabled")
         except Exception as fh_err:
-            print(f"[WARN] Failed to enable crash handler: {fh_err}", flush=True)
+            logger.warning(f"[WARN] Failed to enable crash handler: {fh_err}")
 
-        print("[START] Application launching...", flush=True)
+        logger.info("[START] Application launching...")
         app = Qt5Application()
         success = app.run()
-        print(f"[END] Application exit code: {0 if success else 1}", flush=True)
+        logger.info(f"[END] Application exit code: {0 if success else 1}")
         sys.exit(0 if success else 1)
     except Exception as final_err:
-        print(f"[FATAL] Uncaught exception: {final_err}", flush=True)
+        logger.critical(f"[FATAL] Uncaught exception: {final_err}")
         traceback.print_exc()
         sys.exit(1)

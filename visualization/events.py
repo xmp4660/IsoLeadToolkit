@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 """
 Event Handlers
 Manages user interactions: hover, click, and legend events
@@ -65,7 +67,7 @@ def _notify_selection_ui():
     try:
         update_fn()
     except Exception as err:
-        print(f"[WARN] Unable to update selection controls: {err}", flush=True)
+        logger.warning(f"[WARN] Unable to update selection controls: {err}")
 
 
 def _disable_rectangle_selector():
@@ -129,7 +131,7 @@ def _ensure_rectangle_selector():
                 interactive=False
             )
         except Exception as err:
-            print(f"[WARN] Unable to initialize rectangle selector: {err}", flush=True)
+            logger.warning(f"[WARN] Unable to initialize rectangle selector: {err}")
             app_state.rectangle_selector = None
 
 
@@ -170,7 +172,7 @@ def _ensure_lasso_selector():
                 button=[1]
             )
         except Exception as err:
-            print(f"[WARN] Unable to initialize lasso selector: {err}", flush=True)
+            logger.warning(f"[WARN] Unable to initialize lasso selector: {err}")
             app_state.lasso_selector = None
 
 
@@ -200,11 +202,11 @@ def _handle_rectangle_select(eclick, erelease):
         if all(idx in current for idx in indices_in_box):
             for idx in indices_in_box:
                 current.discard(idx)
-            print(f"[INFO] Deselected {len(indices_in_box)} samples via box selection.", flush=True)
+            logger.info(f"[INFO] Deselected {len(indices_in_box)} samples via box selection.")
         else:
             for idx in indices_in_box:
                 current.add(idx)
-            print(f"[INFO] Selected {len(indices_in_box)} samples via box selection.", flush=True)
+            logger.info(f"[INFO] Selected {len(indices_in_box)} samples via box selection.")
 
         refresh_selection_overlay()
         _notify_selection_ui()
@@ -217,9 +219,9 @@ def _handle_rectangle_select(eclick, erelease):
                 from visualization.events import on_slider_change
                 on_slider_change()
             except Exception as e:
-                print(f"[WARN] Failed to refresh plot after isochron calculation: {e}", flush=True)
+                logger.warning(f"[WARN] Failed to refresh plot after isochron calculation: {e}")
     except Exception as err:
-        print(f"[WARN] Rectangle selection failed: {err}", flush=True)
+        logger.warning(f"[WARN] Rectangle selection failed: {err}")
 
 
 def _handle_lasso_select(vertices):
@@ -244,16 +246,16 @@ def _handle_lasso_select(vertices):
         if all(idx in current for idx in indices_in_shape):
             for idx in indices_in_shape:
                 current.discard(idx)
-            print(f"[INFO] Deselected {len(indices_in_shape)} samples via custom shape.", flush=True)
+            logger.info(f"[INFO] Deselected {len(indices_in_shape)} samples via custom shape.")
         else:
             for idx in indices_in_shape:
                 current.add(idx)
-            print(f"[INFO] Selected {len(indices_in_shape)} samples via custom shape.", flush=True)
+            logger.info(f"[INFO] Selected {len(indices_in_shape)} samples via custom shape.")
 
         refresh_selection_overlay()
         _notify_selection_ui()
     except Exception as err:
-        print(f"[WARN] Custom shape selection failed: {err}", flush=True)
+        logger.warning(f"[WARN] Custom shape selection failed: {err}")
 
 
 def refresh_selection_overlay():
@@ -327,9 +329,9 @@ def refresh_selection_overlay():
                     confidence=app_state.ellipse_confidence,
                     edgecolor='#f97316', linestyle='--', linewidth=2, zorder=5, alpha=0.8
                 )
-                print(f"[INFO] Drawn {app_state.ellipse_confidence*100:.0f}% confidence ellipse for {len(xs)} selected points.", flush=True)
+                logger.info(f"[INFO] Drawn {app_state.ellipse_confidence*100:.0f}% confidence ellipse for {len(xs)} selected points.")
             except Exception as e:
-                print(f"[WARN] Failed to draw selection ellipse: {e}", flush=True)
+                logger.warning(f"[WARN] Failed to draw selection ellipse: {e}")
 
         # Restore view limits
         app_state.ax.set_xlim(current_xlim)
@@ -338,7 +340,7 @@ def refresh_selection_overlay():
         app_state.fig.canvas.draw_idle()
         _notify_selection_ui()
     except Exception as err:
-        print(f"[WARN] Unable to refresh selection overlay: {err}", flush=True)
+        logger.warning(f"[WARN] Unable to refresh selection overlay: {err}")
 
 
 def _resolve_isochron_errors(df, size):
@@ -359,7 +361,7 @@ def _resolve_isochron_errors(df, size):
                 rxy = np.zeros_like(sx)
             return sx, sy, rxy
 
-        print("[WARN] Isochron error columns not found; using fixed values.", flush=True)
+        logger.warning("[WARN] Isochron error columns not found; using fixed values.")
 
     sx_val = float(getattr(app_state, 'isochron_sx_value', 0.001))
     sy_val = float(getattr(app_state, 'isochron_sy_value', 0.001))
@@ -375,13 +377,13 @@ def calculate_selected_isochron():
     try:
         # Check if we have selected points
         if not app_state.selected_indices or len(app_state.selected_indices) < 2:
-            print("[WARN] Isochron calculation requires at least 2 selected points.", flush=True)
+            logger.warning("[WARN] Isochron calculation requires at least 2 selected points.")
             app_state.selected_isochron_data = None
             return
 
         # Check if we're in a Pb evolution mode
         if app_state.render_mode != 'PB_EVOL_76':
-            print("[WARN] Isochron calculation is only available for Pb evolution plot (PB_EVOL_76).", flush=True)
+            logger.warning("[WARN] Isochron calculation is only available for Pb evolution plot (PB_EVOL_76).")
             app_state.selected_isochron_data = None
             return
 
@@ -393,7 +395,7 @@ def calculate_selected_isochron():
         # Get data
         df = app_state.df_global
         if df is None or x_col not in df.columns or y_col not in df.columns:
-            print(f"[WARN] Required columns {x_col} and {y_col} not found in data.", flush=True)
+            logger.warning(f"[WARN] Required columns {x_col} and {y_col} not found in data.")
             app_state.selected_isochron_data = None
             return
 
@@ -417,7 +419,7 @@ def calculate_selected_isochron():
         rxy_data = rxy_data[valid]
 
         if len(x_data) < 2:
-            print("[WARN] Not enough valid data points for isochron calculation.", flush=True)
+            logger.warning("[WARN] Not enough valid data points for isochron calculation.")
             app_state.selected_isochron_data = None
             return
 
@@ -432,7 +434,7 @@ def calculate_selected_isochron():
             mswd = fit['mswd']
             p_value = fit['p_value']
         except Exception as e:
-            print(f"[WARN] Isochron regression failed: {e}", flush=True)
+            logger.warning(f"[WARN] Isochron regression failed: {e}")
             app_state.selected_isochron_data = None
             return
 
@@ -447,7 +449,7 @@ def calculate_selected_isochron():
             params = engine.get_parameters()
             age_ma, age_err = calculate_pbpb_age_from_ratio(slope, slope_err, params)
         except Exception as e:
-            print(f"[WARN] Age calculation failed: {e}", flush=True)
+            logger.warning(f"[WARN] Age calculation failed: {e}")
             age_ma = 0.0
             age_err = None
 
@@ -475,11 +477,11 @@ def calculate_selected_isochron():
             'y_col': y_col
         }
 
-        print(f"[INFO] Isochron calculated: Age = {age_ma:.1f} Ma, n = {len(x_data)}, R² = {r_squared:.4f}", flush=True)
-        print(f"[INFO] Slope = {slope:.6f}, Intercept = {intercept:.6f}", flush=True)
+        logger.info(f"[INFO] Isochron calculated: Age = {age_ma:.1f} Ma, n = {len(x_data)}, R² = {r_squared:.4f}")
+        logger.info(f"[INFO] Slope = {slope:.6f}, Intercept = {intercept:.6f}")
 
     except Exception as err:
-        print(f"[WARN] Isochron calculation failed: {err}", flush=True)
+        logger.warning(f"[WARN] Isochron calculation failed: {err}")
         app_state.selected_isochron_data = None
 
 
@@ -529,7 +531,7 @@ def toggle_selection_mode(tool_type='export'):
             new_tool = tool_type
 
         if new_tool and app_state.render_mode == '3D':
-            print('[WARN] Selection mode is only available for 2D projections.', flush=True)
+            logger.warning('[WARN] Selection mode is only available for 2D projections.')
             return
 
         # Disable existing tool if any
@@ -547,7 +549,7 @@ def toggle_selection_mode(tool_type='export'):
         app_state.selection_mode = (new_tool is not None) # Keep legacy flag in sync
 
         if app_state.selection_tool:
-            print(f"[INFO] Selection tool '{new_tool}' enabled.", flush=True)
+            logger.info(f"[INFO] Selection tool '{new_tool}' enabled.")
             if new_tool == 'lasso':
                 _ensure_lasso_selector()
             else:
@@ -568,7 +570,7 @@ def toggle_selection_mode(tool_type='export'):
                 app_state.draw_selection_ellipse = False
 
         else:
-            print("[INFO] Selection tool disabled.", flush=True)
+            logger.info("[INFO] Selection tool disabled.")
             app_state.draw_selection_ellipse = False
             _disable_rectangle_selector()
             _disable_lasso_selector()
@@ -582,9 +584,9 @@ def toggle_selection_mode(tool_type='export'):
                 from visualization.events import on_slider_change
                 on_slider_change()
             except Exception as e:
-                print(f"[WARN] Failed to refresh plot after disabling selection tool: {e}", flush=True)
+                logger.warning(f"[WARN] Failed to refresh plot after disabling selection tool: {e}")
     except Exception as err:
-        print(f"[WARN] Failed to toggle selection mode: {err}", flush=True)
+        logger.warning(f"[WARN] Failed to toggle selection mode: {err}")
 
 
 def sync_selection_tools():
@@ -714,7 +716,7 @@ def on_click(event):
             if getattr(event, 'dblclick', False):
                 sample_idx = _resolve_sample_index(event)
                 if sample_idx is None:
-                    print("[WARN] No point detected for selection.", flush=True)
+                    logger.warning("[WARN] No point detected for selection.")
                     return
 
                 try:
@@ -729,19 +731,19 @@ def on_click(event):
 
                 if sample_idx in app_state.selected_indices:
                     app_state.selected_indices.discard(sample_idx)
-                    print(f"[INFO] Deselected sample {lab_label}.", flush=True)
+                    logger.info(f"[INFO] Deselected sample {lab_label}.")
                 else:
                     app_state.selected_indices.add(sample_idx)
-                    print(f"[INFO] Selected sample {lab_label}.", flush=True)
+                    logger.info(f"[INFO] Selected sample {lab_label}.")
 
                 refresh_selection_overlay()
             return
 
-        print("[INFO] 单击导出已移除，请使用控制面板中的导出功能。", flush=True)
+        logger.info("[INFO] 单击导出已移除，请使用控制面板中的导出功能。")
         return
                 
     except Exception as e:
-        print(f"[WARN] Click handler error: {e}", flush=True)
+        logger.warning(f"[WARN] Click handler error: {e}")
 
 
 def on_legend_click(event):
@@ -814,9 +816,9 @@ def on_legend_click(event):
                                 try:
                                     panel.sync_legend_ui()
                                 except Exception as e:
-                                    print(f"[WARN] Failed to sync legend UI: {e}", flush=True)
+                                    logger.warning(f"[WARN] Failed to sync legend UI: {e}")
 
-                            print(f"[OK] Toggled visibility for: {label} to {new_visible}", flush=True)
+                            logger.info(f"[OK] Toggled visibility for: {label} to {new_visible}")
                             try:
                                 app_state.fig.canvas.draw_idle()
                             except:
@@ -832,32 +834,32 @@ def on_legend_click(event):
 def on_slider_change(val=None):
     """Handle slider and radio button changes from the control panel."""
     try:
-        print(f"[DEBUG] on_slider_change called, val={val}", flush=True)
+        logger.debug(f"[DEBUG] on_slider_change called, val={val}")
         from .plotting import plot_embedding, plot_3d_data, plot_2d_data
         
         # At this point, app_state has been updated by control_panel callbacks
         # We just need to re-render the plot with the current parameters
         
         if app_state.df_global is None or len(app_state.df_global) == 0:
-            print("[WARN] No data available", flush=True)
+            logger.warning("[WARN] No data available")
             return
         
         try:
             # Get current group column
             group_col = app_state.last_group_col
-            print(f"[DEBUG] Current group_col: {group_col}, available: {app_state.group_cols}", flush=True)
+            logger.debug(f"[DEBUG] Current group_col: {group_col}, available: {app_state.group_cols}")
             
             if not group_col or group_col not in app_state.group_cols:
                 if app_state.group_cols:
                     group_col = app_state.group_cols[0]
-                    print(f"[DEBUG] Using default group_col: {group_col}", flush=True)
+                    logger.debug(f"[DEBUG] Using default group_col: {group_col}")
                 else:
-                    print("[WARN] No group columns available", flush=True)
+                    logger.warning("[WARN] No group columns available")
                     return
             
             # Get algorithm
             render_mode = app_state.render_mode
-            print(f"[DEBUG] Current render_mode: {render_mode}", flush=True)
+            logger.debug(f"[DEBUG] Current render_mode: {render_mode}")
             selected_columns_3d = list(app_state.selected_3d_cols)
             selected_columns_2d = list(getattr(app_state, 'selected_2d_cols', []))
 
@@ -879,33 +881,33 @@ def on_slider_change(val=None):
 
             if render_mode == '3D':
                 available_cols = [c for c in app_state.data_cols if c in app_state.df_global.columns]
-                print(f"[DEBUG] Available numeric columns for 3D: {available_cols}", flush=True)
+                logger.debug(f"[DEBUG] Available numeric columns for 3D: {available_cols}")
 
                 if len(available_cols) < 3:
-                    print("[WARN] Not enough numeric columns for 3D view; reverting to 2D", flush=True)
+                    logger.warning("[WARN] Not enough numeric columns for 3D view; reverting to 2D")
                     render_mode = '2D'
                 else:
                     preselected = [c for c in selected_columns_3d if c in available_cols]
                     if len(preselected) == 3:
                         selected_columns_3d = preselected
                         if app_state.selected_3d_confirmed:
-                            print(f"[DEBUG] Reusing confirmed 3D columns: {selected_columns_3d}", flush=True)
+                            logger.debug(f"[DEBUG] Reusing confirmed 3D columns: {selected_columns_3d}")
                         else:
-                            print(f"[DEBUG] Using existing 3D columns (unconfirmed): {selected_columns_3d}", flush=True)
+                            logger.debug(f"[DEBUG] Using existing 3D columns (unconfirmed): {selected_columns_3d}")
                     elif len(available_cols) >= 3:
                         selected_columns_3d = available_cols[:3]
                         app_state.selected_3d_cols = selected_columns_3d
                         app_state.selected_3d_confirmed = False
-                        print(f"[INFO] Using default 3D columns: {selected_columns_3d}", flush=True)
+                        logger.info(f"[INFO] Using default 3D columns: {selected_columns_3d}")
                     
                     # Removed auto-prompt logic. User must use the button in Control Panel.
 
             if render_mode == '2D':
                 available_cols_2d = [c for c in app_state.data_cols if c in app_state.df_global.columns]
-                print(f"[DEBUG] Available numeric columns for 2D: {available_cols_2d}", flush=True)
+                logger.debug(f"[DEBUG] Available numeric columns for 2D: {available_cols_2d}")
 
                 if len(available_cols_2d) < 2:
-                    print("[WARN] Not enough numeric columns for 2D view; falling back to UMAP", flush=True)
+                    logger.warning("[WARN] Not enough numeric columns for 2D view; falling back to UMAP")
                     render_mode = 'UMAP'
                 else:
                     preselected_2d = [c for c in selected_columns_2d if c in available_cols_2d][:2]
@@ -916,23 +918,23 @@ def on_slider_change(val=None):
                         # If confirmed, great. If not, we just use them without prompting.
                         # The user can change them via the "Select Axis Columns" button.
                         if app_state.selected_2d_confirmed:
-                            print(f"[DEBUG] Reusing confirmed 2D columns: {selected_columns_2d}", flush=True)
+                            logger.debug(f"[DEBUG] Reusing confirmed 2D columns: {selected_columns_2d}")
                         else:
-                            print(f"[DEBUG] Using existing 2D columns (unconfirmed): {selected_columns_2d}", flush=True)
+                            logger.debug(f"[DEBUG] Using existing 2D columns (unconfirmed): {selected_columns_2d}")
                     elif len(available_cols_2d) >= 2:
                         # Default to first two
                         selected_columns_2d = available_cols_2d[:2]
                         app_state.selected_2d_cols = selected_columns_2d
                         # We don't set confirmed=True here so we know they are defaults
                         app_state.selected_2d_confirmed = False 
-                        print(f"[INFO] Using default 2D columns: {selected_columns_2d}", flush=True)
+                        logger.info(f"[INFO] Using default 2D columns: {selected_columns_2d}")
                     
                     # Removed auto-prompt logic. User must use the button in Control Panel.
 
             if render_mode == 'Ternary':
                 available_cols_ternary = [c for c in app_state.data_cols if c in app_state.df_global.columns]
                 if len(available_cols_ternary) < 3:
-                     print("[WARN] Not enough numeric columns for Ternary view; falling back to UMAP", flush=True)
+                     logger.warning("[WARN] Not enough numeric columns for Ternary view; falling back to UMAP")
                      render_mode = 'UMAP'
                 else:
                     preselected = getattr(app_state, 'selected_ternary_cols', [])
@@ -951,7 +953,7 @@ def on_slider_change(val=None):
                          app_state.selected_ternary_confirmed = False
 
             if render_mode != app_state.render_mode:
-                print(f"[DEBUG] Adjusted render mode: {app_state.render_mode} -> {render_mode}", flush=True)
+                logger.debug(f"[DEBUG] Adjusted render mode: {app_state.render_mode} -> {render_mode}")
                 app_state.render_mode = render_mode
                 if app_state.render_mode in ('UMAP', 'tSNE', 'PCA', 'RobustPCA'):
                     app_state.algorithm = app_state.render_mode
@@ -960,7 +962,7 @@ def on_slider_change(val=None):
                     if panel is not None and 'render_mode' in panel.radio_vars:
                         panel.radio_vars['render_mode'].set(render_mode)
                 except Exception as sync_err:
-                    print(f"[WARN] Unable to sync control panel render mode: {sync_err}", flush=True)
+                    logger.warning(f"[WARN] Unable to sync control panel render mode: {sync_err}")
 
             rendered_ok = False
             if app_state.render_mode == '3D':
@@ -969,11 +971,11 @@ def on_slider_change(val=None):
                     _disable_rectangle_selector()
                     refresh_selection_overlay()
                     _notify_selection_ui()
-                    print("[INFO] Selection mode automatically disabled for 3D view.", flush=True)
+                    logger.info("[INFO] Selection mode automatically disabled for 3D view.")
                 if len(selected_columns_3d) != 3:
-                    print("[WARN] Invalid 3D column selection; skipping plot", flush=True)
+                    logger.warning("[WARN] Invalid 3D column selection; skipping plot")
                 else:
-                    print(f"[DEBUG] Rendering 3D plot with columns={selected_columns_3d}", flush=True)
+                    logger.debug(f"[DEBUG] Rendering 3D plot with columns={selected_columns_3d}")
                     rendered_ok = plot_3d_data(
                         group_col,
                         selected_columns_3d,
@@ -981,9 +983,9 @@ def on_slider_change(val=None):
                     )
             elif app_state.render_mode == '2D':
                 if len(selected_columns_2d) != 2:
-                    print("[WARN] Invalid 2D column selection; skipping plot", flush=True)
+                    logger.warning("[WARN] Invalid 2D column selection; skipping plot")
                 else:
-                    print(f"[DEBUG] Rendering 2D plot with columns={selected_columns_2d}", flush=True)
+                    logger.debug(f"[DEBUG] Rendering 2D plot with columns={selected_columns_2d}")
                     # Check both global KDE setting and specific 2D KDE setting
                     is_kde = getattr(app_state, 'show_kde', False) or getattr(app_state, 'show_2d_kde', False)
                     rendered_ok = plot_2d_data(
@@ -996,7 +998,7 @@ def on_slider_change(val=None):
                 # Use the current render mode as the algorithm name
                 # This supports UMAP, tSNE, PCA, RobustPCA
                 algorithm = app_state.render_mode
-                print(f"[DEBUG] Calling plot_embedding with algorithm={algorithm}, group_col={group_col}", flush=True)
+                logger.debug(f"[DEBUG] Calling plot_embedding with algorithm={algorithm}, group_col={group_col}")
                 rendered_ok = plot_embedding(
                     group_col,
                     algorithm,
@@ -1008,18 +1010,18 @@ def on_slider_change(val=None):
                 )
 
             if rendered_ok:
-                print("[DEBUG] Plot rendered successfully, calling draw_idle", flush=True)
+                logger.debug("[DEBUG] Plot rendered successfully, calling draw_idle")
                 refresh_selection_overlay()
                 sync_selection_tools()
                 _notify_selection_ui()
                 try:
                     app_state.fig.canvas.draw_idle()
                 except Exception as draw_err:
-                    print(f"[WARN] Draw error: {draw_err}", flush=True)
+                    logger.warning(f"[WARN] Draw error: {draw_err}")
             else:
-                print("[WARN] Plot rendering failed", flush=True)
+                logger.warning("[WARN] Plot rendering failed")
                 if app_state.render_mode in ('2D', '3D'):
-                    print("[INFO] Falling back to UMAP embedding for display", flush=True)
+                    logger.info("[INFO] Falling back to UMAP embedding for display")
                     app_state.render_mode = 'UMAP'
                     app_state.algorithm = 'UMAP'
                     try:
@@ -1045,14 +1047,14 @@ def on_slider_change(val=None):
                         except Exception:
                             pass
                     else:
-                        print("[WARN] Fallback UMAP plot also failed", flush=True)
+                        logger.warning("[WARN] Fallback UMAP plot also failed")
 
             app_state.initial_render_done = True
         except Exception as plot_err:
-            print(f"[ERROR] Plotting error: {plot_err}", flush=True)
+            logger.error(f"[ERROR] Plotting error: {plot_err}")
             import traceback
             traceback.print_exc()
     except Exception as e:
-        print(f"[ERROR] on_slider_change error: {e}", flush=True)
+        logger.error(f"[ERROR] on_slider_change error: {e}")
         import traceback
         traceback.print_exc()

@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 """Style helpers for plotting."""
 import matplotlib.pyplot as plt
 from matplotlib import font_manager
@@ -17,7 +19,7 @@ def _apply_current_style():
     try:
         apply_custom_style(show_grid, color_scheme, primary_font, cjk_font, font_sizes)
     except Exception as e:
-        print(f"[WARN] Failed to apply styles: {e}", flush=True)
+        logger.warning(f"[WARN] Failed to apply styles: {e}")
         apply_custom_style(False, 'vibrant')
 
     try:
@@ -49,7 +51,7 @@ def _apply_current_style():
         plt.rcParams['axes.titlecolor'] = getattr(app_state, 'title_color', '#111827')
         plt.rcParams['axes.titleweight'] = getattr(app_state, 'title_weight', 'bold')
     except Exception as err:
-        print(f"[WARN] Failed to apply rcParams style: {err}", flush=True)
+        logger.warning(f"[WARN] Failed to apply rcParams style: {err}")
 
 
 def _enforce_plot_style(ax):

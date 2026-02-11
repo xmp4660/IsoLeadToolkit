@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 """Qt-based analysis plots and diagnostics."""
 from PyQt5.QtWidgets import QDialog, QVBoxLayout
 from matplotlib.figure import Figure
@@ -23,7 +25,7 @@ def _create_plot_dialog(title, width=800, height=500, parent=None):
 def show_scree_plot(parent_window=None):
     """Display a scree plot of the explained variance for the last PCA run."""
     if not hasattr(app_state, 'last_pca_variance') or app_state.last_pca_variance is None:
-        print("[WARN] No PCA variance data available. Run PCA first.", flush=True)
+        logger.warning("[WARN] No PCA variance data available. Run PCA first.")
         return
 
     variance_ratio = app_state.last_pca_variance
@@ -59,14 +61,14 @@ def show_scree_plot(parent_window=None):
 def show_pca_loadings(parent_window=None):
     """Display a heatmap of PCA loadings (components)."""
     if not hasattr(app_state, 'last_pca_components') or app_state.last_pca_components is None:
-        print("[WARN] No PCA components data available. Run PCA first.", flush=True)
+        logger.warning("[WARN] No PCA components data available. Run PCA first.")
         return
 
     components = app_state.last_pca_components
     feature_names = app_state.current_feature_names
 
     if not feature_names or len(feature_names) != components.shape[1]:
-        print("[WARN] Feature names mismatch or missing.", flush=True)
+        logger.warning("[WARN] Feature names mismatch or missing.")
         feature_names = [f"Feature {i + 1}" for i in range(components.shape[1])]
 
     n_comps = components.shape[0]
@@ -106,7 +108,7 @@ def show_pca_loadings(parent_window=None):
 def show_embedding_correlation(parent_window=None):
     """Display correlation between original features and embedding dimensions."""
     if not hasattr(app_state, 'last_embedding') or app_state.last_embedding is None:
-        print("[WARN] No embedding data available. Run an analysis first.", flush=True)
+        logger.warning("[WARN] No embedding data available. Run an analysis first.")
         return
 
     embedding = app_state.last_embedding
@@ -165,7 +167,7 @@ def show_embedding_correlation(parent_window=None):
 def show_shepard_diagram(parent_window=None):
     """Display a Shepard diagram (Distance Plot) to evaluate embedding quality."""
     if not hasattr(app_state, 'last_embedding') or app_state.last_embedding is None:
-        print("[WARN] No embedding data available.", flush=True)
+        logger.warning("[WARN] No embedding data available.")
         return
 
     embedding = app_state.last_embedding
@@ -226,7 +228,7 @@ def show_correlation_heatmap(parent_window=None):
     """Display a correlation heatmap of the current dataset."""
     X, _ = _get_analysis_data()
     if X is None:
-        print("[WARN] No data available for correlation analysis.", flush=True)
+        logger.warning("[WARN] No data available for correlation analysis.")
         return
 
     cols = app_state.data_cols

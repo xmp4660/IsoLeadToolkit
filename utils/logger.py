@@ -53,14 +53,6 @@ def setup_logging(log_filename='isotopes_analyse.log', max_bytes=50*1024*1024, b
         max_bytes (int): Maximum size of the log file in bytes before rotation.
         backup_count (int): Number of backup files to keep.
     """
-    # Create a logger specific for stdout/stderr capture
-    logger = logging.getLogger('AppLogger')
-    logger.setLevel(logging.DEBUG)
-    
-    # Prevent propagation to root logger to avoid double printing if root has console handler
-    logger.propagate = False
-
-    # Create Rotating File Handler
     try:
         handler = RotatingFileHandler(
             log_filename, 
@@ -73,14 +65,24 @@ def setup_logging(log_filename='isotopes_analyse.log', max_bytes=50*1024*1024, b
         formatter = logging.Formatter('%(asctime)s - %(message)s')
         handler.setFormatter(formatter)
         
-        logger.addHandler(handler)
+        root_logger = logging.getLogger()
+        root_logger.setLevel(logging.DEBUG)
+        if not root_logger.handlers:
+            root_logger.addHandler(handler)
+
+        # Create a logger specific for stdout/stderr capture
+        logger = logging.getLogger('AppLogger')
+        logger.setLevel(logging.DEBUG)
+        logger.propagate = False
+        if not logger.handlers:
+            logger.addHandler(handler)
 
         # Redirect stdout and stderr
         # We use INFO for stdout and ERROR for stderr
         sys.stdout = LoggerWriter(logger, logging.INFO, sys.__stdout__)
         sys.stderr = LoggerWriter(logger, logging.ERROR, sys.__stderr__)
         
-        print(f"[INFO] Logging initialized. Log file: {os.path.abspath(log_filename)}")
+        logging.getLogger(__name__).info("Logging initialized. Log file: %s", os.path.abspath(log_filename))
         
     except Exception as e:
-        print(f"[ERROR] Failed to setup logging: {e}")
+        logging.getLogger(__name__).error("Failed to setup logging: %s", e)
