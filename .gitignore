@@ -26,3 +26,5 @@ ISOCHRON_FIX.md
 locales/reports/untranslated.txt
 *.log
 .cursor/
+.cursor/
+.vscode/
