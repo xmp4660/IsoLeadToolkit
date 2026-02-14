@@ -2,6 +2,8 @@
 Style Manager for Matplotlib visualization
 Handles themes, fonts, and color schemes
 """
+import json
+import os
 import matplotlib.pyplot as plt
 from matplotlib import rcParams, font_manager
 import matplotlib as mpl
@@ -68,6 +70,26 @@ class StyleManager:
     def __init__(self):
         self.palettes = self.DEFAULT_PALETTES.copy()
         self._available_fonts = None
+        self._font_cache_path = CONFIG['temp_dir'] / 'font_cache.json'
+        self._font_cache = self._load_font_cache()
+
+    def _load_font_cache(self):
+        try:
+            if self._font_cache_path.exists():
+                with open(self._font_cache_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                if isinstance(data, dict):
+                    return data
+        except Exception:
+            pass
+        return {}
+
+    def _save_font_cache(self):
+        try:
+            with open(self._font_cache_path, 'w', encoding='utf-8') as f:
+                json.dump(self._font_cache, f, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
 
     def get_available_fonts(self):
         """Lazy load available system fonts"""
@@ -165,11 +187,29 @@ class StyleManager:
                 
         # 4d. Generic Fallback
         final_fonts.append('sans-serif')
+
+        cache_key = '|'.join(final_fonts)
+        cached = self._font_cache.get(cache_key, {}) if self._font_cache else {}
+        resolved_family = cached.get('family') if isinstance(cached, dict) else None
+        resolved_path = cached.get('path') if isinstance(cached, dict) else None
+        if resolved_family and resolved_path and os.path.exists(resolved_path):
+            preferred_fonts = [resolved_family] + [f for f in final_fonts if f != resolved_family]
+        else:
+            props = font_manager.FontProperties(family=final_fonts)
+            resolved_path = font_manager.findfont(props, fallback_to_default=True)
+            try:
+                resolved_family = font_manager.FontProperties(fname=resolved_path).get_name()
+            except Exception:
+                resolved_family = final_fonts[0]
+            preferred_fonts = [resolved_family] + [f for f in final_fonts if f != resolved_family]
+            if self._font_cache is not None:
+                self._font_cache[cache_key] = {'family': resolved_family, 'path': resolved_path}
+                self._save_font_cache()
                 
         # Apply to font.family directly as a list
-        rcParams['font.family'] = final_fonts
-        rcParams['font.sans-serif'] = final_fonts
-        rcParams['font.serif'] = ['Times New Roman'] + [f for f in final_fonts if f != 'Times New Roman']
+        rcParams['font.family'] = preferred_fonts
+        rcParams['font.sans-serif'] = preferred_fonts
+        rcParams['font.serif'] = ['Times New Roman'] + [f for f in preferred_fonts if f != 'Times New Roman']
 
 style_manager_instance = StyleManager()
 

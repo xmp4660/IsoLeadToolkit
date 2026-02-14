@@ -1,7 +1,7 @@
 [project]
 name = "isotopesanalyse"
 version = "0.1.0"
-description = "Add your description here"
+description = "Isotopes analysis and visualization desktop application"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -21,3 +21,7 @@ dependencies = [
     "pyqt5>=5.15",
     "pyqt5-qt5>=5.15",
 ]
+
+[tool.isotopesanalyse.build]
+spec = "build.spec"
+command = "pyinstaller build.spec"

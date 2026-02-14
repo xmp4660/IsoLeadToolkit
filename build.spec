@@ -1,8 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
 import os
+import sys
 from PyInstaller.utils.hooks import collect_all
 
-PROJECT_ROOT = os.path.abspath(os.getcwd())
+spec_arg = sys.argv[-1] if sys.argv else ''
+spec_path = spec_arg if spec_arg.endswith('.spec') else ''
+PROJECT_ROOT = os.path.abspath(os.path.dirname(spec_path)) if spec_path and os.path.isfile(spec_path) else os.path.abspath(os.getcwd())
+
+# Build: python -m PyInstaller build.spec
 
 datas = [('locales', 'locales')]
 binaries = []
@@ -15,71 +20,54 @@ hiddenimports = [
     'scipy.spatial.transform._rotation_groups',
 ]
 
+excludes = [
+    'matplotlib.tests',
+    'matplotlib.testing',
+    'numpy.tests',
+    'pandas.tests',
+    'scipy.tests',
+    'scipy.testing',
+    'sklearn.tests',
+    'sklearn.utils.tests',
+    'sklearn.metrics.tests',
+    'seaborn.tests',
+    'seaborn.testing',
+    'mpl_toolkits.tests',
+    'PIL.tests',
+    'PyQt5.QtTest',
+]
+
+
+def _filter_test_datas(items):
+    filtered = []
+    for src, dest in items:
+        src_norm = src.replace('\\', '/').lower()
+        if '/tests/' in src_norm:
+            continue
+        if '/testing/' in src_norm:
+            continue
+        filtered.append((src, dest))
+    return filtered
+
 # Collect all necessary files for complex packages
-tmp_ret = collect_all('numpy')
-datas += tmp_ret[0]
-binaries += tmp_ret[1]
-hiddenimports += tmp_ret[2]
+for pkg in (
+    'numpy',
+    'umap',
+    'sklearn',
+    'pandas',
+    'matplotlib',
+    'seaborn',
+    'scipy',
+    'openpyxl',
+    'xlsxwriter',
+    'python_calamine',
+):
+    tmp_ret = collect_all(pkg)
+    datas += tmp_ret[0]
+    binaries += tmp_ret[1]
+    hiddenimports += tmp_ret[2]
 
-tmp_ret = collect_all('umap')
-datas += tmp_ret[0]
-binaries += tmp_ret[1]
-hiddenimports += tmp_ret[2]
-
-tmp_ret = collect_all('sklearn')
-datas += tmp_ret[0]
-binaries += tmp_ret[1]
-hiddenimports += tmp_ret[2]
-
-tmp_ret = collect_all('pandas')
-datas += tmp_ret[0]
-binaries += tmp_ret[1]
-hiddenimports += tmp_ret[2]
-
-tmp_ret = collect_all('matplotlib')
-datas += tmp_ret[0]
-binaries += tmp_ret[1]
-hiddenimports += tmp_ret[2]
-
-tmp_ret = collect_all('seaborn')
-datas += tmp_ret[0]
-binaries += tmp_ret[1]
-hiddenimports += tmp_ret[2]
-
-tmp_ret = collect_all('scipy')
-datas += tmp_ret[0]
-binaries += tmp_ret[1]
-hiddenimports += tmp_ret[2]
-
-tmp_ret = collect_all('openpyxl')
-datas += tmp_ret[0]
-binaries += tmp_ret[1]
-hiddenimports += tmp_ret[2]
-
-tmp_ret = collect_all('xlsxwriter')
-datas += tmp_ret[0]
-binaries += tmp_ret[1]
-hiddenimports += tmp_ret[2]
-
-tmp_ret = collect_all('python_calamine')
-datas += tmp_ret[0]
-binaries += tmp_ret[1]
-hiddenimports += tmp_ret[2]
-
-tmp_ret = collect_all('scienceplots')
-datas += tmp_ret[0]
-binaries += tmp_ret[1]
-hiddenimports += tmp_ret[2]
-
-tmp_ret = collect_all('mpltern')
-datas += tmp_ret[0]
-binaries += tmp_ret[1]
-hiddenimports += tmp_ret[2]
-
-tmp_ret = collect_all('ternary')
-datas += tmp_ret[0]
-binaries += tmp_ret[1]
-hiddenimports += tmp_ret[2]
+datas = _filter_test_datas(datas)
 
 block_cipher = None
 
@@ -92,7 +80,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=excludes,
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,

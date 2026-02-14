@@ -70,6 +70,10 @@ def setup_logging(log_filename='isotopes_analyse.log', max_bytes=50*1024*1024, b
         if not root_logger.handlers:
             root_logger.addHandler(handler)
 
+        # Quiet down noisy matplotlib debug logs (e.g., findfont scoring).
+        logging.getLogger('matplotlib').setLevel(logging.WARNING)
+        logging.getLogger('matplotlib.font_manager').setLevel(logging.WARNING)
+
         # Create a logger specific for stdout/stderr capture
         logger = logging.getLogger('AppLogger')
         logger.setLevel(logging.DEBUG)
