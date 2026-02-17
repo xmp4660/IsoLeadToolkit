@@ -741,5 +741,13 @@
   "Data Scope": "数据范围",
   "All data": "全部数据",
   "Selected data only": "仅选中数据",
-  "no selection": "未选中"
+  "no selection": "未选中",
+  "Isochron Regression Results": "等时线回归结果",
+  "Slope": "斜率",
+  "Intercept": "截距",
+  "Age": "年龄",
+  "Selected Isochron": "选中样品等时线",
+  "Hide Isochron": "关闭等时线",
+  "Label Display": "标注显示",
+  "Sample Count (n)": "样品数 (n)"
 }

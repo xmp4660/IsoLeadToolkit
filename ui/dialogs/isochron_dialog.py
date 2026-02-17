@@ -123,6 +123,20 @@ class IsochronErrorConfigDialog(QDialog):
         fixed_layout.addLayout(self._row(translate("Fixed rXY"), self.rxy_spin))
         layout.addWidget(self.fixed_group)
 
+        # ---- 等时线回归结果 ----
+        self.results_group = QGroupBox(translate("Isochron Regression Results"))
+        results_layout = QVBoxLayout(self.results_group)
+        results_layout.setContentsMargins(12, 10, 12, 12)
+        results_layout.setSpacing(4)
+
+        self.results_label = QLabel("")
+        self.results_label.setWordWrap(True)
+        self.results_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        results_layout.addWidget(self.results_label)
+
+        self._populate_isochron_results()
+        layout.addWidget(self.results_group)
+
         buttons = QHBoxLayout()
         buttons.addStretch()
 
@@ -179,6 +193,75 @@ class IsochronErrorConfigDialog(QDialog):
         use_columns = self.columns_radio.isChecked()
         self.columns_group.setEnabled(use_columns)
         self.fixed_group.setEnabled(not use_columns)
+
+    def _populate_isochron_results(self):
+        """从 app_state 读取并展示等时线回归结果。"""
+        lines = []
+
+        # 1. 用户选中样品的等时线结果
+        selected = getattr(app_state, 'selected_isochron_data', None)
+        if selected and selected.get('slope') is not None:
+            lines.append(f"── {translate('Selected Isochron')} (n={selected.get('n_points', '—')}) ──")
+
+            slope_text = f"  {translate('Slope')}: {selected['slope']:.6f}"
+            if selected.get('slope_err') is not None:
+                slope_text += f" ± {selected['slope_err']:.6f}"
+            lines.append(slope_text)
+
+            intercept_text = f"  {translate('Intercept')}: {selected['intercept']:.4f}"
+            if selected.get('intercept_err') is not None:
+                intercept_text += f" ± {selected['intercept_err']:.4f}"
+            lines.append(intercept_text)
+
+            if selected.get('mswd') is not None:
+                lines.append(f"  MSWD: {selected['mswd']:.3f}")
+            if selected.get('r_squared') is not None:
+                lines.append(f"  R²: {selected['r_squared']:.4f}")
+            if selected.get('age') is not None and selected['age'] > 0:
+                age_text = f"  {translate('Age')}: {selected['age']:.1f} Ma"
+                if selected.get('age_err') is not None:
+                    age_text += f" ± {selected['age_err']:.1f}"
+                lines.append(age_text)
+            lines.append("")
+
+        # 2. 按分组的等时线结果
+        results = getattr(app_state, 'isochron_results', None)
+        if results:
+            for grp, r in results.items():
+                slope = r.get('slope')
+                intercept = r.get('intercept')
+                slope_err = r.get('slope_err')
+                intercept_err = r.get('intercept_err')
+                n_pts = r.get('n_points', '—')
+                mswd = r.get('mswd')
+                age = r.get('age_ma')
+
+                lines.append(f"── {grp} (n={n_pts}) ──")
+
+                slope_text = f"  {translate('Slope')}: {slope:.6f}"
+                if slope_err is not None:
+                    slope_text += f" ± {slope_err:.6f}"
+                lines.append(slope_text)
+
+                intercept_text = f"  {translate('Intercept')}: {intercept:.4f}"
+                if intercept_err is not None:
+                    intercept_text += f" ± {intercept_err:.4f}"
+                lines.append(intercept_text)
+
+                if mswd is not None:
+                    lines.append(f"  MSWD: {mswd:.3f}")
+
+                if age is not None:
+                    lines.append(f"  {translate('Age')}: {age:.0f} Ma")
+
+                lines.append("")
+
+        if not lines:
+            self.results_group.setVisible(False)
+            return
+
+        self.results_label.setText("\n".join(lines))
+        self.results_group.setVisible(True)
 
     def _on_ok(self):
         if self.columns_radio.isChecked():

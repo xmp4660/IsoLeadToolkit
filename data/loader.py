@@ -192,11 +192,14 @@ def load_data(show_file_dialog=True, show_config_dialog=True):
                 return False
             logger.debug(f"[DEBUG] Data column '{col}' is numeric: OK")
         
-        # Validate grouping columns exist
+        # Validate grouping columns exist, skip missing ones
+        valid_group_cols = []
         for col in app_state.group_cols:
             if col not in df.columns:
-                logger.error(f"[ERROR] Missing group column: {col}")
-                return False
+                logger.warning(f"[WARN] Skipping missing group column: {col}")
+            else:
+                valid_group_cols.append(col)
+        app_state.group_cols = valid_group_cols
         
         if progress:
             progress.update_message("Cleaning data...")

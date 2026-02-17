@@ -531,6 +531,26 @@ def _draw_model_curves(ax, actual_algorithm, params_list):
             logger.warning(f"[WARN] Failed to draw model curve: {err}")
 
 
+def _build_isochron_label(result_dict):
+    """根据 isochron_label_options 动态构建等时线标注文本。"""
+    opts = getattr(app_state, 'isochron_label_options', {})
+    parts = []
+    age = result_dict.get('age') or result_dict.get('age_ma')
+    if opts.get('show_age', True) and age is not None and age > 0:
+        parts.append(f"{age:.0f} Ma")
+    if opts.get('show_n_points', True) and result_dict.get('n_points'):
+        parts.append(f"n={result_dict['n_points']}")
+    if opts.get('show_mswd', False) and result_dict.get('mswd') is not None:
+        parts.append(f"MSWD={result_dict['mswd']:.2f}")
+    if opts.get('show_r_squared', False) and result_dict.get('r_squared') is not None:
+        parts.append(f"R²={result_dict['r_squared']:.3f}")
+    if opts.get('show_slope', False) and result_dict.get('slope') is not None:
+        parts.append(f"m={result_dict['slope']:.4f}")
+    if opts.get('show_intercept', False) and result_dict.get('intercept') is not None:
+        parts.append(f"b={result_dict['intercept']:.4f}")
+    return ", ".join(parts) if parts else ""
+
+
 def _draw_isochron_overlays(ax, actual_algorithm):
     """Draw isochron reference lines and growth curves for Pb-Pb plots."""
     if geochemistry is None:
@@ -626,8 +646,21 @@ def _draw_isochron_overlays(ax, actual_algorithm):
                 slope = fit['b']
                 intercept = fit['a']
                 slope_err = fit['sb']
+                intercept_err = fit.get('sa', None)
             except Exception:
                 continue
+
+            # 保存等时线回归结果到 app_state
+            if not hasattr(app_state, 'isochron_results'):
+                app_state.isochron_results = {}
+            app_state.isochron_results[grp] = {
+                'slope': slope,
+                'intercept': intercept,
+                'slope_err': slope_err,
+                'intercept_err': intercept_err,
+                'n_points': len(x_grp),
+                'mswd': fit.get('mswd', None),
+            }
 
             x_min_g, x_max_g = np.min(x_grp), np.max(x_grp)
             if x_max_g == x_min_g:
@@ -665,17 +698,19 @@ def _draw_isochron_overlays(ax, actual_algorithm):
                 try:
                     age_ma, _ = geochemistry.calculate_pbpb_age_from_ratio(slope, slope_err, params)
                     if age_ma is not None and age_ma > 0:
-                        # Place label at the end of the fitted line, clipped to axes limits
+                        # 保存年龄到结果
+                        app_state.isochron_results[grp]['age_ma'] = age_ma
+
+                    # 动态构建标注
+                    label_text = _build_isochron_label(app_state.isochron_results[grp])
+                    if label_text:
                         xlim = ax.get_xlim()
                         ylim = ax.get_ylim()
 
-                        # Try to place at x_max_g, but clip to visible range
                         txt_x = min(x_max_g, xlim[1] * 0.95)
                         txt_y = slope * txt_x + intercept
 
-                        # Ensure y is within visible range
                         if txt_y < ylim[0] or txt_y > ylim[1]:
-                            # If y is out of range, find x where line intersects visible area
                             if txt_y > ylim[1]:
                                 txt_y = ylim[1] * 0.95
                                 txt_x = (txt_y - intercept) / slope if abs(slope) > 1e-10 else txt_x
@@ -683,9 +718,7 @@ def _draw_isochron_overlays(ax, actual_algorithm):
                                 txt_y = ylim[0] + (ylim[1] - ylim[0]) * 0.05
                                 txt_x = (txt_y - intercept) / slope if abs(slope) > 1e-10 else txt_x
 
-                        ax.text(txt_x, txt_y, f" {age_ma:.0f} Ma", color=color, fontsize=9, va='center', ha='left', fontweight='bold')
-                    else:
-                        logger.info(f"[INFO] Isochron age calculation returned {age_ma} for slope {slope:.6f} (group: {grp})")
+                        ax.text(txt_x, txt_y, f" {label_text}", color=color, fontsize=9, va='center', ha='left', fontweight='bold')
                 except Exception as age_err:
                     logger.warning(f"[WARN] Failed to calculate isochron age for slope {slope:.6f}: {age_err}")
 
@@ -740,11 +773,8 @@ def _draw_selected_isochron(ax):
         data = app_state.selected_isochron_data
         x_range = data['x_range']
         y_range = data['y_range']
-        age = data['age']
-        r_squared = data['r_squared']
-        n_points = data['n_points']
 
-        # Get line style from style system
+        # 统一使用 isochron 样式
         from visualization.line_styles import resolve_line_style
         fallback_style = {
             'color': '#ef4444',
@@ -752,50 +782,48 @@ def _draw_selected_isochron(ax):
             'linestyle': '-',
             'alpha': 0.9
         }
-        line_style = resolve_line_style(app_state, 'selected_isochron', fallback_style)
+        line_style = resolve_line_style(app_state, 'isochron', fallback_style)
+        # 选中等时线用稍粗的线
+        draw_width = line_style['linewidth'] * 1.3
 
-        # Draw the isochron line with style from line_styles
         ax.plot(
             x_range,
             y_range,
-            color=line_style['color'],
-            linewidth=line_style['linewidth'],
+            color=line_style['color'] or '#ef4444',
+            linewidth=draw_width,
             linestyle=line_style['linestyle'],
             alpha=line_style['alpha'],
-            zorder=100,  # Draw on top
-            label=f'Selected Isochron ({age:.1f} Ma)'
+            zorder=100,
+            label='_nolegend_'
         )
 
-        # Add label with age, n, and R²
-        # Position label at the midpoint of the line
-        x_mid = (x_range[0] + x_range[1]) / 2
-        y_mid = (y_range[0] + y_range[1]) / 2
+        # 动态构建标注
+        label_text = _build_isochron_label(data)
+        if label_text:
+            x_mid = (x_range[0] + x_range[1]) / 2
+            y_mid = (y_range[0] + y_range[1]) / 2
+            xlim = ax.get_xlim()
+            ylim = ax.get_ylim()
+            y_offset = (ylim[1] - ylim[0]) * 0.02
 
-        # Offset label slightly above the line
-        xlim = ax.get_xlim()
-        ylim = ax.get_ylim()
-        y_offset = (ylim[1] - ylim[0]) * 0.02
-
-        label_text = f'{age:.1f} Ma (n={n_points}, R²={r_squared:.3f})'
-
-        ax.text(
-            x_mid,
-            y_mid + y_offset,
-            label_text,
-            color=line_style['color'],
-            fontsize=10,
-            fontweight='bold',
-            ha='center',
-            va='bottom',
-            bbox=dict(
-                boxstyle='round,pad=0.4',
-                facecolor='white',
-                edgecolor=line_style['color'],
-                alpha=0.9,
-                linewidth=1.5
-            ),
-            zorder=101
-        )
+            ax.text(
+                x_mid,
+                y_mid + y_offset,
+                label_text,
+                color=line_style['color'] or '#ef4444',
+                fontsize=10,
+                fontweight='bold',
+                ha='center',
+                va='bottom',
+                bbox=dict(
+                    boxstyle='round,pad=0.4',
+                    facecolor='white',
+                    edgecolor=line_style['color'] or '#ef4444',
+                    alpha=0.9,
+                    linewidth=1.5
+                ),
+                zorder=101
+            )
 
     except Exception as err:
         logger.warning(f"[WARN] Failed to draw selected isochron: {err}")

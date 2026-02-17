@@ -741,5 +741,13 @@
   "Data Scope": "Data Scope",
   "All data": "All data",
   "Selected data only": "Selected data only",
-  "no selection": "no selection"
+  "no selection": "no selection",
+  "Isochron Regression Results": "Isochron Regression Results",
+  "Slope": "Slope",
+  "Intercept": "Intercept",
+  "Age": "Age",
+  "Selected Isochron": "Selected Isochron",
+  "Hide Isochron": "Hide Isochron",
+  "Label Display": "Label Display",
+  "Sample Count (n)": "Sample Count (n)"
 }
