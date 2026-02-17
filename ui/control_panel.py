@@ -1619,6 +1619,22 @@ class Qt5ControlPanel(QWidget):
         mixing_group.setLayout(mixing_layout)
         layout.addWidget(mixing_group)
 
+        # ---- 端元识别 ----
+        endmember_group = QGroupBox(translate("Endmember Identification"))
+        endmember_layout = QVBoxLayout()
+
+        endmember_hint = QLabel(translate("Identify lead isotope endmembers using PCA."))
+        endmember_hint.setWordWrap(True)
+        endmember_layout.addWidget(endmember_hint)
+
+        endmember_btn = QPushButton(translate("Run Endmember Analysis"))
+        endmember_btn.setFixedWidth(200)
+        endmember_btn.clicked.connect(self._on_run_endmember_analysis)
+        endmember_layout.addWidget(endmember_btn, 0, Qt.AlignHCenter)
+
+        endmember_group.setLayout(endmember_layout)
+        layout.addWidget(endmember_group)
+
         confidence_group = QGroupBox(translate("Confidence Ellipse"))
         confidence_layout = QVBoxLayout()
 
@@ -3819,6 +3835,26 @@ class Qt5ControlPanel(QWidget):
                 self,
                 translate("Error"),
                 translate("Failed to compute mixing: {error}").format(error=str(e))
+            )
+
+    def _on_run_endmember_analysis(self):
+        """运行端元识别分析"""
+        if app_state.df_global is None:
+            QMessageBox.warning(
+                self,
+                translate("Warning"),
+                translate("Please load data first.")
+            )
+            return
+        try:
+            from ui.dialogs.endmember_dialog import show_endmember_analysis
+            show_endmember_analysis(self)
+        except Exception as e:
+            logger.error(f"[ERROR] Endmember analysis failed: {e}")
+            QMessageBox.warning(
+                self,
+                translate("Error"),
+                translate("Endmember analysis failed: {error}").format(error=str(e))
             )
 
     def _update_mixing_status(self):

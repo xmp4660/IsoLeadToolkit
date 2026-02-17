@@ -27,3 +27,5 @@ locales/reports/untranslated.txt
 *.log
 .cursor/
 .codex/
+CLAUDE.md
+*.pdf
