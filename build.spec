@@ -61,6 +61,8 @@ for pkg in (
     'openpyxl',
     'xlsxwriter',
     'python_calamine',
+    'xgboost',
+    'imblearn',
 ):
     tmp_ret = collect_all(pkg)
     datas += tmp_ret[0]

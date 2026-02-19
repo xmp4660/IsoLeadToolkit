@@ -26,5 +26,6 @@ ISOCHRON_FIX.md
 locales/reports/untranslated.txt
 *.log
 .cursor/
-.cursor/
-.vscode/
+.codex/
+CLAUDE.md
+*.pdf

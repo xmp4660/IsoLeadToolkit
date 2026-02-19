@@ -865,21 +865,23 @@ class Qt5ControlPanel(QWidget):
         )
 
         isochron_row = QHBoxLayout()
-        calc_isochron_btn = QPushButton(translate("Calculate Isochron Age"))
-        calc_isochron_btn.clicked.connect(self._on_calculate_isochron)
-        isochron_row.addWidget(calc_isochron_btn)
+        self.calc_isochron_btn = QPushButton(translate("Calculate Isochron Age"))
+        self.calc_isochron_btn.clicked.connect(self._on_calculate_isochron)
+        if getattr(app_state, 'show_isochrons', False):
+            self.calc_isochron_btn.setText(translate("Hide Isochron"))
+        isochron_row.addWidget(self.calc_isochron_btn)
 
         isochron_settings_btn = QPushButton(translate("Isochron Settings"))
         isochron_settings_btn.clicked.connect(self._on_isochron_settings)
         isochron_row.addWidget(isochron_settings_btn)
 
-        selected_style = getattr(app_state, 'line_styles', {}).get('selected_isochron', {}) or {}
-        selected_color = selected_style.get('color') or '#ef4444'
-        isochron_swatch = QLabel()
-        isochron_swatch.setFixedSize(16, 16)
-        isochron_swatch.setStyleSheet(f"background-color: {selected_color}; border: 1px solid #111827;")
-        isochron_swatch.mousePressEvent = lambda event, s=isochron_swatch: self._open_line_style_dialog('selected_isochron', s)
-        isochron_row.addWidget(isochron_swatch)
+        iso_style = getattr(app_state, 'line_styles', {}).get('isochron', {}) or {}
+        iso_color = iso_style.get('color') or '#e2e8f0'
+        self.isochron_swatch = QLabel()
+        self.isochron_swatch.setFixedSize(16, 16)
+        self.isochron_swatch.setStyleSheet(f"background-color: {iso_color}; border: 1px solid #111827;")
+        self.isochron_swatch.mousePressEvent = lambda event, s=self.isochron_swatch: self._open_line_style_dialog('isochron', s)
+        isochron_row.addWidget(self.isochron_swatch)
         isochron_row.addStretch()
         geochem_layout.addLayout(isochron_row)
 
@@ -1364,13 +1366,6 @@ class Qt5ControlPanel(QWidget):
             geochem_layout.addLayout(row)
             return chk
 
-        self.modeling_show_isochron_check = _add_geochem_toggle(
-            "Show Age Isochrons",
-            getattr(app_state, 'show_isochrons', True),
-            self._on_isochron_change,
-            style_key='isochron'
-        )
-
         self.modeling_show_model_check = _add_geochem_toggle(
             "Show Model Curves",
             getattr(app_state, 'show_model_curves', True),
@@ -1404,21 +1399,23 @@ class Qt5ControlPanel(QWidget):
         )
 
         isochron_row = QHBoxLayout()
-        calc_isochron_btn = QPushButton(translate("Calculate Isochron Age"))
-        calc_isochron_btn.clicked.connect(self._on_calculate_isochron)
-        isochron_row.addWidget(calc_isochron_btn)
+        self.calc_isochron_btn = QPushButton(translate("Calculate Isochron Age"))
+        self.calc_isochron_btn.clicked.connect(self._on_calculate_isochron)
+        if getattr(app_state, 'show_isochrons', False):
+            self.calc_isochron_btn.setText(translate("Hide Isochron"))
+        isochron_row.addWidget(self.calc_isochron_btn)
 
         isochron_settings_btn = QPushButton(translate("Isochron Settings"))
         isochron_settings_btn.clicked.connect(self._on_isochron_settings)
         isochron_row.addWidget(isochron_settings_btn)
 
-        selected_style = getattr(app_state, 'line_styles', {}).get('selected_isochron', {}) or {}
-        selected_color = selected_style.get('color') or '#ef4444'
-        isochron_swatch = QLabel()
-        isochron_swatch.setFixedSize(16, 16)
-        isochron_swatch.setStyleSheet(f"background-color: {selected_color}; border: 1px solid #111827;")
-        isochron_swatch.mousePressEvent = lambda event, s=isochron_swatch: self._open_line_style_dialog('selected_isochron', s)
-        isochron_row.addWidget(isochron_swatch)
+        iso_style = getattr(app_state, 'line_styles', {}).get('isochron', {}) or {}
+        iso_color = iso_style.get('color') or '#e2e8f0'
+        self.isochron_swatch = QLabel()
+        self.isochron_swatch.setFixedSize(16, 16)
+        self.isochron_swatch.setStyleSheet(f"background-color: {iso_color}; border: 1px solid #111827;")
+        self.isochron_swatch.mousePressEvent = lambda event, s=self.isochron_swatch: self._open_line_style_dialog('isochron', s)
+        isochron_row.addWidget(self.isochron_swatch)
         isochron_row.addStretch()
         geochem_layout.addLayout(isochron_row)
 
@@ -1618,6 +1615,38 @@ class Qt5ControlPanel(QWidget):
 
         mixing_group.setLayout(mixing_layout)
         layout.addWidget(mixing_group)
+
+        # ---- 端元识别 ----
+        endmember_group = QGroupBox(translate("Endmember Identification"))
+        endmember_layout = QVBoxLayout()
+
+        endmember_hint = QLabel(translate("Identify lead isotope endmembers using PCA."))
+        endmember_hint.setWordWrap(True)
+        endmember_layout.addWidget(endmember_hint)
+
+        endmember_btn = QPushButton(translate("Run Endmember Analysis"))
+        endmember_btn.setFixedWidth(200)
+        endmember_btn.clicked.connect(self._on_run_endmember_analysis)
+        endmember_layout.addWidget(endmember_btn, 0, Qt.AlignHCenter)
+
+        endmember_group.setLayout(endmember_layout)
+        layout.addWidget(endmember_group)
+
+        # ---- ML Provenance ----
+        provenance_group = QGroupBox(translate("Provenance ML"))
+        provenance_layout = QVBoxLayout()
+
+        provenance_hint = QLabel(translate("Run ML provenance classification using DBSCAN, SMOTE and XGBoost."))
+        provenance_hint.setWordWrap(True)
+        provenance_layout.addWidget(provenance_hint)
+
+        provenance_btn = QPushButton(translate("Run Provenance ML"))
+        provenance_btn.setFixedWidth(200)
+        provenance_btn.clicked.connect(self._on_run_provenance_ml)
+        provenance_layout.addWidget(provenance_btn, 0, Qt.AlignHCenter)
+
+        provenance_group.setLayout(provenance_layout)
+        layout.addWidget(provenance_group)
 
         confidence_group = QGroupBox(translate("Confidence Ellipse"))
         confidence_layout = QVBoxLayout()
@@ -3821,6 +3850,46 @@ class Qt5ControlPanel(QWidget):
                 translate("Failed to compute mixing: {error}").format(error=str(e))
             )
 
+    def _on_run_endmember_analysis(self):
+        """运行端元识别分析"""
+        if app_state.df_global is None:
+            QMessageBox.warning(
+                self,
+                translate("Warning"),
+                translate("Please load data first.")
+            )
+            return
+        try:
+            from ui.dialogs.endmember_dialog import show_endmember_analysis
+            show_endmember_analysis(self)
+        except Exception as e:
+            logger.error(f"[ERROR] Endmember analysis failed: {e}")
+            QMessageBox.warning(
+                self,
+                translate("Error"),
+                translate("Endmember analysis failed: {error}").format(error=str(e))
+            )
+
+    def _on_run_provenance_ml(self):
+        """运行溯源机器学习"""
+        if app_state.df_global is None:
+            QMessageBox.warning(
+                self,
+                translate("Warning"),
+                translate("Please load data first.")
+            )
+            return
+        try:
+            from ui.dialogs.provenance_ml_dialog import show_provenance_ml
+            show_provenance_ml(self)
+        except Exception as e:
+            logger.error(f"[ERROR] Provenance ML failed: {e}")
+            QMessageBox.warning(
+                self,
+                translate("Error"),
+                translate("Provenance ML failed: {error}").format(error=str(e))
+            )
+
     def _update_mixing_status(self):
         """更新混合组状态"""
         endmembers = getattr(app_state, 'mixing_endmembers', {})
@@ -4459,6 +4528,31 @@ class Qt5ControlPanel(QWidget):
         alpha_row.addStretch()
         layout.addLayout(alpha_row)
 
+        # 等时线标注显示选项
+        label_checks = {}
+        if style_key == 'isochron':
+            label_group = QGroupBox(translate("Label Display"))
+            label_layout = QVBoxLayout(label_group)
+            label_layout.setContentsMargins(8, 6, 8, 6)
+            label_layout.setSpacing(4)
+
+            opts = getattr(app_state, 'isochron_label_options', {})
+            label_items = [
+                ('show_age', translate("Age")),
+                ('show_n_points', translate("Sample Count (n)")),
+                ('show_mswd', 'MSWD'),
+                ('show_r_squared', 'R²'),
+                ('show_slope', translate("Slope")),
+                ('show_intercept', translate("Intercept")),
+            ]
+            for key, text in label_items:
+                chk = QCheckBox(text)
+                chk.setChecked(opts.get(key, False))
+                label_layout.addWidget(chk)
+                label_checks[key] = chk
+
+            layout.addWidget(label_group)
+
         btn_row = QHBoxLayout()
         btn_row.addStretch()
         cancel_btn = QPushButton(translate("Cancel"))
@@ -4490,6 +4584,12 @@ class Qt5ControlPanel(QWidget):
                 app_state.model_age_line_width = style_ref['linewidth']
             elif style_key == 'isochron':
                 app_state.isochron_line_width = style_ref['linewidth']
+                # 保存标注显示选项
+                if label_checks:
+                    if not hasattr(app_state, 'isochron_label_options'):
+                        app_state.isochron_label_options = {}
+                    for key, chk in label_checks.items():
+                        app_state.isochron_label_options[key] = chk.isChecked()
             elif style_key == 'selected_isochron':
                 app_state.selected_isochron_line_width = style_ref['linewidth']
 
@@ -4832,15 +4932,27 @@ class Qt5ControlPanel(QWidget):
         dialog.exec_()
 
     def _on_calculate_isochron(self):
-        """计算等时线年龄"""
+        """计算等时线年龄：切换显示/隐藏。"""
         try:
-            from visualization.events import toggle_selection_mode, calculate_selected_isochron, on_slider_change
+            from visualization.events import calculate_selected_isochron, on_slider_change
         except Exception as e:
             QMessageBox.warning(
                 self,
                 translate("Error"),
                 translate("Failed to start isochron selection: {error}").format(error=str(e))
             )
+            return
+
+        # 如果等时线已显示，关闭它
+        if getattr(app_state, 'show_isochrons', False) or getattr(app_state, 'selected_isochron_data', None):
+            app_state.show_isochrons = False
+            app_state.isochron_results = {}
+            app_state.selected_isochron_data = None
+            self._update_isochron_btn_text()
+            try:
+                on_slider_change()
+            except Exception:
+                pass
             return
 
         if app_state.render_mode == '3D':
@@ -4862,16 +4974,32 @@ class Qt5ControlPanel(QWidget):
         if not self._ensure_isochron_error_settings():
             return
 
-        previous_selection = set(getattr(app_state, 'selected_indices', set()) or set())
-        toggle_selection_mode('isochron')
+        selected = set(getattr(app_state, 'selected_indices', set()) or set())
 
-        if app_state.selection_tool == 'isochron' and previous_selection:
-            app_state.selected_indices = set(previous_selection)
+        if selected:
             calculate_selected_isochron()
-            try:
-                on_slider_change()
-            except Exception as refresh_err:
-                logger.warning(f"[WARN] Failed to refresh plot after isochron calculation: {refresh_err}")
+        else:
+            app_state.show_isochrons = True
+
+        try:
+            on_slider_change()
+        except Exception as refresh_err:
+            logger.warning(f"[WARN] Failed to refresh plot: {refresh_err}")
+
+        self._update_isochron_btn_text()
+
+        # 显示结果
+        self._on_isochron_settings()
+
+    def _update_isochron_btn_text(self):
+        """更新等时线按钮文本。"""
+        btn = getattr(self, 'calc_isochron_btn', None)
+        if btn is None:
+            return
+        if getattr(app_state, 'show_isochrons', False) or getattr(app_state, 'selected_isochron_data', None):
+            btn.setText(translate("Hide Isochron"))
+        else:
+            btn.setText(translate("Calculate Isochron Age"))
 
     def _ensure_isochron_error_settings(self):
         """Ensure isochron error settings are usable before calculation."""
