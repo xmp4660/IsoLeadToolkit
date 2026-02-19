@@ -1632,6 +1632,22 @@ class Qt5ControlPanel(QWidget):
         endmember_group.setLayout(endmember_layout)
         layout.addWidget(endmember_group)
 
+        # ---- ML Provenance ----
+        provenance_group = QGroupBox(translate("Provenance ML"))
+        provenance_layout = QVBoxLayout()
+
+        provenance_hint = QLabel(translate("Run ML provenance classification using DBSCAN, SMOTE and XGBoost."))
+        provenance_hint.setWordWrap(True)
+        provenance_layout.addWidget(provenance_hint)
+
+        provenance_btn = QPushButton(translate("Run Provenance ML"))
+        provenance_btn.setFixedWidth(200)
+        provenance_btn.clicked.connect(self._on_run_provenance_ml)
+        provenance_layout.addWidget(provenance_btn, 0, Qt.AlignHCenter)
+
+        provenance_group.setLayout(provenance_layout)
+        layout.addWidget(provenance_group)
+
         confidence_group = QGroupBox(translate("Confidence Ellipse"))
         confidence_layout = QVBoxLayout()
 
@@ -3852,6 +3868,26 @@ class Qt5ControlPanel(QWidget):
                 self,
                 translate("Error"),
                 translate("Endmember analysis failed: {error}").format(error=str(e))
+            )
+
+    def _on_run_provenance_ml(self):
+        """运行溯源机器学习"""
+        if app_state.df_global is None:
+            QMessageBox.warning(
+                self,
+                translate("Warning"),
+                translate("Please load data first.")
+            )
+            return
+        try:
+            from ui.dialogs.provenance_ml_dialog import show_provenance_ml
+            show_provenance_ml(self)
+        except Exception as e:
+            logger.error(f"[ERROR] Provenance ML failed: {e}")
+            QMessageBox.warning(
+                self,
+                translate("Error"),
+                translate("Provenance ML failed: {error}").format(error=str(e))
             )
 
     def _update_mixing_status(self):

@@ -60,6 +60,29 @@ CONFIG = {
         'random_state': 42,
         'n_components': 2
     },
+    'ml_params': {
+        'min_region_samples': 5,
+        'dbscan_min_region_samples': 20,
+        'dbscan_eps': 0.18,
+        'dbscan_min_samples_ratio': 0.1,
+        'standardize': True,
+        'smote_enabled': True,
+        'smote_k_neighbors': 3,
+        'smote_sampling_strategy': 1.0,
+        'xgb_params': {
+            'n_estimators': 200,
+            'max_depth': 6,
+            'learning_rate': 0.1,
+            'subsample': 0.8,
+            'colsample_bytree': 0.8,
+            'objective': 'binary:logistic',
+            'eval_metric': 'logloss',
+            'random_state': 42,
+            'n_jobs': 1,
+            'tree_method': 'exact'
+        },
+        'predict_threshold': 0.9
+    },
     'show_ellipses': False,
     'ellipse_confidence': 0.95,  # Default confidence level
     'point_size': 60,

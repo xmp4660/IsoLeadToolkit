@@ -19,6 +19,10 @@ class AppState:
         self.robust_pca_params = CONFIG.get('robust_pca_params', {'n_components': 2, 'random_state': 42, 'support_fraction': 0.75}).copy()
         if 'support_fraction' not in self.robust_pca_params:
             self.robust_pca_params['support_fraction'] = 0.75
+
+        self.ml_params = CONFIG.get('ml_params', {}).copy()
+        self.ml_last_result = None
+        self.ml_last_model_meta = None
         
         # V1V2 Parameters
         self.v1v2_params = {
