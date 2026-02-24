@@ -6,7 +6,7 @@ import uuid
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
     QGroupBox, QComboBox, QCheckBox, QSpinBox, QDoubleSpinBox,
-    QLineEdit, QMessageBox, QDialog,
+    QLineEdit, QMessageBox, QDialog, QRadioButton,
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor

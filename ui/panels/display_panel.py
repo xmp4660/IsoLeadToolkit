@@ -5,7 +5,7 @@ import logging
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
     QGroupBox, QComboBox, QCheckBox, QSpinBox, QDoubleSpinBox,
-    QLineEdit, QMessageBox,
+    QLineEdit, QMessageBox, QGridLayout,
 )
 
 from core import translate, app_state, CONFIG
