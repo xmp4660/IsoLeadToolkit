@@ -164,7 +164,7 @@ class AppState:
         self.selected_3d_confirmed = False
         self.selected_ternary_confirmed = False
         self.selection_mode = False # Deprecated in favor of selection_tool, but kept for compatibility if needed
-        self.selection_tool = None # None, 'export', 'ellipse', 'isochron'
+        self.selection_tool = None # None, 'export', 'lasso', 'isochron'
         self.draw_selection_ellipse = False
         self.selected_indices = set()
         self.selection_button = None

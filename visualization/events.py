@@ -303,18 +303,21 @@ def refresh_selection_overlay():
 
         xs = [app_state.sample_coordinates[idx][0] for idx in valid_indices]
         ys = [app_state.sample_coordinates[idx][1] for idx in valid_indices]
-        base_marker_size = getattr(app_state, 'plot_marker_size', app_state.point_size)
-        highlight_size = max(int(base_marker_size * 1.8), 20)
 
-        app_state.selection_overlay = app_state.ax.scatter(
-            xs,
-            ys,
-            s=[highlight_size] * len(xs),
-            facecolors='none',
-            edgecolors='#f97316',
-            linewidths=1.6,
-            zorder=6
-        )
+        # Only draw highlight rings when a selection tool is active
+        if app_state.selection_tool:
+            base_marker_size = getattr(app_state, 'plot_marker_size', app_state.point_size)
+            highlight_size = max(int(base_marker_size * 1.8), 20)
+
+            app_state.selection_overlay = app_state.ax.scatter(
+                xs,
+                ys,
+                s=[highlight_size] * len(xs),
+                facecolors='none',
+                edgecolors='#f97316',
+                linewidths=1.6,
+                zorder=6
+            )
         
         # Draw confidence ellipse for selected points if enabled
         should_draw_ellipse = app_state.show_ellipses or getattr(app_state, 'draw_selection_ellipse', False)
@@ -521,7 +524,7 @@ def _resolve_sample_index(event):
 def toggle_selection_mode(tool_type='export'):
     """
     Toggle interactive selection mode.
-    tool_type: 'export', 'ellipse', 'lasso', or 'isochron'
+    tool_type: 'export', 'lasso', or 'isochron'
     """
     try:
         # If switching to the same tool that is already active, toggle it off
@@ -538,13 +541,13 @@ def toggle_selection_mode(tool_type='export'):
         if app_state.selection_tool:
              _disable_rectangle_selector()
              _disable_lasso_selector()
-             # Clear selection if we are switching tools or turning off
-             if app_state.selected_indices:
+             # Clear selection only if ellipse is not active
+             if app_state.selected_indices and not getattr(app_state, 'draw_selection_ellipse', False):
                  app_state.selected_indices.clear()
              # Clear isochron data if switching away from isochron tool
              if app_state.selection_tool == 'isochron':
                  app_state.selected_isochron_data = None
-        
+
         app_state.selection_tool = new_tool
         app_state.selection_mode = (new_tool is not None) # Keep legacy flag in sync
 
@@ -554,7 +557,7 @@ def toggle_selection_mode(tool_type='export'):
                 _ensure_lasso_selector()
             else:
                 _ensure_rectangle_selector()
-            
+
             # Disable Matplotlib toolbar zoom/pan if active
             try:
                 if app_state.fig.canvas.toolbar.mode == 'zoom rect':
@@ -564,14 +567,8 @@ def toggle_selection_mode(tool_type='export'):
             except Exception:
                 pass
 
-            if new_tool == 'ellipse':
-                app_state.draw_selection_ellipse = True
-            else:
-                app_state.draw_selection_ellipse = False
-
         else:
             logger.info("[INFO] Selection tool disabled.")
-            app_state.draw_selection_ellipse = False
             _disable_rectangle_selector()
             _disable_lasso_selector()
 

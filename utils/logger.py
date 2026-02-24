@@ -74,6 +74,9 @@ def setup_logging(log_filename='isotopes_analyse.log', max_bytes=50*1024*1024, b
         logging.getLogger('matplotlib').setLevel(logging.WARNING)
         logging.getLogger('matplotlib.font_manager').setLevel(logging.WARNING)
 
+        # Suppress numba verbose bytecode/compilation logs.
+        logging.getLogger('numba').setLevel(logging.WARNING)
+
         # Create a logger specific for stdout/stderr capture
         logger = logging.getLogger('AppLogger')
         logger.setLevel(logging.DEBUG)

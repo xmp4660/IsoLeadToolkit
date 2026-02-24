@@ -280,6 +280,7 @@ class Qt5ControlPanel(QWidget):
         self.selection_status_label = None
         self.export_csv_button = None
         self.export_excel_button = None
+        self.export_append_button = None
         self.export_selected_button = None
         self.status_data_label = None
         self.status_render_label = None
@@ -480,24 +481,26 @@ class Qt5ControlPanel(QWidget):
         if app_state.umap_params['n_neighbors'] != n_neighbors:
             app_state.umap_params['n_neighbors'] = n_neighbors
         n_slider.setValue(n_neighbors)
-        n_slider.valueChanged.connect(lambda v: self._on_umap_param_change('n_neighbors', v, n_label))
+        n_slider.valueChanged.connect(lambda v: self._on_umap_slider_changed('n_neighbors', v, n_label, n_slider))
+        n_slider.sliderReleased.connect(self._on_change)
         umap_layout.addWidget(n_slider)
 
         self.sliders['umap_n_neighbors'] = n_slider
         self.labels['umap_n_neighbors'] = n_label
 
         # min_dist
-        min_dist_label = QLabel(translate("min_dist: {value:.3f}").format(value=app_state.umap_params['min_dist']))
+        min_dist_label = QLabel(translate("min_dist: {value:.2f}").format(value=app_state.umap_params['min_dist']))
         umap_layout.addWidget(min_dist_label)
 
-        min_dist_spin = QDoubleSpinBox()
-        min_dist_spin.setRange(0.0, 1.0)
-        min_dist_spin.setSingleStep(0.01)
-        min_dist_spin.setDecimals(3)
-        min_dist_spin.setValue(app_state.umap_params['min_dist'])
-        min_dist_spin.valueChanged.connect(lambda v: self._on_umap_param_change('min_dist', v, min_dist_label))
-        umap_layout.addWidget(min_dist_spin)
+        min_dist_slider = QSlider(Qt.Horizontal)
+        min_dist_slider.setMinimum(0)
+        min_dist_slider.setMaximum(100)
+        min_dist_slider.setValue(int(app_state.umap_params['min_dist'] * 100))
+        min_dist_slider.valueChanged.connect(lambda v: self._on_umap_slider_changed('min_dist', v / 100.0, min_dist_label, min_dist_slider))
+        min_dist_slider.sliderReleased.connect(self._on_change)
+        umap_layout.addWidget(min_dist_slider)
 
+        self.sliders['umap_min_dist'] = min_dist_slider
         self.labels['umap_min_dist'] = min_dist_label
 
         # metric
@@ -528,23 +531,26 @@ class Qt5ControlPanel(QWidget):
         if app_state.tsne_params['perplexity'] != perplexity:
             app_state.tsne_params['perplexity'] = perplexity
         perp_slider.setValue(perplexity)
-        perp_slider.valueChanged.connect(lambda v: self._on_tsne_param_change('perplexity', v, perp_label))
+        perp_slider.valueChanged.connect(lambda v: self._on_tsne_slider_changed('perplexity', v, perp_label))
+        perp_slider.sliderReleased.connect(self._on_change)
         tsne_layout.addWidget(perp_slider)
 
         self.sliders['tsne_perplexity'] = perp_slider
         self.labels['tsne_perplexity'] = perp_label
 
         # learning_rate
-        lr_label = QLabel(translate("learning_rate: {value}").format(value=app_state.tsne_params['learning_rate']))
+        lr_label = QLabel(translate("learning_rate: {value}").format(value=int(app_state.tsne_params['learning_rate'])))
         tsne_layout.addWidget(lr_label)
 
-        lr_spin = QDoubleSpinBox()
-        lr_spin.setRange(10.0, 1000.0)
-        lr_spin.setSingleStep(10.0)
-        lr_spin.setValue(app_state.tsne_params['learning_rate'])
-        lr_spin.valueChanged.connect(lambda v: self._on_tsne_param_change('learning_rate', v, lr_label))
-        tsne_layout.addWidget(lr_spin)
+        lr_slider = QSlider(Qt.Horizontal)
+        lr_slider.setMinimum(1)
+        lr_slider.setMaximum(100)
+        lr_slider.setValue(int(app_state.tsne_params['learning_rate'] / 10))
+        lr_slider.valueChanged.connect(lambda v: self._on_tsne_slider_changed('learning_rate', v * 10, lr_label))
+        lr_slider.sliderReleased.connect(self._on_change)
+        tsne_layout.addWidget(lr_slider)
 
+        self.sliders['tsne_learning_rate'] = lr_slider
         self.labels['tsne_learning_rate'] = lr_label
 
         # random_state
@@ -1043,23 +1049,25 @@ class Qt5ControlPanel(QWidget):
         if app_state.umap_params['n_neighbors'] != n_neighbors:
             app_state.umap_params['n_neighbors'] = n_neighbors
         n_slider.setValue(n_neighbors)
-        n_slider.valueChanged.connect(lambda v: self._on_umap_param_change('n_neighbors', v, n_label))
+        n_slider.valueChanged.connect(lambda v: self._on_umap_slider_changed('n_neighbors', v, n_label, n_slider))
+        n_slider.sliderReleased.connect(self._on_change)
         umap_layout.addWidget(n_slider)
 
         self.sliders['umap_n_neighbors'] = n_slider
         self.labels['umap_n_neighbors'] = n_label
 
-        min_dist_label = QLabel(translate("min_dist: {value:.3f}").format(value=app_state.umap_params['min_dist']))
+        min_dist_label = QLabel(translate("min_dist: {value:.2f}").format(value=app_state.umap_params['min_dist']))
         umap_layout.addWidget(min_dist_label)
 
-        min_dist_spin = QDoubleSpinBox()
-        min_dist_spin.setRange(0.0, 1.0)
-        min_dist_spin.setSingleStep(0.01)
-        min_dist_spin.setDecimals(3)
-        min_dist_spin.setValue(app_state.umap_params['min_dist'])
-        min_dist_spin.valueChanged.connect(lambda v: self._on_umap_param_change('min_dist', v, min_dist_label))
-        umap_layout.addWidget(min_dist_spin)
+        min_dist_slider = QSlider(Qt.Horizontal)
+        min_dist_slider.setMinimum(0)
+        min_dist_slider.setMaximum(100)
+        min_dist_slider.setValue(int(app_state.umap_params['min_dist'] * 100))
+        min_dist_slider.valueChanged.connect(lambda v: self._on_umap_slider_changed('min_dist', v / 100.0, min_dist_label, min_dist_slider))
+        min_dist_slider.sliderReleased.connect(self._on_change)
+        umap_layout.addWidget(min_dist_slider)
 
+        self.sliders['umap_min_dist'] = min_dist_slider
         self.labels['umap_min_dist'] = min_dist_label
 
         metric_label = QLabel(translate("metric:"))
@@ -1090,22 +1098,25 @@ class Qt5ControlPanel(QWidget):
         if app_state.tsne_params['perplexity'] != perplexity:
             app_state.tsne_params['perplexity'] = perplexity
         perp_slider.setValue(perplexity)
-        perp_slider.valueChanged.connect(lambda v: self._on_tsne_param_change('perplexity', v, perp_label))
+        perp_slider.valueChanged.connect(lambda v: self._on_tsne_slider_changed('perplexity', v, perp_label))
+        perp_slider.sliderReleased.connect(self._on_change)
         tsne_layout.addWidget(perp_slider)
 
         self.sliders['tsne_perplexity'] = perp_slider
         self.labels['tsne_perplexity'] = perp_label
 
-        lr_label = QLabel(translate("learning_rate: {value}").format(value=app_state.tsne_params['learning_rate']))
+        lr_label = QLabel(translate("learning_rate: {value}").format(value=int(app_state.tsne_params['learning_rate'])))
         tsne_layout.addWidget(lr_label)
 
-        lr_spin = QDoubleSpinBox()
-        lr_spin.setRange(10.0, 1000.0)
-        lr_spin.setSingleStep(10.0)
-        lr_spin.setValue(app_state.tsne_params['learning_rate'])
-        lr_spin.valueChanged.connect(lambda v: self._on_tsne_param_change('learning_rate', v, lr_label))
-        tsne_layout.addWidget(lr_spin)
+        lr_slider = QSlider(Qt.Horizontal)
+        lr_slider.setMinimum(1)
+        lr_slider.setMaximum(100)
+        lr_slider.setValue(int(app_state.tsne_params['learning_rate'] / 10))
+        lr_slider.valueChanged.connect(lambda v: self._on_tsne_slider_changed('learning_rate', v * 10, lr_label))
+        lr_slider.sliderReleased.connect(self._on_change)
+        tsne_layout.addWidget(lr_slider)
 
+        self.sliders['tsne_learning_rate'] = lr_slider
         self.labels['tsne_learning_rate'] = lr_label
 
         tsne_rs_label = QLabel(translate("random_state: {value}").format(
@@ -1701,6 +1712,11 @@ class Qt5ControlPanel(QWidget):
         self.export_excel_button.setFixedWidth(200)
         self.export_excel_button.clicked.connect(self._on_export_excel)
         export_layout.addWidget(self.export_excel_button, 0, Qt.AlignHCenter)
+
+        self.export_append_button = QPushButton(translate("Append to Excel"))
+        self.export_append_button.setFixedWidth(200)
+        self.export_append_button.clicked.connect(self._on_export_append_excel)
+        export_layout.addWidget(self.export_append_button, 0, Qt.AlignHCenter)
 
         self.export_selected_button = QPushButton(translate("Export Selected"))
         self.export_selected_button.setFixedWidth(200)
@@ -2506,6 +2522,11 @@ class Qt5ControlPanel(QWidget):
         self.export_excel_button.clicked.connect(self._on_export_excel)
         export_layout.addWidget(self.export_excel_button, 0, Qt.AlignHCenter)
 
+        self.export_append_button = QPushButton(translate("Append to Excel"))
+        self.export_append_button.setFixedWidth(200)
+        self.export_append_button.clicked.connect(self._on_export_append_excel)
+        export_layout.addWidget(self.export_append_button, 0, Qt.AlignHCenter)
+
         # 导出选中数据按钮
         self.export_selected_button = QPushButton(translate("Export Selected"))
         self.export_selected_button.setFixedWidth(200)
@@ -2651,10 +2672,11 @@ class Qt5ControlPanel(QWidget):
 
         ellipse_button = getattr(self, 'ellipse_selection_button', None)
         if ellipse_button is not None:
+            ellipse_active = getattr(app_state, 'draw_selection_ellipse', False)
             ellipse_button.blockSignals(True)
-            ellipse_button.setChecked(tool == 'ellipse')
+            ellipse_button.setChecked(ellipse_active)
             ellipse_button.setText(
-                translate("Disable Ellipse") if tool == 'ellipse' else translate("Draw Ellipse")
+                translate("Disable Ellipse") if ellipse_active else translate("Draw Ellipse")
             )
             ellipse_button.blockSignals(False)
 
@@ -2679,6 +2701,7 @@ class Qt5ControlPanel(QWidget):
         for btn in (
             getattr(self, 'export_csv_button', None),
             getattr(self, 'export_excel_button', None),
+            getattr(self, 'export_append_button', None),
             getattr(self, 'export_selected_button', None),
         ):
             if btn is not None:
@@ -2750,12 +2773,13 @@ class Qt5ControlPanel(QWidget):
         self._sync_selection_buttons()
 
     def _on_toggle_ellipse_selection(self):
-        """切换椭圆选择模式"""
+        """切换置信椭圆显示（不激活选择工具）"""
         try:
-            from visualization.events import toggle_selection_mode
-            toggle_selection_mode('ellipse')
+            app_state.draw_selection_ellipse = not getattr(app_state, 'draw_selection_ellipse', False)
+            from visualization.events import refresh_selection_overlay
+            refresh_selection_overlay()
         except Exception as err:
-            logger.warning(f"[WARN] Failed to toggle ellipse selection: {err}")
+            logger.warning(f"[WARN] Failed to toggle ellipse display: {err}")
         self._sync_selection_buttons()
 
     def _on_toggle_lasso_selection(self):
@@ -2766,6 +2790,65 @@ class Qt5ControlPanel(QWidget):
         except Exception as err:
             logger.warning(f"[WARN] Failed to toggle custom shape selection: {err}")
         self._sync_selection_buttons()
+
+    def _build_export_df(self, selected_indices):
+        """构建导出 DataFrame，降维算法附加嵌入坐标和参数信息"""
+        import pandas as pd
+        selected_df = app_state.df_global.iloc[list(selected_indices)].copy()
+
+        algo = getattr(app_state, 'algorithm', None)
+        embedding = getattr(app_state, 'last_embedding', None)
+        embedding_type = getattr(app_state, 'last_embedding_type', None)
+
+        dr_algorithms = {'UMAP', 'tSNE', 'PCA', 'RobustPCA'}
+        if algo not in dr_algorithms or embedding is None or embedding_type is None:
+            return selected_df
+
+        # 获取当前使用的数据索引
+        if app_state.active_subset_indices is not None:
+            data_indices = sorted(list(app_state.active_subset_indices))
+        else:
+            data_indices = list(range(len(app_state.df_global)))
+
+        # 将 selected_indices 映射到 embedding 行号
+        index_map = {orig: i for i, orig in enumerate(data_indices)}
+
+        dim1, dim2 = [], []
+        for idx in selected_indices:
+            if idx in index_map and index_map[idx] < len(embedding):
+                row = embedding[index_map[idx]]
+                dim1.append(row[0])
+                dim2.append(row[1] if len(row) > 1 else None)
+            else:
+                dim1.append(None)
+                dim2.append(None)
+
+        # 列名与绘图轴标签一致
+        if embedding_type in ('PCA', 'RobustPCA'):
+            pca_idx = getattr(app_state, 'pca_component_indices', [0, 1])
+            col1 = f'PC{pca_idx[0] + 1}'
+            col2 = f'PC{pca_idx[1] + 1}' if len(pca_idx) > 1 else 'PC2'
+        else:
+            col1 = f'{embedding_type} Dimension 1'
+            col2 = f'{embedding_type} Dimension 2'
+
+        selected_df[col1] = dim1
+        selected_df[col2] = dim2
+
+        # 附加算法参数
+        params_map = {
+            'UMAP': 'umap_params',
+            'tSNE': 'tsne_params',
+            'PCA': 'pca_params',
+            'RobustPCA': 'robust_pca_params',
+        }
+        params_attr = params_map.get(algo)
+        if params_attr:
+            params = getattr(app_state, params_attr, {})
+            for k, v in params.items():
+                selected_df[f'param_{k}'] = v
+
+        return selected_df
 
     def _on_export_csv(self):
         """导出CSV"""
@@ -2788,7 +2871,7 @@ class Qt5ControlPanel(QWidget):
 
         if file_path:
             try:
-                selected_df = app_state.df_global.iloc[list(app_state.selected_indices)]
+                selected_df = self._build_export_df(app_state.selected_indices)
                 selected_df.to_csv(file_path, index=False)
                 QMessageBox.information(
                     self,
@@ -2823,7 +2906,7 @@ class Qt5ControlPanel(QWidget):
 
         if file_path:
             try:
-                selected_df = app_state.df_global.iloc[list(app_state.selected_indices)]
+                selected_df = self._build_export_df(app_state.selected_indices)
                 selected_df.to_excel(file_path, index=False)
                 QMessageBox.information(
                     self,
@@ -2836,6 +2919,67 @@ class Qt5ControlPanel(QWidget):
                     translate("Error"),
                     translate("Failed to export data: {error}").format(error=str(e))
                 )
+
+    def _on_export_append_excel(self):
+        """追加数据到已有 Excel 文件的新 Sheet"""
+        from PyQt5.QtWidgets import QFileDialog, QInputDialog
+        import os
+        import pandas as pd
+
+        if not app_state.selected_indices:
+            QMessageBox.warning(
+                self,
+                translate("Warning"),
+                translate("No data selected. Please select data points first.")
+            )
+            return
+
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            translate("Select Excel File to Append"),
+            "",
+            "Excel Files (*.xlsx);;All Files (*.*)"
+        )
+
+        if not file_path:
+            return
+
+        # 获取默认 sheet 名称
+        algo = getattr(app_state, 'algorithm', '')
+        default_name = algo if algo else 'Sheet'
+
+        sheet_name, ok = QInputDialog.getText(
+            self,
+            translate("Sheet Name"),
+            translate("Enter sheet name:"),
+            text=default_name
+        )
+
+        if not ok or not sheet_name.strip():
+            return
+        sheet_name = sheet_name.strip()
+
+        try:
+            import openpyxl
+            selected_df = self._build_export_df(app_state.selected_indices)
+
+            if os.path.exists(file_path):
+                with pd.ExcelWriter(file_path, engine='openpyxl', mode='a', if_sheet_exists='new') as writer:
+                    selected_df.to_excel(writer, sheet_name=sheet_name, index=False)
+            else:
+                selected_df.to_excel(file_path, sheet_name=sheet_name, index=False)
+
+            QMessageBox.information(
+                self,
+                translate("Success"),
+                translate("Data appended as sheet '{sheet}' to {file}").format(sheet=sheet_name, file=file_path)
+            )
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                translate("Error"),
+                translate("Failed to export data: {error}").format(error=str(e))
+            )
 
     def _on_analyze_subset(self):
         """子集分析"""
@@ -3060,18 +3204,33 @@ class Qt5ControlPanel(QWidget):
         if self.geochem_plot_group is not None:
             self.geochem_plot_group.setVisible(mode in ('PB_EVOL_76', 'PB_EVOL_86', 'PB_MU_AGE', 'PB_KAPPA_AGE'))
 
-    def _on_umap_param_change(self, param, value, label):
-        """UMAP 参数变化"""
+    def _on_umap_slider_changed(self, param, value, label, slider):
+        """UMAP 滑块拖动中 - 仅更新标签和状态，不触发重新计算"""
         app_state.umap_params[param] = value
         if label:
             if param == 'min_dist':
-                label.setText(translate("{param}: {value:.3f}").format(param=param, value=value))
+                label.setText(translate("{param}: {value:.2f}").format(param=param, value=value))
+            else:
+                label.setText(translate("{param}: {value}").format(param=param, value=value))
+
+    def _on_umap_param_change(self, param, value, label):
+        """UMAP 参数变化（非滑块控件，如 metric combo）"""
+        app_state.umap_params[param] = value
+        if label:
+            if param == 'min_dist':
+                label.setText(translate("{param}: {value:.2f}").format(param=param, value=value))
             else:
                 label.setText(translate("{param}: {value}").format(param=param, value=value))
         self._schedule_slider_callback(f'umap_{param}')
 
+    def _on_tsne_slider_changed(self, param, value, label):
+        """t-SNE 滑块拖动中 - 仅更新标签和状态，不触发重新计算"""
+        app_state.tsne_params[param] = value
+        if label:
+            label.setText(translate("{param}: {value}").format(param=param, value=int(value)))
+
     def _on_tsne_param_change(self, param, value, label):
-        """t-SNE 参数变化"""
+        """t-SNE 参数变化（非滑块控件）"""
         app_state.tsne_params[param] = value
         if label:
             label.setText(translate("{param}: {value}").format(param=param, value=value))
@@ -3503,6 +3662,9 @@ class Qt5ControlPanel(QWidget):
 
     def _on_style_change(self, *_args):
         """处理样式变化"""
+        if not self._is_initialized:
+            return
+
         def _safe_float(text, default):
             try:
                 return float(text)
@@ -4009,8 +4171,8 @@ class Qt5ControlPanel(QWidget):
 
         if file_path:
             try:
-                # 获取选中的数据
-                selected_df = app_state.df_global.iloc[list(app_state.selected_indices)]
+                # 获取选中的数据（含降维结果和参数）
+                selected_df = self._build_export_df(app_state.selected_indices)
 
                 # 根据文件扩展名保存
                 if file_path.endswith('.xlsx'):
@@ -5450,9 +5612,11 @@ def create_section_dialog(section_key, callback, parent=None):
     root.addLayout(header)
 
     panel = Qt5ControlPanel(callback, parent=dialog, build_ui=False)
+    panel._reset_ui_state()
     panel._setup_styles()
 
     content_widget = builder(panel)
+    panel._is_initialized = True
     scroll = QScrollArea()
     scroll.setWidgetResizable(True)
     scroll.setFrameShape(QFrame.NoFrame)
