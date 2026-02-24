@@ -431,8 +431,12 @@ IsoLeadToolkit/
 │       ├── provenance_ml_dialog.py  # ML 来源判别
 │       └── ...
 ├── visualization/
-│   ├── plotting.py                  # 主渲染引擎
-│   ├── plotting_embed.py            # 嵌入图渲染
+│   ├── plotting.py                  # 渲染入口（汇总导出）
+│   ├── plotting_core.py             # 嵌入计算 + 核心工具
+│   ├── plotting_render.py           # 嵌入渲染 + 2D/3D 绘制
+│   ├── plotting_geo.py              # 地球化学叠加/等时线
+│   ├── plotting_ternary.py          # 三元图工具
+│   ├── plotting_embed.py            # 兼容入口 (shim)
 │   ├── plotting_data.py             # 数据提取与预处理
 │   ├── plotting_analysis_qt.py      # 分析图表（碎石图、载荷图等）
 │   ├── events.py                    # 交互事件（悬停、选择、图例）

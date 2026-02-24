@@ -9,8 +9,12 @@
 | 文件 | 行数 | 职责 |
 |------|------|------|
 | `__init__.py` | 89 | 模块入口，导出公共 API |
-| `plotting.py` | 1,216 | 主渲染调度器 + 嵌入计算 |
-| `plotting_embed.py` | 1,336 | 嵌入渲染 (从 plotting.py 拆出) |
+| `plotting.py` | ~200 | 渲染入口（汇总导出） |
+| `plotting_core.py` | ~600 | 嵌入计算 + 核心工具 |
+| `plotting_render.py` | ~1,400 | 嵌入渲染 + 2D/3D 绘制 |
+| `plotting_geo.py` | ~400 | 地球化学叠加/等时线 |
+| `plotting_ternary.py` | ~120 | 三元图工具 |
+| `plotting_embed.py` | 20 | 兼容入口 (shim) |
 | `events.py` | 1,057 | 交互事件 (hover, 选择, 图例点击) |
 | `plotting_style.py` | 320 | 绘图样式 + 图例布局 |
 | `style_manager.py` | 224 | 调色板 + 字体 + UI 主题 |
@@ -200,22 +204,23 @@ def _find_age_column(columns) -> str | None
 
 ---
 
-## 2. plotting_embed.py — 嵌入渲染
+## 2. plotting_core.py / plotting_render.py / plotting_geo.py / plotting_ternary.py
 
-### 职责
-从 plotting.py 拆出的嵌入渲染逻辑。
-
-### 与 plotting.py 的关系
-- 导入 plotting.py 的辅助函数
-- 提供相同的公共 API (`plot_embedding`, `plot_2d_data`, `plot_3d_data`)
-- **存在代码重复** — 两个文件有大量相似逻辑
-
-### 注意
-这两个文件存在循环导入风险，应合并或明确分工。
+### 拆分职责
+- `plotting_core.py`：嵌入计算 + 核心工具函数
+- `plotting_render.py`：嵌入渲染 + 2D/3D 绘制
+- `plotting_geo.py`：地球化学叠加与等时线相关逻辑
+- `plotting_ternary.py`：三元图拉伸与自动因子
 
 ---
 
-## 3. events.py — 交互事件
+## 3. plotting_embed.py — 兼容入口
+
+`plotting_embed.py` 已合并至 `plotting.py`。当前文件仅保留为兼容入口，避免外部导入中断。
+
+---
+
+## 4. events.py — 交互事件
 
 ### 职责
 处理所有用户交互: 悬停提示、点击选择、图例交互、选择工具。
@@ -492,11 +497,19 @@ plotting_kde.py ← seaborn (懒加载), app_state
   ↓
 line_styles.py ← app_state
   ↓
-plotting.py ← plotting_style, plotting_data, plotting_kde, line_styles, geochemistry
+plotting_core.py ← plotting_data, app_state, sklearn (懒加载)
   ↓
-plotting_embed.py ← plotting.py (存在循环导入风险!)
+plotting_geo.py ← plotting_core, line_styles, geochemistry
   ↓
-events.py ← plotting.py, plotting_embed.py, app_state
+plotting_ternary.py ← app_state, scipy
+  ↓
+plotting_render.py ← plotting_core, plotting_geo, plotting_ternary, plotting_style, plotting_kde
+  ↓
+plotting.py ← plotting_core, plotting_render, plotting_geo, plotting_ternary
+  ↓
+plotting_embed.py → plotting.py (兼容入口)
+  ↓
+events.py ← plotting.py, app_state
   ↓
 plotting_analysis_qt.py ← plotting_data, PyQt5
   ↓
@@ -509,10 +522,7 @@ __init__.py ← 导出所有公共 API
 
 ### 高优先级
 
-1. **合并 plotting.py 和 plotting_embed.py** — 两个文件有大量重复代码和循环导入风险。应合并为一个文件，或明确拆分为:
-   - `plotting_core.py` — 嵌入计算 + 工具函数
-   - `plotting_render.py` — 渲染逻辑
-   - `plotting_geo.py` — 地球化学叠加
+1. **合并 plotting.py 和 plotting_embed.py** — ✅ 已完成 (plotting_embed.py 作为 shim)。
 
 2. **plot_embedding() 过长 (~757 行)** — 应拆分为子函数:
    - `_render_scatter_groups()` — 散点渲染

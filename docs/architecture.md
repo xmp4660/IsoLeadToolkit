@@ -26,15 +26,18 @@
 │  ┌──────────┐  ┌──────────────┐  ┌───────────────────┐  │
 │  │  core/   │  │     ui/      │  │  visualization/   │  │
 │  │          │  │              │  │                   │  │
-│  │ state    │←─│ app          │──│ plotting          │  │
-│  │ config   │  │ main_window  │  │ plotting_embed    │  │
-│  │ session  │  │ control_panel│  │ events            │  │
-│  │ locale   │  │ dialogs/     │  │ plotting_style    │  │
-│  │ cache    │  │  (11 个)     │  │ style_manager     │  │
-│  └──────────┘  └──────────────┘  │ plotting_kde      │  │
-│       ↑                          │ plotting_analysis  │  │
-│       │        ┌──────────┐      │ plotting_data     │  │
-│       └────────│  data/   │──────│ line_styles       │  │
+│  │ state    │←─│ app          │──│ plotting.py       │  │
+│  │ config   │  │ main_window  │  │ plotting_core    │  │
+│  │ session  │  │ control_panel│  │ plotting_render  │  │
+│  │ locale   │  │ dialogs/     │  │ plotting_geo     │  │
+│  │ cache    │  │  (11 个)     │  │ plotting_ternary │  │
+│  └──────────┘  └──────────────┘  │ events            │  │
+│       ↑                          │ plotting_style    │  │
+│       │        ┌──────────┐      │ style_manager     │  │
+│       └────────│  data/   │──────│ plotting_kde      │  │
+│                │          │      │ plotting_analysis │  │
+│                │          │      │ plotting_data     │  │
+│                │          │      │ line_styles       │  │
 │                │          │      └───────────────────┘  │
 │                │ loader   │                             │
 │                │ geochem  │      ┌───────────────────┐  │
@@ -111,17 +114,19 @@ ui/
 - `control_panel.py` 仅保留组装与 `create_section_dialog()`
 - `_on_style_change()` 下沉至 `BasePanel` (跨面板共享)
 
-#### 1.2 合并 plotting.py + plotting_embed.py
+#### 1.2 合并 plotting.py + plotting_embed.py — ✅ 已完成（已按功能拆分）
 
 **现状:** 两个文件有大量重复代码和循环导入风险。
 
-**目标结构:**
+**调整结果:**
 ```
 visualization/
-├── plotting_core.py      # 嵌入计算 + 工具函数
-├── plotting_render.py    # 散点/图例/标题渲染
-├── plotting_geo.py       # 地球化学叠加 (模型曲线, 等时线, 古等时线)
-├── plotting_ternary.py   # 三元图逻辑
+├── plotting.py          # 渲染入口（汇总导出）
+├── plotting_core.py     # 嵌入计算 + 核心工具
+├── plotting_render.py   # 嵌入渲染 + 2D/3D 绘制
+├── plotting_geo.py      # 地球化学叠加/等时线
+├── plotting_ternary.py  # 三元图工具
+└── plotting_embed.py    # 兼容入口 (shim)
 ```
 
 #### 1.3 拆分 geochemistry.py (1,369 行)
@@ -267,7 +272,7 @@ tests/
 | numba 日志过长 | utils/logger.py | ✅ 已修复 (设置 WARNING 级别) |
 | `_reset_ui_state` 重复赋值 | control_panel.py:285-296 | 待修复 |
 | 全局 widget 引用 (slider_n 等) | state.py:332-344 | 待清理 |
-| 循环导入风险 | plotting.py ↔ plotting_embed.py | 待重构 |
+| 循环导入风险 | plotting.py ↔ plotting_embed.py | ✅ 已消解 |
 | 控制面板禁用但代码保留 | app.py:322 | 待清理 |
 
 ---
