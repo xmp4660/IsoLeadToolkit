@@ -143,6 +143,19 @@ data/
 │   └── isochron.py       # 等时线工具
 ```
 
+**调整结果:**
+```
+data/
+├── geochemistry/
+│   ├── __init__.py       # 公共 API + 兼容导出
+│   ├── engine.py         # 常量 + GeochemistryEngine + modelcurve
+│   ├── age.py            # 模式年龄/求解器
+│   ├── delta.py          # Delta + V1V2
+│   ├── source.py         # 源区参数/初始比值
+│   └── isochron.py       # 等时线/回归工具
+└── geochemistry.py       # 兼容 shim (旧导入保留)
+```
+
 ---
 
 ### 第二优先级: 功能改进
@@ -198,7 +211,7 @@ def _update_translations(self):
 #### 3.2 国际化完善
 
 - events.py 中硬编码中文字符串改用 `translate()`
-- 统一 geochemistry.py 中的中英文注释
+- 统一 geochemistry/ 中的中英文注释
 
 #### 3.3 类型注解
 

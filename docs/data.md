@@ -4,13 +4,14 @@
 
 `data/` 负责数据加载、地球化学计算、端元识别、ML 产地分析和混合模型。是应用的科学计算核心。
 
-**文件清单 (2,410 行)**
+**文件清单 (拆分后)**
 
 | 文件 | 行数 | 职责 |
 |------|------|------|
 | `__init__.py` | 34 | 模块入口，导出公共 API |
 | `loader.py` | 239 | Excel/CSV 数据加载与列映射 |
-| `geochemistry.py` | 1,369 | 铅同位素地球化学计算引擎 |
+| `geochemistry/` | — | 铅同位素地球化学计算引擎 (拆分模块) |
+| `geochemistry.py` | 30 | 兼容 shim (保持旧导入可用) |
 | `endmember.py` | 302 | 端元识别 (PCA + 地球化学过滤) |
 | `provenance_ml.py` | 366 | ML 产地分类管线 (DBSCAN + XGBoost) |
 | `mixing.py` | 100 | 混合模型计算 |
@@ -55,10 +56,23 @@ Excel/CSV 文件
 
 ---
 
-## 2. geochemistry.py — 地球化学计算引擎
+## 2. geochemistry/ — 地球化学计算引擎
 
 ### 职责
 实现铅同位素地球化学的完整计算体系，包括模式年龄、Delta 值、V1V2 投影、源区参数反演。
+`data/geochemistry.py` 为兼容 shim，转发到包实现。
+
+### 模块拆分
+
+```
+data/geochemistry/
+├── __init__.py       # 公共 API + 兼容导出
+├── engine.py         # 常量 + GeochemistryEngine + modelcurve
+├── age.py            # 模式年龄/求解器
+├── delta.py          # Delta + V1V2
+├── source.py         # 源区参数/初始比值
+└── isochron.py       # 等时线/回归工具
+```
 
 ### 物理常数
 
@@ -81,7 +95,7 @@ A0, B0, C0 = 9.307, 10.294, 29.476  # CDT 原始比值
 | `Cumming & Richards` | C&R 模型 |
 | `Maltese & Mezger` | M&M 模型 |
 
-### GeochemistryEngine 类
+### GeochemistryEngine 类 (engine.py)
 
 ```python
 class GeochemistryEngine:
@@ -102,7 +116,7 @@ class GeochemistryEngine:
 
 全局实例: `engine = GeochemistryEngine()`
 
-### 年龄计算函数
+### 年龄计算函数 (age.py)
 
 ```python
 def calculate_single_stage_age(Pb206_204_S, Pb207_204_S, params=None, initial_age=None)
@@ -121,7 +135,7 @@ def calculate_isochron_age_from_slope(slope, params=None)
     """从等时线斜率计算年龄"""
 ```
 
-### 模型曲线函数
+### 模型曲线函数 (engine.py / isochron.py)
 
 ```python
 def calculate_modelcurve(t_Ma, params=None, ...)
@@ -131,7 +145,7 @@ def calculate_paleoisochron_line(age_ma, params=None, algorithm='PB_EVOL_76')
     """计算古等时线的斜率和截距"""
 ```
 
-### Delta 值与 V1V2
+### Delta 值与 V1V2 (delta.py)
 
 ```python
 def calculate_deltas(Pb206_204_S, Pb207_204_S, Pb208_204_S, t_Ma,
@@ -144,7 +158,7 @@ def calculate_v1v2_coordinates(d_alpha, d_beta, d_gamma, params=None)
     # 返回: (V1, V2)
 ```
 
-### 源区参数反演
+### 源区参数反演 (source.py)
 
 ```python
 # 传统方法
@@ -157,7 +171,7 @@ def calculate_mu_sk_model(Pb206_204_S, Pb207_204_S, t_Ma, params=None)     # Cal
 def calculate_kappa_sk_model(Pb208_204_S, Pb206_204_S, t_Ma, params=None)  # CalcKa
 ```
 
-### 初始比值反演
+### 初始比值反演 (source.py)
 
 ```python
 def calculate_initial_ratio_64(t_Ma, Pb206_204_S, Pb207_204_S, params=None)              # 初始 206/204
@@ -165,7 +179,7 @@ def calculate_initial_ratio_74(t_Ma, Pb206_204_S, Pb207_204_S, params=None)     
 def calculate_initial_ratio_84(t_Ma, Pb206_204_S, Pb207_204_S, Pb208_204_S, params=None) # 初始 208/204
 ```
 
-### 等时线回归
+### 等时线回归 (isochron.py)
 
 ```python
 def york_regression(x, sx, y, sy, rxy=None, max_iter=50, tol=1e-15)
@@ -179,7 +193,7 @@ def calculate_source_kappa_from_slope(slope_208_206, age_ma, params=None)
     """从 208/206 斜率反演源区 κ"""
 ```
 
-### 主入口函数
+### 主入口函数 (__init__.py)
 
 ```python
 def calculate_all_parameters(Pb206_204_S, Pb207_204_S, Pb208_204_S,
@@ -195,7 +209,7 @@ def calculate_all_parameters(Pb206_204_S, Pb207_204_S, Pb208_204_S,
 - `mu_SK`, `kappa_SK`, `omega_SK` — PbIso 兼容参数
 - `Init_206_204`, `Init_207_204`, `Init_208_204` — 初始比值
 
-### 内部求解器
+### 内部求解器 (age.py)
 
 ```python
 def _solve_age_scipy(f, bounds=(-4700e6, 4700e6), search_points=200)
@@ -353,7 +367,7 @@ def _solve_simplex_weights(endmember_matrix, target) -> tuple[np.ndarray, float]
 ```
 loader.py
   → app_state.df_global (pandas DataFrame)
-      ├→ geochemistry.py (年龄, Delta, V1V2, 源区参数)
+      ├→ geochemistry/ (年龄, Delta, V1V2, 源区参数)
       ├→ endmember.py (PCA + 地球化学过滤)
       ├→ mixing.py (端元混合比例)
       └→ provenance_ml.py (DBSCAN + XGBoost 分类)
@@ -365,12 +379,13 @@ loader.py
 
 ### 高优先级
 
-1. **geochemistry.py 过大 (1369 行)** — 建议拆分为:
+1. **geochemistry.py 过大 (1369 行)** — 已拆分为:
    - `geochemistry/engine.py` — GeochemistryEngine + 预设模型
    - `geochemistry/age.py` — 年龄计算
    - `geochemistry/delta.py` — Delta + V1V2
    - `geochemistry/source.py` — 源区参数反演
    - `geochemistry/isochron.py` — 等时线工具
+   - `geochemistry.py` — 兼容 shim (旧导入保留)
 
 2. **provenance_ml.py 缺少交叉验证** — 无训练/测试集划分，无 CV 指标。应添加 `cross_val_score` 或至少 train/test split 报告。
 
@@ -388,7 +403,7 @@ loader.py
 
 ### 低优先级
 
-8. **中英文注释混杂** — geochemistry.py 中中文注释和英文 docstring 混用，建议统一。
+8. **中英文注释混杂** — geochemistry/ 中中文注释和英文 docstring 混用，建议统一。
 
 9. **向后兼容别名** — `calculate_delta_values`, `calculate_v1v2`, `calculate_model_age` 等别名函数可在下个大版本移除。
 
