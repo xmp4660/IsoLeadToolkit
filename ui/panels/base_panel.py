@@ -1,9 +1,13 @@
 """面板基类 - 提供共享工具方法"""
+from __future__ import annotations
+
 import logging
-from PyQt5.QtWidgets import QWidget
+from typing import Callable
+
+from PyQt5.QtWidgets import QWidget, QGroupBox, QLabel, QPushButton, QCheckBox
 from PyQt5.QtCore import QTimer
 
-from core import app_state
+from core import app_state, translate
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +24,7 @@ class BasePanel(QWidget):
         self.check_vars = {}
         self._slider_steps = {}
         self._slider_timers = {}
+        self._debounce_timers: dict[str, QTimer] = {}
         self._slider_delay_ms = 350
         self._is_initialized = False
 
@@ -35,7 +40,29 @@ class BasePanel(QWidget):
         self.check_vars = {}
         self._slider_steps = {}
         self._slider_timers = {}
+        self._debounce_timers = {}
         self._is_initialized = False
+
+    def _update_translations(self, root: QWidget | None = None) -> None:
+        """遍历控件树，根据 ``translate_key`` 属性更新文本。
+
+        在控件构建时通过 ``widget.setProperty('translate_key', 'English Key')``
+        标记需要翻译的控件，语言切换时调用此方法即可就地刷新文本，
+        无需销毁重建整个 UI。
+
+        支持的控件类型: QGroupBox (setTitle), QLabel/QPushButton/QCheckBox (setText)。
+        """
+        if root is None:
+            root = self
+        for child in root.findChildren(QWidget):
+            key = child.property('translate_key')
+            if not key:
+                continue
+            translated = translate(key)
+            if isinstance(child, QGroupBox):
+                child.setTitle(translated)
+            elif isinstance(child, (QLabel, QPushButton, QCheckBox)):
+                child.setText(translated)
 
     def _on_change(self):
         """参数变化回调"""
@@ -59,6 +86,37 @@ class BasePanel(QWidget):
             self._slider_timers[key].stop()
             del self._slider_timers[key]
         self._on_change()
+
+    def _debounce(self, key: str, func: Callable, delay_ms: int | None = None) -> None:
+        """通用防抖：在 *delay_ms* 毫秒内仅执行最后一次调用。
+
+        Args:
+            key: 唯一标识符，同一 key 的连续调用会取消前一次。
+            func: 延迟后执行的无参回调。
+            delay_ms: 延迟毫秒数，默认使用 ``_slider_delay_ms``。
+        """
+        if delay_ms is None:
+            delay_ms = self._slider_delay_ms
+
+        existing = self._debounce_timers.get(key)
+        if existing is not None:
+            existing.stop()
+
+        timer = QTimer()
+        timer.setSingleShot(True)
+        timer.timeout.connect(lambda: self._fire_debounced(key, func))
+        timer.start(delay_ms)
+        self._debounce_timers[key] = timer
+
+    def _fire_debounced(self, key: str, func: Callable) -> None:
+        """执行防抖回调并清理 timer。"""
+        if key in self._debounce_timers:
+            self._debounce_timers[key].stop()
+            del self._debounce_timers[key]
+        try:
+            func()
+        except Exception:
+            logger.exception("Debounced callback %s failed", key)
 
     def _combo_value(self, combo, value_or_index):
         """获取组合框的实际值"""

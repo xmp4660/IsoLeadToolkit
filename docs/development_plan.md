@@ -312,19 +312,29 @@ tests/
 
 #### 高优先级
 
-1. **语言切换重建整个 UI** — `_rebuild_ui()` 仍会销毁并重建控件，可改为仅更新文本 (`setText`/`setTitle`)，保留控件状态。
-2. **标记图标渲染重复** — `main_window.py` 和 `control_panel.py` 各有一份 `_build_marker_icon()`，应提取到 `utils/icons.py`。
+1. **语言切换重建整个 UI** — `BasePanel` 新增 `_update_translations()` 方法，通过 `translate_key` 属性就地刷新控件文本；`create_section_dialog()` 语言切换时优先使用轻量级更新，失败时回退到完整重建。LegendPanel 已标记 `translate_key`，其余面板可逐步迁移。⚡ 部分完成
+   - 变更: `panels/base_panel.py` — 新增 `_update_translations()`
+   - 变更: `panels/legend_panel.py` — 静态控件添加 `translate_key` 属性
+   - 变更: `control_panel.py` — `_try_lightweight_update()` 优先于 `_rebuild_section()`
+2. **标记图标渲染重复** — `main_window.py` 和 `legend_panel.py` 各有一份 `_build_marker_icon()`，已提取到 `utils/icons.py`。✅ 已完成
+   - 变更: 新增 `utils/icons.py`，`main_window.py` 和 `legend_panel.py` 改为调用 `build_marker_icon()`
 
 #### 中优先级
 
-3. **对话框缓存无失效** — `_section_dialogs` 缓存对话框实例，但语言切换后不会更新已缓存对话框的文本。
-4. **控制面板禁用但代码仍在** — `app.py` 中 `_setup_control_panel()` 直接设为 None，但 control_panel.py 仍有完整的嵌入面板逻辑。应清理或明确标记。
-5. **滑块防抖** — 使用 QTimer 实现，但每个滑块创建独立 timer。可改用统一的防抖装饰器。
+3. **对话框缓存无失效** — `_section_dialogs` 缓存对话框实例，语言切换后已缓存对话框现在会在重新打开时检测语言变化并自动重建。✅ 已完成
+   - 变更: `control_panel.py` — `_on_show()` 重新注册语言监听器并检测关闭期间的语言变化
+4. **控制面板禁用但代码仍在** — `Qt5ControlPanel` 已添加 deprecation 标记，明确标注将在下个大版本移除。✅ 已完成
+   - 变更: `control_panel.py` — 类 docstring 添加 `.. deprecated::` 说明
+5. **滑块防抖** — 已在 `BasePanel` 添加通用 `_debounce(key, func, delay_ms)` 方法，支持任意回调防抖。✅ 已完成
+   - 变更: `panels/base_panel.py` — 新增 `_debounce()` 和 `_fire_debounced()`
 
 #### 低优先级
 
-6. **对话框验证不一致** — 部分对话框在 `_ok_clicked()` 中验证，部分无验证。应统一模式。
-7. **无键盘快捷键** — 菜单操作无快捷键绑定。
+6. **对话框验证不一致** — `tooltip_dialog.py` 已添加 `_ok_clicked()` 验证（至少选择一列）。✅ 已完成
+   - 变更: `dialogs/tooltip_dialog.py`，`locales/zh.json`，`locales/en.json`
+7. **无键盘快捷键** — 菜单操作已绑定快捷键。✅ 已完成
+   - Ctrl+D (数据), Ctrl+Shift+D (显示), Ctrl+Shift+A (分析), Ctrl+E (导出), Ctrl+L (图例), Ctrl+G (地球化学)
+   - 变更: `main_window.py`
 
 ---
 

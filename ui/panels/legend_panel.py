@@ -1,16 +1,16 @@
 """图例面板 - 分组可见性、颜色、形状、图例位置管理"""
 import logging
-import math
 
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
     QGroupBox, QGridLayout, QListWidget, QListWidgetItem,
     QComboBox, QCheckBox, QSpinBox, QToolButton,
 )
-from PyQt5.QtCore import Qt, QSize, QPointF, QRectF, QTimer
-from PyQt5.QtGui import QIcon, QColor, QCursor, QPainter, QPen, QBrush, QPixmap, QPolygonF
+from PyQt5.QtCore import Qt, QSize, QTimer
+from PyQt5.QtGui import QIcon, QColor, QCursor
 
 from core import translate, app_state
+from utils.icons import build_marker_icon
 from .base_panel import BasePanel
 
 logger = logging.getLogger(__name__)
@@ -33,10 +33,12 @@ class LegendPanel(BasePanel):
         layout.setContentsMargins(10, 10, 10, 10)
 
         refresh_btn = QPushButton(translate("Refresh Legend"))
+        refresh_btn.setProperty('translate_key', 'Refresh Legend')
         refresh_btn.clicked.connect(self._update_group_list)
         layout.addWidget(refresh_btn)
 
         group_visibility_group = QGroupBox(translate("Group Visibility"))
+        group_visibility_group.setProperty('translate_key', 'Group Visibility')
         group_layout = QVBoxLayout()
 
         self.group_list = QListWidget()
@@ -46,10 +48,12 @@ class LegendPanel(BasePanel):
 
         btn_layout = QHBoxLayout()
         show_all_btn = QPushButton(translate("Show All"))
+        show_all_btn.setProperty('translate_key', 'Show All')
         show_all_btn.clicked.connect(self._show_all_groups)
         btn_layout.addWidget(show_all_btn)
 
         hide_all_btn = QPushButton(translate("Hide All"))
+        hide_all_btn.setProperty('translate_key', 'Hide All')
         hide_all_btn.clicked.connect(self._hide_all_groups)
         btn_layout.addWidget(hide_all_btn)
 
@@ -58,6 +62,7 @@ class LegendPanel(BasePanel):
         layout.addWidget(group_visibility_group)
 
         position_group = QGroupBox(translate("Legend Position"))
+        position_group.setProperty('translate_key', 'Legend Position')
         position_layout = QVBoxLayout()
 
         position_grid = QGridLayout()
@@ -130,6 +135,7 @@ class LegendPanel(BasePanel):
         layout.addWidget(position_group)
 
         columns_group = QGroupBox(translate("Legend Columns"))
+        columns_group.setProperty('translate_key', 'Legend Columns')
         columns_layout = QVBoxLayout()
 
         self.legend_columns_spin = QSpinBox()
@@ -171,63 +177,7 @@ class LegendPanel(BasePanel):
         return next(iter(self._marker_shape_map.keys()))
 
     def _build_marker_icon(self, color, marker, size=16):
-        pixmap = QPixmap(size, size)
-        pixmap.fill(Qt.transparent)
-
-        painter = QPainter(pixmap)
-        painter.setRenderHint(QPainter.Antialiasing, True)
-        pen = QPen(QColor('#111827'))
-        pen.setWidthF(1.0)
-        painter.setPen(pen)
-
-        brush = QBrush(QColor(color))
-        filled_markers = {'o', 's', '^', 'v', 'D', 'P', '*'}
-        painter.setBrush(brush if marker in filled_markers else Qt.NoBrush)
-
-        cx = size / 2.0
-        cy = size / 2.0
-        r = size * 0.35
-
-        if marker == 'o':
-            painter.drawEllipse(QPointF(cx, cy), r, r)
-        elif marker == 's':
-            painter.drawRect(QRectF(cx - r, cy - r, r * 2, r * 2))
-        elif marker == '^':
-            points = [QPointF(cx, cy - r), QPointF(cx - r, cy + r), QPointF(cx + r, cy + r)]
-            painter.drawPolygon(QPolygonF(points))
-        elif marker == 'v':
-            points = [QPointF(cx - r, cy - r), QPointF(cx + r, cy - r), QPointF(cx, cy + r)]
-            painter.drawPolygon(QPolygonF(points))
-        elif marker == 'D':
-            points = [QPointF(cx, cy - r), QPointF(cx + r, cy), QPointF(cx, cy + r), QPointF(cx - r, cy)]
-            painter.drawPolygon(QPolygonF(points))
-        elif marker == 'P':
-            points = []
-            for i in range(5):
-                angle = (math.pi / 2.0) + (i * 2.0 * math.pi / 5.0)
-                points.append(QPointF(cx + r * math.cos(angle), cy - r * math.sin(angle)))
-            painter.drawPolygon(QPolygonF(points))
-        elif marker == '*':
-            points = []
-            outer = r
-            inner = r * 0.5
-            for i in range(10):
-                angle = (math.pi / 2.0) + (i * math.pi / 5.0)
-                radius = outer if i % 2 == 0 else inner
-                points.append(QPointF(cx + radius * math.cos(angle), cy - radius * math.sin(angle)))
-            painter.drawPolygon(QPolygonF(points))
-        elif marker in {'+', 'x', 'X'}:
-            if marker == '+':
-                painter.drawLine(QPointF(cx - r, cy), QPointF(cx + r, cy))
-                painter.drawLine(QPointF(cx, cy - r), QPointF(cx, cy + r))
-            else:
-                painter.drawLine(QPointF(cx - r, cy - r), QPointF(cx + r, cy + r))
-                painter.drawLine(QPointF(cx - r, cy + r), QPointF(cx + r, cy - r))
-        else:
-            painter.drawEllipse(QPointF(cx, cy), r, r)
-
-        painter.end()
-        return QIcon(pixmap)
+        return build_marker_icon(color, marker, size)
 
     def _update_marker_swatch(self, group, swatch):
         color = app_state.current_palette.get(group, '#cccccc')

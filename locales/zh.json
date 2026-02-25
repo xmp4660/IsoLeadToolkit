@@ -381,6 +381,7 @@
   "{column} ({dtype})": "{column}（{dtype}）",
   "Validation Error": "校验错误",
   "Please select at least one grouping column.": "请至少选择一个分组列。",
+  "Please select at least one column.": "请至少选择一列。",
   "Please select at least one data column.": "请至少选择一个数据列。",
   "Data column '{column}' is not numeric. Please select only numeric columns for data.": "数据列“{column}”不是数值类型，请仅选择数值列。",
   "Error validating columns: {error}": "校验列时发生错误：{error}",

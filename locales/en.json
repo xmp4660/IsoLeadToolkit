@@ -323,6 +323,7 @@
   "{column} ({dtype})": "{column} ({dtype})",
   "Validation Error": "Validation Error",
   "Please select at least one grouping column.": "Please select at least one grouping column.",
+  "Please select at least one column.": "Please select at least one column.",
   "Please select at least one data column.": "Please select at least one data column.",
   "Data column '{column}' is not numeric. Please select only numeric columns for data.": "Data column '{column}' is not numeric. Please select only numeric columns for data.",
   "Error validating columns: {error}": "Error validating columns: {error}",

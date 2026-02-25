@@ -20,7 +20,13 @@ logger = logging.getLogger(__name__)
 
 
 class Qt5ControlPanel(QWidget):
-    """Qt5 控制面板"""
+    """Qt5 控制面板。
+
+    .. deprecated::
+        控制面板已禁用，改用菜单栏弹出对话框模式。
+        参见 :func:`create_section_dialog`。
+        此类保留仅供向后兼容，将在下个大版本移除。
+    """
 
     parameter_changed = pyqtSignal(str, object)
 
@@ -409,6 +415,20 @@ def create_section_dialog(section_key, callback, parent=None):
         scroll.setWidget(new_content)
         QTimer.singleShot(0, _apply_adaptive_size)
 
+    def _try_lightweight_update():
+        """尝试轻量级翻译更新，仅刷新带 translate_key 的控件文本。
+
+        如果面板不支持（无 _update_translations），回退到完整重建。
+        """
+        content_widget = scroll.widget()
+        if content_widget is not None and hasattr(panel, '_update_translations'):
+            try:
+                panel._update_translations(content_widget)
+                return
+            except Exception:
+                logger.debug("Lightweight translation update failed, falling back to rebuild")
+        _rebuild_section()
+
     def _refresh_titles():
         new_title = translate(title_key)
         dialog.setWindowTitle(new_title)
@@ -421,9 +441,12 @@ def create_section_dialog(section_key, callback, parent=None):
             return
         set_language(code)
         QTimer.singleShot(0, _refresh_titles)
-        QTimer.singleShot(0, _rebuild_section)
+        QTimer.singleShot(0, _try_lightweight_update)
 
     lang_combo.currentIndexChanged.connect(_on_language_change)
+
+    # 跟踪对话框关闭时的语言，用于检测是否需要重建
+    _dialog_last_lang = [getattr(app_state, 'language', None)]
 
     def _on_show(_event):
         app_state.control_panel_ref = panel
@@ -431,10 +454,30 @@ def create_section_dialog(section_key, callback, parent=None):
             panel.update_selection_controls()
         except Exception:
             pass
+        # 重新注册语言监听器（关闭时已移除）
+        listeners = getattr(app_state, 'language_listeners', [])
+        if _on_language_refresh not in listeners:
+            try:
+                app_state.register_language_listener(_on_language_refresh)
+            except Exception:
+                pass
+        # 如果关闭期间语言发生了变化，重建内容
+        current_lang = getattr(app_state, 'language', None)
+        if current_lang != _dialog_last_lang[0]:
+            _dialog_last_lang[0] = current_lang
+            # 同步语言下拉框
+            idx = lang_combo.findData(current_lang)
+            if idx >= 0 and lang_combo.currentIndex() != idx:
+                lang_combo.blockSignals(True)
+                lang_combo.setCurrentIndex(idx)
+                lang_combo.blockSignals(False)
+            QTimer.singleShot(0, _refresh_titles)
+            QTimer.singleShot(0, _try_lightweight_update)
         QTimer.singleShot(0, _apply_adaptive_size)
 
     def _on_language_refresh():
         current_lang = getattr(app_state, 'language', None)
+        _dialog_last_lang[0] = current_lang
         if current_lang:
             idx = lang_combo.findData(current_lang)
             if idx >= 0 and lang_combo.currentIndex() != idx:
@@ -442,11 +485,12 @@ def create_section_dialog(section_key, callback, parent=None):
                 lang_combo.setCurrentIndex(idx)
                 lang_combo.blockSignals(False)
         QTimer.singleShot(0, _refresh_titles)
-        QTimer.singleShot(0, _rebuild_section)
+        QTimer.singleShot(0, _try_lightweight_update)
 
     def _on_close(_event):
         if getattr(app_state, 'control_panel_ref', None) is panel:
             app_state.control_panel_ref = None
+        _dialog_last_lang[0] = getattr(app_state, 'language', None)
         listeners = getattr(app_state, 'language_listeners', [])
         if _on_language_refresh in listeners:
             listeners.remove(_on_language_refresh)

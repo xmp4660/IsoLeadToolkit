@@ -94,15 +94,15 @@ class Qt5MainWindow(QMainWindow):
 
 ### 菜单操作
 
-| 菜单 | 操作 |
-|------|------|
-| 文件 | 重新加载数据、退出 |
-| 数据 | 打开数据配置对话框 |
-| 显示 | 打开显示设置对话框 |
-| 分析 | 打开分析工具对话框 |
-| 导出 | 打开导出对话框 |
-| 图例 | 打开图例配置对话框 |
-| 地球化学 | 打开地球化学对话框 |
+| 菜单 | 操作 | 快捷键 |
+|------|------|--------|
+| 文件 | 重新加载数据、退出 | Ctrl+R / Ctrl+Q |
+| 数据 | 打开数据配置对话框 | Ctrl+D |
+| 显示 | 打开显示设置对话框 | Ctrl+Shift+D |
+| 分析 | 打开分析工具对话框 | Ctrl+Shift+A |
+| 导出 | 打开导出对话框 | Ctrl+E |
+| 图例 | 打开图例配置对话框 | Ctrl+L |
+| 地球化学 | 打开地球化学对话框 | Ctrl+G |
 
 ### 关键方法
 
@@ -119,7 +119,7 @@ def _update_legend_panel(self, title, handles, labels)
     """更新图例列表 (颜色 + 标记图标)"""
 
 def _build_marker_icon(self, marker, color, size=16) -> QIcon
-    """渲染标记图标 (circle, square, triangle, diamond, pentagon, star, cross)"""
+    """委托到 utils.icons.build_marker_icon()"""
 
 def closeEvent(self, event)
     """关闭时保存会话参数"""
@@ -270,6 +270,7 @@ def _delete_theme(self)   # 删除已保存主题
 - 统一 `_on_style_change()` 与防抖逻辑
 - 统一 `_is_initialized` 守卫
 - 提供 `_set_combo_value()` / `_combo_value()`
+- 提供通用 `_debounce(key, func, delay_ms)` 方法，支持任意回调防抖
 
 ### DataPanel
 - 数据/分组/算法/投影/地球化学曲线控制
