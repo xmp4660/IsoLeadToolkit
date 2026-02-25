@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import pandas as pd
 
-from core.state import app_state
+from core import app_state
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ def resolve_isochron_errors(df, size):
                 rxy = np.zeros_like(sx, dtype=float)
             return sx, sy, rxy
 
-        logger.warning("[WARN] Isochron error columns not found; using fixed values.")
+        logger.warning("Isochron error columns not found; using fixed values.")
 
     sx_val = float(getattr(app_state, 'isochron_sx_value', 0.001))
     sy_val = float(getattr(app_state, 'isochron_sy_value', 0.001))

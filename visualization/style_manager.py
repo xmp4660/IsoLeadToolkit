@@ -7,7 +7,7 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib import rcParams, font_manager
 import matplotlib as mpl
-from core.config import CONFIG
+from core import CONFIG
 
 # --- Color Cycles ---
 # Defined to match common scienceplots schemes

@@ -105,12 +105,12 @@ Excel/CSV 文件
 | 全局 widget 引用 (slider_n 等) | state.py:332-344 | 待清理 |
 | 循环导入风险 | visualization/plotting (旧 shim) | ✅ 已消解 (兼容入口已移除) |
 | 控制面板禁用但代码保留 | app.py:322 | 待清理 |
-| 可视化模块 docstring/导入顺序不规范 | visualization/events.py, visualization/plotting/* | 待修复 |
-| 可视化模块日志前缀残留 | visualization/events.py, visualization/plotting/* | 待修复 |
-| 可视化模块 core 导入入口不统一 | visualization/plotting/* | 待修复 |
-| 诊断图未完全国际化 | visualization/plotting/analysis_qt.py | 待修复 |
-| plotting/api.py 导出私有 helper | visualization/plotting/api.py | 待修复 |
-| plotting/geo.py & plotting/render.py 顶层副作用 | visualization/plotting/geo.py, visualization/plotting/render.py | 待修复 |
+| 可视化模块 docstring/导入顺序不规范 | visualization/events.py, visualization/plotting/* | ✅ 已修复 |
+| 可视化模块日志前缀残留 | visualization/events.py, visualization/plotting/* | ✅ 已修复 |
+| 可视化模块 core 导入入口不统一 | visualization/plotting/* | ✅ 已修复 |
+| 诊断图未完全国际化 | visualization/plotting/analysis_qt.py | ✅ 已修复 |
+| plotting/api.py 导出私有 helper | visualization/plotting/api.py | ✅ 已修复 |
+| plotting/geo.py & plotting/render.py 顶层副作用 | visualization/plotting/geo.py, visualization/plotting/render.py | ✅ 已修复 |
 
 ---
 

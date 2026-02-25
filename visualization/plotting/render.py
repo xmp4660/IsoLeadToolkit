@@ -1,14 +1,14 @@
 """Primary rendering routines for embeddings and scatter plots."""
 import logging
 import traceback
+
 import numpy as np
 import pandas as pd
 from matplotlib import font_manager
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
-from core.config import CONFIG
-from core.state import app_state
+from core import CONFIG, app_state
 from . import kde as kde_utils
 from .style import (
     _apply_current_style,
@@ -48,13 +48,30 @@ try:
 except ImportError:
     refresh_selection_overlay = None
 
-try:
-    from data import geochemistry
-    from data.geochemistry import calculate_all_parameters
-except ImportError:
-    logger.warning("[WARN] geochemistry module not found. V1V2 algorithm will not be available.")
-    geochemistry = None
-    calculate_all_parameters = None
+_geochemistry = None
+_calculate_all_parameters = None
+_geochem_checked = False
+
+
+def _lazy_import_geochemistry():
+    global _geochemistry, _calculate_all_parameters, _geochem_checked
+    if _geochem_checked:
+        return _geochemistry, _calculate_all_parameters
+    _geochem_checked = True
+    try:
+        from data import geochemistry as _geochemistry_mod
+        from data.geochemistry import calculate_all_parameters as _calc
+    except ImportError as err:
+        logger.warning(
+            "Geochemistry module not found. V1V2 algorithm will not be available: %s",
+            err,
+        )
+        _geochemistry = None
+        _calculate_all_parameters = None
+    else:
+        _geochemistry = _geochemistry_mod
+        _calculate_all_parameters = _calc
+    return _geochemistry, _calculate_all_parameters
 
 
 def _notify_legend_panel(title, handles, labels):
@@ -94,10 +111,10 @@ def _build_legend_proxies(handles, labels):
 def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca_params=None, robust_pca_params=None, size=60):
     """Update plot with specified algorithm and parameters"""
     try:
-        logger.debug(f"[DEBUG] plot_embedding called: algorithm={algorithm}, group_col={group_col}, size={size}")
+        logger.debug(f"plot_embedding called: algorithm={algorithm}, group_col={group_col}, size={size}")
 
         if app_state.fig is None:
-            logger.error("[ERROR] Plot axes not initialized")
+            logger.error("Plot axes not initialized")
             return False
 
         # Determine dimensions based on algorithm
@@ -128,7 +145,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
         _ensure_axes(dimensions=target_dims)
 
         if app_state.ax is None:
-            logger.error("[ERROR] Failed to configure axes")
+            logger.error("Failed to configure axes")
             return False
 
         # Apply style before clearing
@@ -155,30 +172,31 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
             robust_pca_params = CONFIG.get('robust_pca_params', {'n_components': 2, 'random_state': 42})
 
         print(
-            f"[DEBUG] Using params - UMAP: {umap_params}, tSNE: {tsne_params}, PCA: {pca_params}, RobustPCA: {robust_pca_params}",
+            f"Using params - UMAP: {umap_params}, tSNE: {tsne_params}, PCA: {pca_params}, RobustPCA: {robust_pca_params}",
             flush=True,
         )
 
         # Get embedding based on algorithm
         embedding = None
-        logger.debug(f"[DEBUG] Actual algorithm (normalized): {actual_algorithm}")
+        logger.debug("Actual algorithm (normalized): %s", actual_algorithm)
 
         if actual_algorithm == 'UMAP':
-            logger.debug("[DEBUG] Computing UMAP embedding")
+            logger.debug("Computing UMAP embedding")
             embedding = get_umap_embedding(umap_params)
         elif actual_algorithm == 'TSNE':
-            logger.debug("[DEBUG] Computing tSNE embedding")
+            logger.debug("Computing tSNE embedding")
             embedding = get_tsne_embedding(tsne_params)
         elif actual_algorithm == 'PCA':
-            logger.debug("[DEBUG] Computing PCA embedding")
+            logger.debug("Computing PCA embedding")
             embedding = get_pca_embedding(pca_params)
         elif actual_algorithm == 'RobustPCA':
-            logger.debug("[DEBUG] Computing Robust PCA embedding")
+            logger.debug("Computing Robust PCA embedding")
             embedding = get_robust_pca_embedding(robust_pca_params)
         elif actual_algorithm == 'V1V2':
-            logger.debug("[DEBUG] Computing V1V2 embedding")
+            logger.debug("Computing V1V2 embedding")
+            geochemistry, calculate_all_parameters = _lazy_import_geochemistry()
             if calculate_all_parameters is None:
-                logger.error("[ERROR] V1V2 module not loaded")
+                logger.error("V1V2 module not loaded")
                 return False
 
             X, indices = _get_analysis_data()
@@ -192,7 +210,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
 
             if not (col_206 and col_207 and col_208):
                 print(
-                    f"[ERROR] Could not identify isotope columns in {cols}. Please ensure columns '206Pb/204Pb', '207Pb/204Pb', '208Pb/204Pb' are selected.",
+                    f"Could not identify isotope columns in {cols}. Please ensure columns '206Pb/204Pb', '207Pb/204Pb', '208Pb/204Pb' are selected.",
                     flush=True,
                 )
                 return False
@@ -228,13 +246,14 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
                 app_state.last_embedding = embedding
                 app_state.last_embedding_type = 'V1V2'
             except Exception as e:
-                logger.error(f"[ERROR] V1V2 calculation failed: {e}")
+                logger.error(f"V1V2 calculation failed: {e}")
                 return False
 
         elif actual_algorithm in ('PB_EVOL_76', 'PB_EVOL_86', 'PB_MU_AGE', 'PB_KAPPA_AGE'):
-            logger.debug(f"[DEBUG] Computing Geochemistry embedding for {actual_algorithm}")
+            logger.debug("Computing Geochemistry embedding for %s", actual_algorithm)
+            geochemistry, _ = _lazy_import_geochemistry()
             if geochemistry is None:
-                logger.error("[ERROR] Geochemistry module not loaded")
+                logger.error("Geochemistry module not loaded")
                 return False
 
             df_subset, indices = _get_subset_dataframe()
@@ -243,7 +262,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
 
             col_206, col_207, col_208 = _get_pb_columns(df_subset.columns)
             if not (col_206 and col_207 and col_208):
-                logger.error("[ERROR] Geochemistry plots require 206Pb/204Pb, 207Pb/204Pb, 208Pb/204Pb columns.")
+                logger.error("Geochemistry plots require 206Pb/204Pb, 207Pb/204Pb, 208Pb/204Pb columns.")
                 return False
 
             pb206 = pd.to_numeric(df_subset[col_206], errors='coerce').values
@@ -253,7 +272,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
             if actual_algorithm in ('PB_MU_AGE', 'PB_KAPPA_AGE'):
                 age_col = _find_age_column(df_subset.columns)
                 if not age_col:
-                    logger.error("[ERROR] Age column not found for Mu/Kappa plots.")
+                    logger.error("Age column not found for Mu/Kappa plots.")
                     return False
                 t_ma = pd.to_numeric(df_subset[age_col], errors='coerce').values
 
@@ -273,10 +292,10 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
             app_state.last_embedding_type = actual_algorithm
 
         elif actual_algorithm == 'TERNARY':
-            logger.debug("[DEBUG] Computing Ternary embedding")
+            logger.debug("Computing Ternary embedding")
             cols = getattr(app_state, 'selected_ternary_cols', [])
             if not cols or len(cols) != 3:
-                logger.error("[ERROR] Ternary columns not selected")
+                logger.error("Ternary columns not selected")
                 return False
 
             try:
@@ -293,7 +312,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
 
                 missing = [c for c in cols if c not in df_subset.columns]
                 if missing:
-                    logger.error(f"[ERROR] Missing columns for ternary plot: {missing}")
+                    logger.error(f"Missing columns for ternary plot: {missing}")
                     return False
 
                 top_vals = pd.to_numeric(df_subset[c_top], errors='coerce').fillna(0).values
@@ -310,15 +329,15 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
                     del app_state.ternary_ranges
 
             except Exception as e:
-                logger.error(f"[ERROR] Ternary calculation failed: {e}")
+                logger.error(f"Ternary calculation failed: {e}")
                 traceback.print_exc()
                 return False
         else:
-            logger.error(f"[ERROR] Unknown algorithm: {algorithm}")
+            logger.error(f"Unknown algorithm: {algorithm}")
             return False
 
         if embedding is None:
-            logger.error(f"[ERROR] Failed to compute {algorithm} embedding")
+            logger.error(f"Failed to compute {algorithm} embedding")
             return False
 
         if app_state.active_subset_indices is not None:
@@ -329,7 +348,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
             df_source = app_state.df_global.copy()
 
         if embedding.shape[0] != len(df_source):
-            logger.error(f"[ERROR] Embedding size {embedding.shape[0]} does not match data size {len(df_source)}")
+            logger.error(f"Embedding size {embedding.shape[0]} does not match data size {len(df_source)}")
             return False
 
         def _reset_plot_dataframe():
@@ -354,21 +373,21 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
 
                     base['_emb_x'] = embedding[:, idx_x]
                     base['_emb_y'] = embedding[:, idx_y]
-                    logger.debug(f"[DEBUG] Plotting components {idx_x + 1} and {idx_y + 1}")
+                    logger.debug(f"Plotting components {idx_x + 1} and {idx_y + 1}")
                 else:
                     base['_emb_x'] = embedding[:, 0]
                     base['_emb_y'] = embedding[:, 1]
             except Exception as emb_error:
-                logger.error(f"[ERROR] Unable to align embedding with data: {emb_error}")
+                logger.error(f"Unable to align embedding with data: {emb_error}")
                 return None
             return base
 
         df_plot = _reset_plot_dataframe()
         if df_plot is None:
-            logger.error(f"[ERROR] Unable to prepare plotting data for column: {group_col}")
+            logger.error(f"Unable to prepare plotting data for column: {group_col}")
             return False
         if group_col not in df_plot.columns:
-            logger.error(f"[ERROR] Column not found: {group_col}")
+            logger.error(f"Column not found: {group_col}")
             return False
 
         all_groups = sorted(df_plot[group_col].unique())
@@ -381,12 +400,12 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
             if not allowed:
                 df_plot = df_plot[mask].copy()
             elif not mask.any():
-                logger.info("[INFO] No data matches the selected legend filter; showing all groups instead.")
+                logger.info("No data matches the selected legend filter; showing all groups instead.")
                 app_state.visible_groups = None
             else:
                 df_plot = df_plot[mask].copy()
                 if df_plot.empty:
-                    logger.info("[INFO] Filtered 3D data is empty; showing all groups instead.")
+                    logger.info("Filtered 3D data is empty; showing all groups instead.")
                     df_plot = _reset_plot_dataframe()
                     if df_plot is None:
                         return False
@@ -394,7 +413,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
                     app_state.available_groups = sorted(df_plot[group_col].unique())
 
         unique_cats = sorted(df_plot[group_col].unique())
-        logger.debug(f"[DEBUG] Unique categories in {group_col}: {unique_cats}")
+        logger.debug(f"Unique categories in {group_col}: {unique_cats}")
 
         new_palette = _build_group_palette(unique_cats)
 
@@ -433,7 +452,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
             try:
                 kde_utils.lazy_import_seaborn()
                 if actual_algorithm == 'TERNARY':
-                    logger.info("[INFO] Generating KDE for Ternary Plot...")
+                    logger.info("Generating KDE for Ternary Plot...")
                     for cat in unique_cats:
                         subset = df_plot[df_plot[group_col] == cat].copy()
                         if subset.empty:
@@ -470,7 +489,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
                             zorder=1,
                         )
                 else:
-                    logger.info(f"[INFO] Generating KDE for {actual_algorithm}...")
+                    logger.info(f"Generating KDE for {actual_algorithm}...")
                     kde_style = getattr(app_state, 'kde_style', {})
                     kde_utils.sns.kdeplot(
                         data=df_plot,
@@ -488,7 +507,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
                         zorder=1,
                     )
             except Exception as kde_err:
-                logger.warning(f"[WARN] Failed to render KDE: {kde_err}")
+                logger.warning(f"Failed to render KDE: {kde_err}")
 
         scatters = []
         is_kde_mode = getattr(app_state, 'show_kde', False)
@@ -606,11 +625,11 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
                 app_state.group_to_scatter[cat] = sc
 
             except Exception as e:
-                logger.warning(f"[WARN] Error plotting category {cat}: {e}")
+                logger.warning(f"Error plotting category {cat}: {e}")
                 continue
 
         if not scatters and not is_kde_mode:
-            logger.error("[ERROR] No data points plotted")
+            logger.error("No data points plotted")
             return False
 
         kde_utils.clear_marginal_axes()
@@ -619,7 +638,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
                 if getattr(app_state.ax, 'name', '') != '3d':
                     kde_utils.draw_marginal_kde(app_state.ax, df_plot, group_col, app_state.current_palette, unique_cats)
             except Exception as kde_err:
-                logger.warning(f"[WARN] Failed to render marginal KDE: {kde_err}")
+                logger.warning(f"Failed to render marginal KDE: {kde_err}")
 
         try:
             handles = []
@@ -686,9 +705,9 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
                     for leg_patch, sc in zip(legend.get_patches(), scatters):
                         app_state.legend_to_scatter[leg_patch] = sc
             else:
-                logger.info("[INFO] Too many categories for standard legend. Use Control Panel legend.")
+                logger.info("Too many categories for standard legend. Use Control Panel legend.")
         except Exception as e:
-            logger.warning(f"[WARN] Legend creation error: {e}")
+            logger.warning(f"Legend creation error: {e}")
 
         subset_info = " (Subset)" if app_state.active_subset_indices is not None else ""
 
@@ -775,6 +794,7 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
         _apply_axis_text_style(app_state.ax)
 
         if actual_algorithm in ('PB_EVOL_76', 'PB_EVOL_86'):
+            geochemistry, _ = _lazy_import_geochemistry()
             params = geochemistry.engine.get_parameters() if geochemistry else {}
             if getattr(app_state, 'show_model_curves', True):
                 params_list = [params]
@@ -840,12 +860,12 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
             try:
                 refresh_selection_overlay()
             except Exception as e:
-                logger.warning(f"[WARN] Failed to restore selection overlay: {e}")
+                logger.warning(f"Failed to restore selection overlay: {e}")
 
         return True
 
     except Exception as e:
-        logger.error(f"[ERROR] Plot update failed: {e}")
+        logger.error(f"Plot update failed: {e}")
         traceback.print_exc()
         return False
 
@@ -857,20 +877,20 @@ def plot_2d_data(group_col, data_columns, size=60, show_kde=False):
     """Render a 2D scatter plot using selected raw measurement columns."""
     try:
         if app_state.fig is None:
-            logger.error("[ERROR] Plot figure not initialized")
+            logger.error("Plot figure not initialized")
             return False
 
         if not data_columns or len(data_columns) != 2:
-            logger.error("[ERROR] Exactly two data columns are required for a 2D scatter plot")
+            logger.error("Exactly two data columns are required for a 2D scatter plot")
             return False
 
         if app_state.df_global is None or len(app_state.df_global) == 0:
-            logger.warning("[WARN] No data available for plotting")
+            logger.warning("No data available for plotting")
             return False
 
         missing = [col for col in data_columns if col not in app_state.df_global.columns]
         if missing:
-            logger.error(f"[ERROR] Missing columns for 2D plot: {missing}")
+            logger.error(f"Missing columns for 2D plot: {missing}")
             return False
 
         prev_ax = app_state.ax
@@ -888,7 +908,7 @@ def plot_2d_data(group_col, data_columns, size=60, show_kde=False):
         _ensure_axes(dimensions=2)
 
         if app_state.ax is None:
-            logger.error("[ERROR] Failed to configure 2D axes")
+            logger.error("Failed to configure 2D axes")
             return False
 
         if app_state.active_subset_indices is not None:
@@ -898,11 +918,11 @@ def plot_2d_data(group_col, data_columns, size=60, show_kde=False):
             df_plot = app_state.df_global.dropna(subset=data_columns).copy()
 
         if df_plot.empty:
-            logger.warning("[WARN] No complete rows available for the selected 2D columns")
+            logger.warning("No complete rows available for the selected 2D columns")
             return False
 
         if group_col not in df_plot.columns:
-            logger.error(f"[ERROR] Column not found: {group_col}")
+            logger.error(f"Column not found: {group_col}")
             return False
 
         try:
@@ -912,10 +932,10 @@ def plot_2d_data(group_col, data_columns, size=60, show_kde=False):
             df_plot = df_plot.dropna(subset=data_columns)
 
             if df_plot.empty:
-                logger.warning("[WARN] No valid numeric data available for 2D plot.")
+                logger.warning("No valid numeric data available for 2D plot.")
                 return False
         except Exception as e:
-            logger.error(f"[ERROR] Failed to convert columns to numeric: {e}")
+            logger.error(f"Failed to convert columns to numeric: {e}")
             return False
 
         df_plot[group_col] = df_plot[group_col].fillna('Unknown').astype(str)
@@ -930,12 +950,12 @@ def plot_2d_data(group_col, data_columns, size=60, show_kde=False):
             if not allowed:
                 df_plot = df_plot[mask].copy()
             elif not mask.any():
-                logger.info("[INFO] No 2D data matches the selected legend filter; reverting to all groups.")
+                logger.info("No 2D data matches the selected legend filter; reverting to all groups.")
                 app_state.visible_groups = None
             else:
                 df_plot = df_plot[mask].copy()
                 if df_plot.empty:
-                    logger.info("[INFO] Filtered 2D data is empty; reverting to all groups.")
+                    logger.info("Filtered 2D data is empty; reverting to all groups.")
                     df_plot = app_state.df_global.dropna(subset=data_columns).copy()
                     df_plot[group_col] = df_plot[group_col].fillna('Unknown').astype(str)
                     app_state.visible_groups = None
@@ -979,7 +999,7 @@ def plot_2d_data(group_col, data_columns, size=60, show_kde=False):
                     zorder=1,
                 )
             except Exception as e:
-                logger.warning(f"[WARN] Failed to render KDE: {e}")
+                logger.warning(f"Failed to render KDE: {e}")
 
         scatters = []
 
@@ -1024,7 +1044,7 @@ def plot_2d_data(group_col, data_columns, size=60, show_kde=False):
                     app_state.artist_to_sample[(id(sc), j)] = idx
 
         if not scatters and not show_kde:
-            logger.error("[ERROR] No points were plotted in 2D")
+            logger.error("No points were plotted in 2D")
             return False
 
         kde_utils.clear_marginal_axes()
@@ -1040,7 +1060,7 @@ def plot_2d_data(group_col, data_columns, size=60, show_kde=False):
                     y_col=data_columns[1],
                 )
             except Exception as kde_err:
-                logger.warning(f"[WARN] Failed to render marginal KDE: {kde_err}")
+                logger.warning(f"Failed to render marginal KDE: {kde_err}")
 
         try:
             handles = []
@@ -1107,13 +1127,13 @@ def plot_2d_data(group_col, data_columns, size=60, show_kde=False):
                             for leg_patch, sc in zip(legend.get_patches(), scatters):
                                 app_state.legend_to_scatter[leg_patch] = sc
                     except Exception as e:
-                        logger.warning(f"[WARN] Legend styling failed: {e}")
+                        logger.warning(f"Legend styling failed: {e}")
 
             else:
-                logger.info("[INFO] Too many categories for standard legend. Use Control Panel legend.")
+                logger.info("Too many categories for standard legend. Use Control Panel legend.")
 
         except Exception as legend_err:
-            logger.warning(f"[WARN] 2D legend creation error: {legend_err}")
+            logger.warning(f"2D legend creation error: {legend_err}")
 
         subset_info = " (Subset)" if app_state.active_subset_indices is not None else ""
         title = (
@@ -1159,7 +1179,7 @@ def plot_2d_data(group_col, data_columns, size=60, show_kde=False):
         return True
 
     except Exception as err:
-        logger.error(f"[ERROR] 2D plot failed: {err}")
+        logger.error(f"2D plot failed: {err}")
         traceback.print_exc()
         return False
 
@@ -1167,26 +1187,26 @@ def plot_3d_data(group_col, data_columns, size=60):
     """Render a 3D scatter plot using selected raw measurement columns."""
     try:
         if app_state.fig is None:
-            logger.error("[ERROR] Plot figure not initialized")
+            logger.error("Plot figure not initialized")
             return False
 
         if not data_columns or len(data_columns) != 3:
-            logger.error("[ERROR] Exactly three data columns are required for a 3D scatter plot")
+            logger.error("Exactly three data columns are required for a 3D scatter plot")
             return False
 
         if app_state.df_global is None or len(app_state.df_global) == 0:
-            logger.warning("[WARN] No data available for plotting")
+            logger.warning("No data available for plotting")
             return False
 
         missing = [col for col in data_columns if col not in app_state.df_global.columns]
         if missing:
-            logger.error(f"[ERROR] Missing columns for 3D plot: {missing}")
+            logger.error(f"Missing columns for 3D plot: {missing}")
             return False
 
         _ensure_axes(dimensions=3)
 
         if app_state.ax is None:
-            logger.error("[ERROR] Failed to configure 3D axes")
+            logger.error("Failed to configure 3D axes")
             return False
 
         if app_state.active_subset_indices is not None:
@@ -1196,11 +1216,11 @@ def plot_3d_data(group_col, data_columns, size=60):
             df_plot = app_state.df_global.dropna(subset=data_columns).copy()
 
         if df_plot.empty:
-            logger.warning("[WARN] No complete rows available for the selected 3D columns")
+            logger.warning("No complete rows available for the selected 3D columns")
             return False
 
         if group_col not in df_plot.columns:
-            logger.error(f"[ERROR] Column not found: {group_col}")
+            logger.error(f"Column not found: {group_col}")
             return False
 
         df_plot[group_col] = df_plot[group_col].fillna('Unknown').astype(str)
@@ -1255,7 +1275,7 @@ def plot_3d_data(group_col, data_columns, size=60):
         _notify_legend_panel(group_col, legend_handles, legend_labels)
 
         if not app_state.scatter_collections:
-            logger.error("[ERROR] No points were plotted in 3D")
+            logger.error("No points were plotted in 3D")
             return False
 
         try:
@@ -1292,9 +1312,9 @@ def plot_3d_data(group_col, data_columns, size=60):
 
                 _style_legend(legend, show_marginal_kde=False)
             else:
-                logger.info("[INFO] Too many categories for standard legend. Use Control Panel legend.")
+                logger.info("Too many categories for standard legend. Use Control Panel legend.")
         except Exception as legend_err:
-            logger.warning(f"[WARN] 3D legend creation error: {legend_err}")
+            logger.warning(f"3D legend creation error: {legend_err}")
 
         subset_info = " (Subset)" if app_state.active_subset_indices is not None else ""
         title = (
@@ -1311,7 +1331,7 @@ def plot_3d_data(group_col, data_columns, size=60):
         return True
 
     except Exception as err:
-        logger.error(f"[ERROR] 3D plot failed: {err}")
+        logger.error(f"3D plot failed: {err}")
         traceback.print_exc()
         return False
 

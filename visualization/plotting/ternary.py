@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import gmean
 
-from core.state import app_state
+from core import app_state
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ def calculate_auto_ternary_factors():
     
     try:
         if not hasattr(app_state, 'selected_ternary_cols') or len(app_state.selected_ternary_cols) != 3:
-            logger.warning("[WARN] Factors calc: invalid col selection")
+            logger.warning("Factors calc: invalid col selection")
             return False
 
         # Get data (using global dataset or subset?)
@@ -86,11 +86,11 @@ def calculate_auto_ternary_factors():
             factors = factors / min_f
         
         app_state.ternary_factors = factors.tolist()
-        logger.info(f"[INFO] Auto-Calculated Factors: {app_state.ternary_factors}")
+        logger.info(f"Auto-Calculated Factors: {app_state.ternary_factors}")
         return True
         
     except Exception as e:
-        logger.error(f"[ERROR] Auto factor calculation failed: {e}")
+        logger.error(f"Auto factor calculation failed: {e}")
         traceback.print_exc()
         return False
 

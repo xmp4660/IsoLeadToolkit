@@ -1,9 +1,4 @@
-import logging
-logger = logging.getLogger(__name__)
-"""
-Dimensionality Reduction Visualization
-Handles UMAP and t-SNE embedding computation and plot rendering
-"""
+"""Dimensionality reduction visualization and plotting API."""
 
 from .analysis_qt import (
     show_scree_plot,
@@ -57,10 +52,6 @@ from .render import (
 )
 
 __all__ = [
-    '_lazy_import_umap',
-    '_lazy_import_mplot3d',
-    '_lazy_import_ellipse',
-    '_ensure_axes',
     'get_umap_embedding',
     'get_tsne_embedding',
     'get_pca_embedding',
@@ -77,25 +68,5 @@ __all__ = [
     'show_shepard_diagram',
     'show_correlation_heatmap',
     'calculate_auto_ternary_factors',
-    # internal helpers
-    '_build_group_palette',
-    '_get_subset_dataframe',
-    '_get_pb_columns',
-    '_find_age_column',
-    '_resolve_isochron_errors',
-    '_draw_model_curves',
-    '_build_isochron_label',
-    '_draw_isochron_overlays',
-    '_draw_selected_isochron',
-    '_label_angle_for_slope',
-    '_position_paleo_label',
-    '_draw_paleoisochrons',
-    'refresh_paleoisochron_labels',
-    '_draw_model_age_lines',
-    '_draw_model_age_lines_86',
-    '_draw_equation_overlays',
-    '_apply_ternary_stretch',
-    '_notify_legend_panel',
-    '_build_legend_proxies',
 ]
 

@@ -2,7 +2,7 @@
 import logging
 import numpy as np
 
-from core.state import app_state
+from core import app_state
 from visualization.line_styles import resolve_line_style
 from .data import _get_analysis_data
 from .core import _get_subset_dataframe, _get_pb_columns
@@ -10,17 +10,35 @@ from .isochron import resolve_isochron_errors as _resolve_isochron_errors
 
 logger = logging.getLogger(__name__)
 
-try:
-    from data import geochemistry
-    from data.geochemistry import calculate_all_parameters
-except ImportError:
-    logger.warning("[WARN] geochemistry module not found. V1V2 algorithm will not be available.")
-    geochemistry = None
-    calculate_all_parameters = None
+_geochemistry = None
+_calculate_all_parameters = None
+_geochem_checked = False
+
+
+def _lazy_import_geochemistry():
+    global _geochemistry, _calculate_all_parameters, _geochem_checked
+    if _geochem_checked:
+        return _geochemistry, _calculate_all_parameters
+    _geochem_checked = True
+    try:
+        from data import geochemistry as _geochemistry_mod
+        from data.geochemistry import calculate_all_parameters as _calc
+    except ImportError as err:
+        logger.warning(
+            "Geochemistry module not found. V1V2 algorithm will not be available: %s",
+            err,
+        )
+        _geochemistry = None
+        _calculate_all_parameters = None
+    else:
+        _geochemistry = _geochemistry_mod
+        _calculate_all_parameters = _calc
+    return _geochemistry, _calculate_all_parameters
 
 
 def _draw_model_curves(ax, actual_algorithm, params_list):
     """Draw model curves for Pb evolution plots."""
+    geochemistry, _ = _lazy_import_geochemistry()
     if geochemistry is None:
         return
 
@@ -69,7 +87,7 @@ def _draw_model_curves(ax, actual_algorithm, params_list):
                 label='_nolegend_'
             )
         except Exception as err:
-            logger.warning(f"[WARN] Failed to draw model curve: {err}")
+            logger.warning(f"Failed to draw model curve: {err}")
 
 def _build_isochron_label(result_dict):
     """根据 isochron_label_options 动态构建等时线标注文本。"""
@@ -92,6 +110,7 @@ def _build_isochron_label(result_dict):
 
 def _draw_isochron_overlays(ax, actual_algorithm):
     """Draw isochron reference lines and growth curves for Pb-Pb plots."""
+    geochemistry, _ = _lazy_import_geochemistry()
     if geochemistry is None:
         return
 
@@ -241,7 +260,7 @@ def _draw_isochron_overlays(ax, actual_algorithm):
                         # 保存年龄到结果
                         app_state.isochron_results[grp]['age_ma'] = age_ma
                 except Exception as age_err:
-                    logger.warning(f"[WARN] Failed to calculate isochron age for slope {slope:.6f}: {age_err}")
+                    logger.warning(f"Failed to calculate isochron age for slope {slope:.6f}: {age_err}")
 
                 # 动态构建标注
                 label_text = _build_isochron_label(app_state.isochron_results[grp])
@@ -300,7 +319,7 @@ def _draw_isochron_overlays(ax, actual_algorithm):
             
 
     except Exception as err:
-        logger.warning(f"[WARN] Failed to draw isochron overlays: {err}")
+        logger.warning(f"Failed to draw isochron overlays: {err}")
 
 def _draw_selected_isochron(ax):
     """Draw isochron line for box-selected data points."""
@@ -365,7 +384,7 @@ def _draw_selected_isochron(ax):
             )
 
     except Exception as err:
-        logger.warning(f"[WARN] Failed to draw selected isochron: {err}")
+        logger.warning(f"Failed to draw selected isochron: {err}")
 
 def _label_angle_for_slope(ax, x0, y0, slope, dx):
     """Compute label angle (deg) for a line in display coords."""
@@ -460,6 +479,7 @@ def _position_paleo_label(ax, text_artist, slope, intercept, age=None):
 
 def _draw_paleoisochrons(ax, actual_algorithm, ages, params):
     """Draw paleoisochron reference lines for given ages."""
+    geochemistry, _ = _lazy_import_geochemistry()
     if geochemistry is None:
         return
     try:
@@ -518,7 +538,7 @@ def _draw_paleoisochrons(ax, actual_algorithm, ages, params):
                 })
                 _position_paleo_label(ax, text_artist, slope, intercept, age=age)
     except Exception as err:
-        logger.warning(f"[WARN] Failed to draw paleoisochrons: {err}")
+        logger.warning(f"Failed to draw paleoisochrons: {err}")
 
 def refresh_paleoisochron_labels():
     """Refresh paleoisochron label positions after zoom/pan."""
@@ -538,6 +558,7 @@ def refresh_paleoisochron_labels():
 
 def _draw_model_age_lines(ax, pb206, pb207, params):
     """Draw model age construction lines for 206/204 vs 207/204."""
+    geochemistry, _ = _lazy_import_geochemistry()
     if geochemistry is None:
         return
     try:
@@ -583,10 +604,11 @@ def _draw_model_age_lines(ax, pb206, pb207, params):
             )
             ax.scatter(x_curve[i], y_curve[i], s=10, color='#475569', alpha=0.6, zorder=2, label='_nolegend_')
     except Exception as err:
-        logger.warning(f"[WARN] Failed to draw model age lines: {err}")
+        logger.warning(f"Failed to draw model age lines: {err}")
 
 def _draw_model_age_lines_86(ax, pb206, pb207, pb208, params):
     """Draw model age construction lines for 206/204 vs 208/204."""
+    geochemistry, _ = _lazy_import_geochemistry()
     if geochemistry is None:
         return
     try:
@@ -632,7 +654,7 @@ def _draw_model_age_lines_86(ax, pb206, pb207, pb208, params):
             )
             ax.scatter(x_curve[i], z_curve[i], s=10, color='#475569', alpha=0.6, zorder=2, label='_nolegend_')
     except Exception as err:
-        logger.warning(f"[WARN] Failed to draw model age lines (206-208): {err}")
+        logger.warning(f"Failed to draw model age lines (206-208): {err}")
 
 def _draw_equation_overlays(ax):
     """Draw configured equation overlays on the current axes."""
@@ -659,7 +681,7 @@ def _draw_equation_overlays(ax):
             try:
                 y_vals = eval(expression, {'x': x_vals, 'np': np, 'math': np})
             except Exception as err:
-                logger.warning(f"[WARN] Failed to evaluate equation '{expression}': {err}")
+                logger.warning(f"Failed to evaluate equation '{expression}': {err}")
                 continue
         elif slope is not None:
             y_vals = slope * x_vals + intercept

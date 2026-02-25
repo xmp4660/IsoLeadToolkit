@@ -1,9 +1,11 @@
-import logging
-logger = logging.getLogger(__name__)
 """Shared data helpers for plotting."""
+import logging
+
 import numpy as np
-from core.state import app_state
-from core.config import CONFIG
+
+from core import CONFIG, app_state
+
+logger = logging.getLogger(__name__)
 
 TSNE = None
 PCA = None
@@ -45,17 +47,17 @@ def _get_analysis_data():
     try:
         X = X.astype(float)
     except ValueError as e:
-        logger.error(f"[ERROR] Data contains non-numeric values: {e}")
+        logger.error(f"Data contains non-numeric values: {e}")
         return None, None
 
     if np.isnan(X).any():
-        logger.warning("[WARN] Missing values detected in data. Imputing with 0.")
+        logger.warning("Missing values detected in data. Imputing with 0.")
         try:
             _lazy_import_ml()
             imputer = SimpleImputer(strategy='constant', fill_value=0)
             X = imputer.fit_transform(X)
         except Exception as e:
-            logger.error(f"[ERROR] Imputation failed: {e}. Dropping incomplete rows as fallback.")
+            logger.error(f"Imputation failed: {e}. Dropping incomplete rows as fallback.")
             mask = ~np.isnan(X).any(axis=1)
             X = X[mask]
             indices = [indices[i] for i in range(len(indices)) if mask[i]]

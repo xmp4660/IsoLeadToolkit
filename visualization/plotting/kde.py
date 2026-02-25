@@ -1,9 +1,12 @@
-import logging
-logger = logging.getLogger(__name__)
 """KDE helpers for plotting."""
-import pandas as pd
+import logging
+
 import numpy as np
-from core.state import app_state
+import pandas as pd
+
+from core import app_state
+
+logger = logging.getLogger(__name__)
 
 sns = None
 
@@ -34,7 +37,7 @@ def draw_marginal_kde(ax, df_plot, group_col, palette, unique_cats, x_col='_emb_
         lazy_import_seaborn()
         from mpl_toolkits.axes_grid1 import make_axes_locatable
     except Exception as import_err:
-        logger.warning(f"[WARN] Failed to import KDE dependencies: {import_err}")
+        logger.warning(f"Failed to import KDE dependencies: {import_err}")
         return
 
     max_points = int(getattr(app_state, 'marginal_kde_max_points', 5000))
@@ -80,7 +83,7 @@ def draw_marginal_kde(ax, df_plot, group_col, palette, unique_cats, x_col='_emb_
                     warn_singular=False
                 )
             except Exception as kde_err:
-                logger.warning(f"[WARN] Marginal KDE X failed for {cat}: {kde_err}")
+                logger.warning(f"Marginal KDE X failed for {cat}: {kde_err}")
         if len(ys) > 1:
             try:
                 sns.kdeplot(
@@ -93,7 +96,7 @@ def draw_marginal_kde(ax, df_plot, group_col, palette, unique_cats, x_col='_emb_
                     warn_singular=False
                 )
             except Exception as kde_err:
-                logger.warning(f"[WARN] Marginal KDE Y failed for {cat}: {kde_err}")
+                logger.warning(f"Marginal KDE Y failed for {cat}: {kde_err}")
 
     ax_top.tick_params(axis='x', labelbottom=False)
     ax_top.tick_params(axis='y', left=False, labelleft=False)

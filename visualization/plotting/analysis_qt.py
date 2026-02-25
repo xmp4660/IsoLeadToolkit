@@ -1,14 +1,16 @@
-import logging
-logger = logging.getLogger(__name__)
 """Qt-based analysis plots and diagnostics."""
-from PyQt5.QtWidgets import QDialog, QVBoxLayout
-from matplotlib.figure import Figure
+import logging
+
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 import numpy as np
 import pandas as pd
+from PyQt5.QtWidgets import QDialog, QVBoxLayout
 
-from core.state import app_state
+from core import app_state, translate
 from .data import _get_analysis_data
+
+logger = logging.getLogger(__name__)
 
 
 def _create_plot_dialog(title, width=800, height=500, parent=None):
@@ -25,7 +27,7 @@ def _create_plot_dialog(title, width=800, height=500, parent=None):
 def show_scree_plot(parent_window=None):
     """Display a scree plot of the explained variance for the last PCA run."""
     if not hasattr(app_state, 'last_pca_variance') or app_state.last_pca_variance is None:
-        logger.warning("[WARN] No PCA variance data available. Run PCA first.")
+        logger.warning("No PCA variance data available. Run PCA first.")
         return
 
     variance_ratio = app_state.last_pca_variance
@@ -33,26 +35,43 @@ def show_scree_plot(parent_window=None):
     components = range(1, n_components + 1)
     cumulative_variance = np.cumsum(variance_ratio)
 
-    dialog, fig, canvas = _create_plot_dialog("Scree Plot - Explained Variance", 600, 450, parent_window)
+    dialog, fig, canvas = _create_plot_dialog(
+        translate("Scree Plot - Explained Variance"),
+        600,
+        450,
+        parent_window,
+    )
     ax1 = fig.add_subplot(111)
 
-    ax1.bar(components, variance_ratio, alpha=0.6, color='b', label='Individual Variance')
-    ax1.set_xlabel('Principal Component')
-    ax1.set_ylabel('Explained Variance Ratio', color='b')
+    ax1.bar(
+        components,
+        variance_ratio,
+        alpha=0.6,
+        color='b',
+        label=translate("Individual Variance"),
+    )
+    ax1.set_xlabel(translate("Principal Component"))
+    ax1.set_ylabel(translate("Explained Variance Ratio"), color='b')
     ax1.tick_params(axis='y', labelcolor='b')
     ax1.set_xticks(list(components))
     ax1.set_ylim(0, 1.05)
 
     ax2 = ax1.twinx()
-    ax2.plot(components, cumulative_variance, marker='o', color='r', label='Cumulative Variance')
-    ax2.set_ylabel('Cumulative Variance Ratio', color='r')
+    ax2.plot(
+        components,
+        cumulative_variance,
+        marker='o',
+        color='r',
+        label=translate("Cumulative Variance"),
+    )
+    ax2.set_ylabel(translate("Cumulative Variance Ratio"), color='r')
     ax2.tick_params(axis='y', labelcolor='r')
     ax2.set_ylim(0, 1.05)
 
     ax1.grid(True, axis='x', alpha=0.3)
     ax2.grid(True, axis='y', alpha=0.3)
 
-    ax1.set_title('Scree Plot')
+    ax1.set_title(translate("Scree Plot"))
     fig.tight_layout()
     canvas.draw()
     dialog.exec_()
@@ -61,26 +80,34 @@ def show_scree_plot(parent_window=None):
 def show_pca_loadings(parent_window=None):
     """Display a heatmap of PCA loadings (components)."""
     if not hasattr(app_state, 'last_pca_components') or app_state.last_pca_components is None:
-        logger.warning("[WARN] No PCA components data available. Run PCA first.")
+        logger.warning("No PCA components data available. Run PCA first.")
         return
 
     components = app_state.last_pca_components
     feature_names = app_state.current_feature_names
 
     if not feature_names or len(feature_names) != components.shape[1]:
-        logger.warning("[WARN] Feature names mismatch or missing.")
-        feature_names = [f"Feature {i + 1}" for i in range(components.shape[1])]
+        logger.warning("Feature names mismatch or missing.")
+        feature_names = [
+            translate("Feature {index}").format(index=i + 1)
+            for i in range(components.shape[1])
+        ]
 
     n_comps = components.shape[0]
     comp_names = [f"PC{i + 1}" for i in range(n_comps)]
 
-    dialog, fig, canvas = _create_plot_dialog("PCA Loadings", 800, 600, parent_window)
+    dialog, fig, canvas = _create_plot_dialog(
+        translate("PCA Loadings"),
+        800,
+        600,
+        parent_window,
+    )
     ax = fig.add_subplot(111)
 
     im = ax.imshow(components, cmap='RdBu_r', vmin=-1, vmax=1, aspect='auto')
 
     cbar = fig.colorbar(im, ax=ax)
-    cbar.set_label('Loading Value')
+    cbar.set_label(translate("Loading Value"))
 
     ax.set_xticks(np.arange(len(feature_names)))
     ax.set_yticks(np.arange(len(comp_names)))
@@ -99,7 +126,7 @@ def show_pca_loadings(parent_window=None):
                 color="k" if abs(components[i, j]) < 0.5 else "w",
             )
 
-    ax.set_title("PCA Loadings (Feature Contribution to Components)")
+    ax.set_title(translate("PCA Loadings (Feature Contribution to Components)"))
     fig.tight_layout()
     canvas.draw()
     dialog.exec_()
@@ -108,7 +135,7 @@ def show_pca_loadings(parent_window=None):
 def show_embedding_correlation(parent_window=None):
     """Display correlation between original features and embedding dimensions."""
     if not hasattr(app_state, 'last_embedding') or app_state.last_embedding is None:
-        logger.warning("[WARN] No embedding data available. Run an analysis first.")
+        logger.warning("No embedding data available. Run an analysis first.")
         return
 
     embedding = app_state.last_embedding
@@ -122,7 +149,7 @@ def show_embedding_correlation(parent_window=None):
         return
 
     n_dims = embedding.shape[1]
-    dim_names = [f"Dim {i+1}" for i in range(n_dims)]
+    dim_names = [translate("Dim {index}").format(index=i + 1) for i in range(n_dims)]
 
     correlations = []
     for i in range(n_dims):
@@ -138,14 +165,15 @@ def show_embedding_correlation(parent_window=None):
 
     correlations = np.array(correlations)
 
-    title = f"Feature Correlation with {getattr(app_state, 'last_embedding_type', 'Embedding')} Axes"
+    embedding_type = getattr(app_state, 'last_embedding_type', 'Embedding')
+    title = translate("Feature Correlation with {embedding} Axes").format(embedding=embedding_type)
     dialog, fig, canvas = _create_plot_dialog(title, 800, 400, parent_window)
     ax = fig.add_subplot(111)
 
     im = ax.imshow(correlations, cmap='RdBu_r', vmin=-1, vmax=1, aspect='auto')
 
     cbar = fig.colorbar(im, ax=ax)
-    cbar.set_label('Correlation Coefficient')
+    cbar.set_label(translate("Correlation Coefficient"))
 
     ax.set_yticks(np.arange(n_dims))
     ax.set_yticklabels(dim_names)
@@ -158,7 +186,9 @@ def show_embedding_correlation(parent_window=None):
             ax.text(j, i, f"{correlations[i, j]:.2f}", ha="center", va="center",
                     color="k" if abs(correlations[i, j]) < 0.5 else "w")
 
-    ax.set_title(f"Correlation: Features vs {getattr(app_state, 'last_embedding_type', 'Embedding')} Dimensions")
+    ax.set_title(
+        translate("Correlation: Features vs {embedding} Dimensions").format(embedding=embedding_type)
+    )
     fig.tight_layout()
     canvas.draw()
     dialog.exec_()
@@ -167,7 +197,7 @@ def show_embedding_correlation(parent_window=None):
 def show_shepard_diagram(parent_window=None):
     """Display a Shepard diagram (Distance Plot) to evaluate embedding quality."""
     if not hasattr(app_state, 'last_embedding') or app_state.last_embedding is None:
-        logger.warning("[WARN] No embedding data available.")
+        logger.warning("No embedding data available.")
         return
 
     embedding = app_state.last_embedding
@@ -194,7 +224,8 @@ def show_shepard_diagram(parent_window=None):
     from scipy.stats import spearmanr
     corr, _ = spearmanr(d_original, d_embedding)
 
-    title = f"Shepard Diagram ({getattr(app_state, 'last_embedding_type', 'Embedding')})"
+    embedding_type = getattr(app_state, 'last_embedding_type', 'Embedding')
+    title = translate("Shepard Diagram ({embedding})").format(embedding=embedding_type)
     dialog, fig, canvas = _create_plot_dialog(title, 600, 600, parent_window)
     ax = fig.add_subplot(111)
 
@@ -215,9 +246,11 @@ def show_shepard_diagram(parent_window=None):
 
     ax.legend()
 
-    ax.set_xlabel("Original Distance")
-    ax.set_ylabel("Embedding Distance")
-    ax.set_title(f"Shepard Diagram\nSpearman Correlation: {corr:.3f}")
+    ax.set_xlabel(translate("Original Distance"))
+    ax.set_ylabel(translate("Embedding Distance"))
+    ax.set_title(
+        translate("Shepard Diagram\nSpearman Correlation: {value}").format(value=f"{corr:.3f}")
+    )
 
     fig.tight_layout()
     canvas.draw()
@@ -228,7 +261,7 @@ def show_correlation_heatmap(parent_window=None):
     """Display a correlation heatmap of the current dataset."""
     X, _ = _get_analysis_data()
     if X is None:
-        logger.warning("[WARN] No data available for correlation analysis.")
+        logger.warning("No data available for correlation analysis.")
         return
 
     cols = app_state.data_cols
@@ -237,13 +270,18 @@ def show_correlation_heatmap(parent_window=None):
 
     df_corr = pd.DataFrame(X, columns=cols).corr()
 
-    dialog, fig, canvas = _create_plot_dialog("Correlation Heatmap", 700, 600, parent_window)
+    dialog, fig, canvas = _create_plot_dialog(
+        translate("Correlation Heatmap"),
+        700,
+        600,
+        parent_window,
+    )
     ax = fig.add_subplot(111)
 
     im = ax.imshow(df_corr, cmap='coolwarm', vmin=-1, vmax=1)
 
     cbar = fig.colorbar(im, ax=ax)
-    cbar.set_label('Correlation Coefficient')
+    cbar.set_label(translate("Correlation Coefficient"))
 
     ax.set_xticks(np.arange(len(cols)))
     ax.set_yticks(np.arange(len(cols)))
@@ -255,7 +293,7 @@ def show_correlation_heatmap(parent_window=None):
         for j in range(len(cols)):
             ax.text(j, i, f"{df_corr.iloc[i, j]:.2f}", ha="center", va="center", color="k")
 
-    ax.set_title("Feature Correlation Matrix")
+    ax.set_title(translate("Feature Correlation Matrix"))
     fig.tight_layout()
     canvas.draw()
     dialog.exec_()

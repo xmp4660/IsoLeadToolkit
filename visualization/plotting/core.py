@@ -1,12 +1,12 @@
 """Core embedding helpers and shared utilities."""
 import logging
 import itertools
+
 import numpy as np
 import matplotlib.pyplot as plt
 
-from core.config import CONFIG
+from core import CONFIG, app_state
 from core.cache import build_embedding_cache_key
-from core.state import app_state
 from . import data as data_utils
 from .data import _lazy_import_ml, _get_analysis_data
 
@@ -75,7 +75,7 @@ def get_umap_embedding(params):
 
         X, _ = _get_analysis_data()
         if X is None or X.shape[0] == 0:
-            logger.error("[ERROR] No data available for UMAP computation")
+            logger.error("No data available for UMAP computation")
             return None
 
         reducer = umap.UMAP(**params)
@@ -86,7 +86,7 @@ def get_umap_embedding(params):
         return embedding
 
     except Exception as e:
-        logger.exception(f"[ERROR] UMAP computation failed: {e}")
+        logger.exception(f"UMAP computation failed: {e}")
         return None
 
 def get_tsne_embedding(params):
@@ -105,13 +105,13 @@ def get_tsne_embedding(params):
 
         X, _ = _get_analysis_data()
         if X is None or X.shape[0] == 0:
-            logger.error("[ERROR] No data available for t-SNE computation")
+            logger.error("No data available for t-SNE computation")
             return None
 
         n_samples = X.shape[0]
         perplexity = float(params.get('perplexity', 30))
         if n_samples <= 1:
-            logger.error("[ERROR] Not enough samples for t-SNE")
+            logger.error("Not enough samples for t-SNE")
             return None
         if perplexity >= n_samples:
             perplexity = max(2, n_samples - 1)
@@ -134,7 +134,7 @@ def get_tsne_embedding(params):
         return embedding
 
     except Exception as e:
-        logger.exception(f"[ERROR] t-SNE computation failed: {e}")
+        logger.exception(f"t-SNE computation failed: {e}")
         return None
 
 def get_pca_embedding(params):
@@ -152,7 +152,7 @@ def get_pca_embedding(params):
 
         X, _ = _get_analysis_data()
         if X is None or X.shape[0] == 0:
-            logger.error("[ERROR] No data available for PCA computation")
+            logger.error("No data available for PCA computation")
             return None
 
         scaler = data_utils.StandardScaler()
@@ -179,7 +179,7 @@ def get_pca_embedding(params):
         return embedding
 
     except Exception as e:
-        logger.exception(f"[ERROR] PCA computation failed: {e}")
+        logger.exception(f"PCA computation failed: {e}")
         return None
 
 def get_robust_pca_embedding(params):
@@ -198,7 +198,7 @@ def get_robust_pca_embedding(params):
 
         X, _ = _get_analysis_data()
         if X is None or X.shape[0] == 0:
-            logger.error("[ERROR] No data available for Robust PCA computation")
+            logger.error("No data available for Robust PCA computation")
             return None
 
         scaler = data_utils.StandardScaler()
@@ -241,7 +241,7 @@ def get_robust_pca_embedding(params):
         return embedding
 
     except Exception as e:
-        logger.exception(f"[ERROR] Robust PCA computation failed: {e}")
+        logger.exception(f"Robust PCA computation failed: {e}")
         return None
 
 def get_embedding(algorithm, umap_params=None, tsne_params=None, pca_params=None, robust_pca_params=None):
@@ -255,7 +255,7 @@ def get_embedding(algorithm, umap_params=None, tsne_params=None, pca_params=None
     elif algorithm == 'RobustPCA':
         return get_robust_pca_embedding(robust_pca_params or CONFIG.get('robust_pca_params', {'n_components': 2, 'random_state': 42}))
     else:
-        logger.error(f"[ERROR] Unknown algorithm: {algorithm}")
+        logger.error(f"Unknown algorithm: {algorithm}")
         return None
 
 def _build_group_palette(unique_cats):

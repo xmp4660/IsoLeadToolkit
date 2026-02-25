@@ -228,12 +228,12 @@ tests/
 
 #### 规范修复
 
-1. **docstring/导入顺序不规范** — 多处文件 docstring 不在第一行，`logger` 定义早于 docstring。
-2. **日志前缀残留** — 仍使用 `[INFO]`/`[WARN]`/`[ERROR]` 字符串前缀，需统一为 logging 级别。
-3. **core 导入入口不统一** — 混用 `core.state` 与 `core.localization`，需统一 `from core import translate, app_state`。
-4. **诊断图国际化缺失** — `analysis_qt.py` 中窗口标题与提示文本未走 `translate()`。
-5. **API 暴露过多** — `plotting/api.py` 导出私有 helper，需收敛 `__all__`。
-6. **顶层副作用** — `plotting/geo.py` 与 `plotting/render.py` 顶层导入并记录日志，需改为惰性加载。
+1. **docstring/导入顺序不规范** — 多处文件 docstring 不在第一行，`logger` 定义早于 docstring。✅ 已完成
+2. **日志前缀残留** — 仍使用 `[INFO]`/`[WARN]`/`[ERROR]` 字符串前缀，需统一为 logging 级别。✅ 已完成
+3. **core 导入入口不统一** — 混用 `core.state` 与 `core.localization`，需统一 `from core import translate, app_state`。✅ 已完成
+4. **诊断图国际化缺失** — `analysis_qt.py` 中窗口标题与提示文本未走 `translate()`。✅ 已完成
+5. **API 暴露过多** — `plotting/api.py` 导出私有 helper，需收敛 `__all__`。✅ 已完成
+6. **顶层副作用** — `plotting/geo.py` 与 `plotting/render.py` 顶层导入并记录日志，需改为惰性加载。✅ 已完成
 
 #### 高优先级
 

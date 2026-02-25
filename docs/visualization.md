@@ -2,9 +2,9 @@
 
 ## 模块概述
 
-`visualization/` 是应用的渲染引擎，负责所有图形绑定、交互事件、样式管理。支持 8+ 种图类型。
+`visualization/` 是应用的渲染引擎，负责图形绑定、交互事件、样式管理。支持 8+ 种图类型，并对地球化学与 ML 依赖进行惰性加载以降低启动成本。
 
-**文件清单 (3,728 行)**
+**文件清单 (约 3,700+ 行)**
 
 | 文件 | 行数 | 职责 |
 |------|------|------|
@@ -22,6 +22,72 @@
 | `plotting/kde.py` | 127 | KDE 叠加渲染 |
 | `plotting/data.py` | 63 | 数据准备工具 (懒加载 ML 依赖) |
 | `line_styles.py` | 22 | 线型解析工具 |
+
+---
+
+## 公共 API
+
+`visualization/__init__.py` 作为外部入口，只导出以下三类 API:
+- 样式管理: `StyleManager`, `style_manager_instance`, `apply_custom_style`, `COLORS`, `STYLES`
+- 交互事件: `on_hover`, `on_click`, `on_legend_click`, `on_slider_change`, `refresh_selection_overlay`, `toggle_selection_mode`, `sync_selection_tools`, `draw_confidence_ellipse`
+- 绘图接口: `plot_embedding`, `plot_2d_data`, `plot_3d_data`, `plot_umap`, `refresh_plot_style`, `get_embedding` 等
+
+`plotting/api.py` 仅汇总公共绘图函数，私有 helper 保留在 `plotting/core.py`, `plotting/geo.py`, `plotting/render.py` 等模块中，不作为对外 API 承诺。
+
+---
+
+## 运行时状态与关键字段
+
+下表列出 visualization 常用的 `app_state` 字段，非穷尽，仅用于理解状态流转。
+
+| 字段 | 用途 | 主要读写位置 |
+|------|------|------|
+| `df_global` / `data_cols` | 全量数据与数值列 | plotting/data.py, plotting/render.py |
+| `active_subset_indices` | 活动子集索引 | plotting/data.py, plotting/core.py |
+| `fig` / `ax` / `legend_ax` | Matplotlib 图对象 | plotting/core.py, plotting/render.py |
+| `render_mode` / `algorithm` | 当前渲染模式与算法 | events.py, plotting/render.py |
+| `embedding_cache` | 嵌入缓存 (LRU) | plotting/core.py |
+| `last_embedding` / `last_embedding_type` | 最近一次嵌入结果 | plotting/core.py, plotting/render.py |
+| `last_pca_variance` / `last_pca_components` | PCA 诊断数据 | plotting/core.py, plotting/analysis_qt.py |
+| `scatter_collections` | 主散点集合 | plotting/render.py |
+| `artist_to_sample` / `sample_coordinates` | 事件索引映射 | plotting/render.py, events.py |
+| `visible_groups` | 图例过滤组 | plotting/render.py, events.py |
+| `current_palette` / `group_marker_map` | 当前调色板与标记映射 | plotting/render.py |
+| `selection_mode` / `selection_tool` | 选择工具状态 | events.py |
+| `selected_indices` / `selected_isochron_data` | 选择结果 | events.py |
+| `plot_style_grid` / `color_scheme` | 样式选项 | plotting/style.py |
+| `custom_primary_font` / `custom_cjk_font` | 字体配置 | plotting/style.py, plotting/render.py |
+| `plot_dpi` / `plot_facecolor` / `axes_facecolor` | 全局绘图样式 | plotting/style.py |
+| `isochron_error_mode` / `isochron_*_col` | 等时线误差配置 | plotting/isochron.py |
+| `show_model_curves` / `show_isochrons` / `show_paleoisochrons` | 地球化学叠加开关 | plotting/geo.py, plotting/render.py |
+| `legend_update_callback` | 图例面板回调 | plotting/render.py |
+
+---
+
+## 错误与降级策略
+
+1. 必要数据缺失时函数返回 `False` 或 `None` 并记录日志，不抛出到 UI 层。
+2. `umap-learn` / `sklearn` / `seaborn` / `data.geochemistry` 使用惰性导入，缺失时记录 `warning` 并跳过相关功能。
+3. 数值列转换使用 `pd.to_numeric(..., errors='coerce')` 或 `astype(float)` 并在失败时退出当前渲染流程。
+4. 缺失值默认采用常量填充 (`SimpleImputer` fill 0)，失败时退化为删除含 NaN 行。
+5. 事件处理与渲染异常由 `events.py` 与 `plotting/render.py` 捕获，保证 UI 不崩溃。
+
+---
+
+## 性能与缓存
+
+1. 嵌入缓存使用 `EmbeddingCache`，键包含算法类型、参数、数据签名与子集标识。
+2. 子集标识 `subset_key` 对 `active_subset_indices` 进行排序与哈希，完整数据使用 `'full'`。
+3. `plot_embedding` 会尽量复用缓存嵌入并只刷新样式，避免重复计算。
+4. KDE 渲染与等时线回归成本较高，受 UI 开关与采样限制控制。
+
+---
+
+## 线程与 UI 约束
+
+1. visualization 层默认在 UI 主线程执行绘图与事件处理。
+2. 大规模嵌入计算建议放入后台线程或异步任务。
+3. 任何跨线程回调必须回到主线程更新 Qt 控件。
 
 ---
 
@@ -43,9 +109,9 @@ on_slider_change() [events.py]
   ├─ get_tsne_embedding() → t-SNE + perplexity 验证
   ├─ get_pca_embedding() → PCA + 方差追踪
   ├─ get_robust_pca_embedding() → MinCovDet / PCA 回退
-  ├─ V1V2 → geochemistry.calculate_all_parameters()
+  ├─ V1V2 → geochemistry.calculate_all_parameters() (惰性导入)
   ├─ TERNARY → 原始数据 + 拉伸
-  └─ PB_EVOL → 原始 Pb 比值
+  └─ PB_EVOL → 原始 Pb 比值 (惰性导入 geochemistry)
   ↓
 构建调色板 + 准备数据:
   ├─ _build_group_palette() → 稳定颜色映射
@@ -61,7 +127,7 @@ on_slider_change() [events.py]
   ├─ sns.kdeplot() (主图)
   └─ draw_marginal_kde() (上/右边际)
   ↓
-可选: 地球化学叠加 (PB_EVOL_76/86)
+可选: 地球化学叠加 (PB_EVOL_76/86, geochemistry 惰性导入)
   ├─ _draw_model_curves() → SK 模型曲线
   ├─ _draw_isochron_overlays() → York 回归线 + 年龄标签
   ├─ _draw_paleoisochrons() → 参考古等时线
@@ -87,10 +153,22 @@ fig.canvas.draw_idle()
 
 ---
 
+## 依赖与惰性加载
+
+为降低启动成本与可选依赖压力，以下库使用惰性导入:
+- `umap-learn` (UMAP 计算)
+- `sklearn` (PCA / t-SNE / RobustPCA / 标准化)
+- `seaborn` (KDE 渲染)
+- `data.geochemistry` (V1V2 与 Pb 演化图)
+
+当可选依赖不可用时，相关功能会记录日志并安全降级，不影响其他绘图模式。
+
+---
+
 ## 1. plotting/api.py — 主渲染调度器
 
 ### 职责
-嵌入计算、主渲染函数、地球化学叠加、三元图支持。
+嵌入计算与主渲染函数的公共入口。内部实现分散在 core/render/geo/ternary 等模块，API 层仅做汇总导出。
 
 ### 嵌入计算函数
 
@@ -139,6 +217,25 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None,
 | `PB_MU_AGE` | μ vs Age 图 |
 | `PB_KAPPA_AGE` | κ vs Age 图 |
 
+**plot_embedding 关键参数:**
+| 参数 | 说明 |
+|------|------|
+| `group_col` | 颜色分组列名，影响图例与调色板 |
+| `algorithm` | 渲染算法/模式 |
+| `umap_params` / `tsne_params` / `pca_params` / `robust_pca_params` | 对应算法参数，缺省时使用 `CONFIG` |
+| `size` | 点大小 (scatter size) |
+
+**返回约定:**
+| 函数 | 成功 | 失败 |
+|------|------|------|
+| `plot_embedding` / `plot_2d_data` / `plot_3d_data` | `True` | `False` |
+| `get_*_embedding` | `np.ndarray` | `None` |
+
+**状态更新:**
+1. `plot_embedding` 成功后更新 `app_state.last_embedding` 与 `app_state.last_embedding_type`。
+2. PCA 系列更新 `app_state.last_pca_variance` 与 `app_state.last_pca_components`。
+3. `plot_embedding` / `plot_2d_data` / `plot_3d_data` 会刷新 `scatter_collections`、`artist_to_sample` 与图例状态。
+
 ```python
 def plot_2d_data(group_col, data_columns, size=60, show_kde=False) -> bool
     """原始 2D 散点图 (用户选择的两列)"""
@@ -147,7 +244,9 @@ def plot_3d_data(group_col, data_columns, size=60) -> bool
     """原始 3D 散点图 (用户选择的三列)"""
 ```
 
-### 地球化学叠加函数
+`plot_umap()` 仅为兼容入口，内部调用 `plot_embedding()`。
+
+### 地球化学叠加函数 (内部实现位于 plotting/geo.py)
 
 ```python
 def _draw_model_curves(ax, algorithm, params_list)
@@ -172,7 +271,7 @@ def _draw_equation_overlays(ax)
     """绘制自定义方程/线叠加"""
 ```
 
-### 三元图支持
+### 三元图支持 (内部实现位于 plotting/ternary.py)
 
 ```python
 def _apply_ternary_stretch(t_vals, l_vals, r_vals)
@@ -182,7 +281,7 @@ def calculate_auto_ternary_factors()
     """基于几何均值的自动居中因子"""
 ```
 
-### 工具函数
+### 工具函数 (内部实现位于 plotting/core.py)
 
 ```python
 def _ensure_axes(dimensions=2)
@@ -207,10 +306,77 @@ def _find_age_column(columns) -> str | None
 ## 2. plotting/core.py / plotting/render.py / plotting/geo.py / plotting/ternary.py
 
 ### 拆分职责
-- `plotting/core.py`：嵌入计算 + 核心工具函数
-- `plotting/render.py`：嵌入渲染 + 2D/3D 绘制
-- `plotting/geo.py`：地球化学叠加与等时线相关逻辑
-- `plotting/ternary.py`：三元图拉伸与自动因子
+1. `plotting/core.py`：嵌入计算 + 核心工具函数
+2. `plotting/render.py`：嵌入渲染 + 2D/3D 绘制
+3. `plotting/geo.py`：地球化学叠加与等时线相关逻辑
+4. `plotting/ternary.py`：三元图拉伸与自动因子
+
+### plotting/core.py — 嵌入计算与缓存
+
+**关键点:**
+1. UMAP / t-SNE / PCA / RobustPCA 统一在此计算。
+2. 使用 `EmbeddingCache` 缓存嵌入结果，避免重复计算。
+3. 自动处理 2D/3D 轴切换 `_ensure_axes()`。
+4. 对 `umap-learn` / `sklearn` 采用惰性导入。
+
+**主要函数:**
+```python
+def get_umap_embedding(params) -> np.ndarray | None
+def get_tsne_embedding(params) -> np.ndarray | None
+def get_pca_embedding(params) -> np.ndarray | None
+def get_robust_pca_embedding(params) -> np.ndarray | None
+def get_embedding(algorithm, ...) -> np.ndarray | None
+```
+
+**缓存键:**
+1. 算法名 + 参数
+2. 数据签名 (data_version / 列名 / 样本量)
+3. 子集标识 `subset_key` (完整数据为 `'full'`)
+
+### plotting/render.py — 绘图渲染与图例
+
+**核心流程:**
+1. 解析算法与参数，准备 `DataFrame` 与嵌入结果。
+2. 生成稳定调色板 `_build_group_palette()`，应用 `visible_groups` 过滤。
+3. 绘制主散点并建立索引映射 `artist_to_sample` / `sample_coordinates`。
+4. 可选 KDE 叠加与边际 KDE。
+5. 可选地球化学叠加、等时线与模型年龄线。
+6. 绘制图例并同步到 UI 面板。
+7. 恢复选择叠加与注释标记。
+
+**数据列约束:**
+1. 2D / 3D 绘制要求指定列数量正确。
+2. 地球化学绘图依赖 Pb 同位素列与可选年龄列。
+3. 三元图要求三列且支持拉伸模式。
+
+**常用开关字段:**
+1. `show_kde` / `show_marginal_kde` 控制 KDE 叠加。
+2. `show_model_curves` / `show_isochrons` / `show_paleoisochrons` 控制地球化学叠加。
+3. `show_model_age_lines` 控制模式年龄构造线。
+4. `show_plot_title` / `title_pad` 控制标题显示与间距。
+
+### plotting/geo.py — 地球化学叠加
+
+**功能范围:**
+1. Stacey-Kramers 模型曲线绘制。
+2. York 回归等时线拟合与标签生成。
+3. 古等时线与增长曲线绘制。
+4. 模式年龄构造线 (206-207 / 206-208)。
+
+**实现约束:**
+1. `data.geochemistry` 采用惰性导入。
+2. 缺失依赖时功能降级，不影响其他模式。
+
+### plotting/ternary.py — 三元图工具
+
+**拉伸模式:**
+1. `power`：指数拉伸
+2. `minmax`：Min-Max 标准化
+3. `hybrid`：先 Min-Max 再 Power
+
+**自动因子:**
+1. 使用几何均值计算三元图自动拉伸因子。
+2. 结果写入 `app_state.ternary_factors`。
 
 ---
 
@@ -241,6 +407,11 @@ def on_slider_change(val=None)
     # 刷新画布
 ```
 
+**关键状态更新:**
+1. 重新计算 `render_mode` 与 `algorithm` 并同步 `app_state`。
+2. 校验 2D/3D/三元图列选择，必要时回退到 UMAP。
+3. 触发 `plot_embedding` 或 `plot_2d_data` / `plot_3d_data`，刷新 `fig.canvas`。
+
 ### 选择工具
 
 ```python
@@ -262,6 +433,16 @@ def calculate_selected_isochron()
     # York 回归 → 年龄 + MSWD + R²
     # 存储到 app_state.selected_isochron_data
 ```
+
+**选择工具细节:**
+1. `selection_tool` 支持 `export` / `lasso` / `isochron`。
+2. 框选与套索选择均更新 `selected_indices`，同时触发高亮叠加。
+3. 等时线工具仅在 Pb 演化图模式下可用。
+
+**事件索引映射:**
+1. `artist_to_sample` 用于从 matplotlib artist 反查样本索引。
+2. `sample_coordinates` 用于最近邻查找，处理非标准 artist。
+3. 选择与悬停均依赖上述映射以获取 tooltip 与选中状态。
 
 ### 选择回调
 
@@ -347,6 +528,12 @@ def refresh_plot_style()
     # 5. fig.canvas.draw_idle()
 ```
 
+**常用样式字段:**
+1. `plot_style_grid` / `grid_color` / `grid_linewidth` / `grid_alpha`
+2. `tick_direction` / `tick_length` / `tick_width` / `minor_ticks`
+3. `plot_dpi` / `plot_facecolor` / `axes_facecolor`
+4. `label_color` / `title_color` / `label_weight` / `title_weight`
+
 ---
 
 ## 5. style_manager.py — 样式管理器
@@ -401,6 +588,10 @@ class StyleManager:
 - 存储字体名 → 路径映射
 - 避免每次启动重新扫描系统字体
 
+**输出约定:**
+1. `apply_style()` 会调用 Matplotlib 样式与 rcParams 组合应用。
+2. `get_ui_theme()` 返回 UI 主题字典，包含背景色、前景色、绘图样式名等字段。
+
 ---
 
 ## 6. plotting/kde.py — KDE 渲染
@@ -422,12 +613,18 @@ def draw_marginal_kde(ax, df_plot, group_col, palette, unique_cats, x_col, y_col
     # 大数据集采样 (max_points)
 ```
 
+**可配置项:**
+1. `marginal_kde_max_points` — 采样上限 (默认 5000)
+2. `marginal_kde_top_size` / `marginal_kde_right_size` — 边际 KDE 轴尺寸 (百分比)
+3. `marginal_kde_style` — `{alpha, linewidth, fill}` 样式字典
+4. `marginal_axes` — 缓存边际坐标轴，用于清理与重绘
+
 ---
 
 ## 7. plotting/analysis_qt.py — 诊断图
 
 ### 职责
-Qt 对话框中的诊断分析图。
+Qt 对话框中的诊断分析图。对话框标题与标签文本统一走 `translate()`，数据来源于 `app_state.last_*`。
 
 ```python
 def show_scree_plot(parent_window)
@@ -447,6 +644,11 @@ def show_correlation_heatmap(parent_window)
     """特征相关性矩阵热图"""
 ```
 
+**数据来源与约束:**
+1. `show_scree_plot` / `show_pca_loadings` 依赖 `last_pca_variance` 与 `last_pca_components`。
+2. `show_embedding_correlation` / `show_shepard_diagram` 依赖 `last_embedding`。
+3. Shepard 图样本数上限 1000，避免 O(n^2) 距离计算过载。
+
 ---
 
 ## 8. plotting/data.py — 数据准备
@@ -465,9 +667,31 @@ def _get_analysis_data() -> tuple[np.ndarray, np.ndarray]
     # 返回 (X, indices)
 ```
 
+**实现细节:**
+1. 若存在 `active_subset_indices`，仅提取子集数据。
+2. 使用 `astype(float)` 做基础数值转换，失败则返回 `None`。
+3. 若存在 NaN，使用 `SimpleImputer` 以常量 0 填充，失败时删除含 NaN 行。
+4. 返回 `indices` 以保持嵌入结果与原始数据对齐。
+
 ---
 
-## 9. line_styles.py — 线型解析
+## 9. plotting/isochron.py — 等时线误差配置
+
+### 职责
+为等时线回归提供 sX/sY/rXY 误差数组，支持固定值与列映射两种模式。
+
+```python
+def resolve_isochron_errors(df, size)
+    """从 app_state 解析误差列或固定值"""
+```
+
+**误差模式:**
+1. `columns`：从 `isochron_sx_col` / `isochron_sy_col` / `isochron_rxy_col` 中读取。
+2. `fixed`：使用 `isochron_sx_value` / `isochron_sy_value` / `isochron_rxy_value` 常量填充。
+
+---
+
+## 10. line_styles.py — 线型解析
 
 ```python
 def resolve_line_style(app_state, style_key: str, fallback: dict) -> dict
@@ -475,6 +699,10 @@ def resolve_line_style(app_state, style_key: str, fallback: dict) -> dict
     # 检查 app_state.line_styles[style_key]
     # 非 None 值覆盖 fallback
 ```
+
+**覆盖规则:**
+1. 若 `line_styles[style_key]` 中字段非空，则覆盖 `fallback`。
+2. `color` 仅在非空字符串时覆盖，避免意外置空。
 
 ---
 
@@ -495,11 +723,11 @@ plotting/isochron.py ← app_state
   ↓
 plotting/core.py ← plotting/data.py, app_state, sklearn (懒加载)
   ↓
-plotting/geo.py ← plotting/core.py, line_styles, plotting/isochron.py, geochemistry
+plotting/geo.py ← plotting/core.py, line_styles, plotting/isochron.py, geochemistry (lazy)
   ↓
 plotting/ternary.py ← app_state, scipy
   ↓
-plotting/render.py ← plotting/core.py, plotting/geo.py, plotting/ternary.py, plotting/style.py, plotting/kde.py
+plotting/render.py ← plotting/core.py, plotting/geo.py, plotting/ternary.py, plotting/style.py, plotting/kde.py, geochemistry (lazy)
   ↓
 plotting/api.py ← plotting/core.py, plotting/render.py, plotting/geo.py, plotting/ternary.py
   ↓
