@@ -83,27 +83,4 @@ main.py (启动时调用 setup_logging())
 
 ## 改进建议
 
-### 中优先级
-
-1. **日志格式增强** — 添加模块名和行号:
-   ```python
-   formatter = logging.Formatter('%(asctime)s [%(name)s:%(lineno)d] %(message)s')
-   ```
-
-2. **LoggerWriter 添加 fileno()** — 返回原始流的 fileno，使 faulthandler 可用:
-   ```python
-   def fileno(self):
-       return self.original_stream.fileno()
-   ```
-
-3. **移除 utils/line_styles.py** — 功能已迁移到 visualization/line_styles.py，此文件仅 4 行且无引用。
-
-### 低优先级
-
-4. **结构化日志** — 当前使用字符串前缀 `[INFO]`, `[WARN]`, `[ERROR]`。应直接使用 logging 级别:
-   ```python
-   logger.info("Message")      # 而非 logger.info("[INFO] Message")
-   logger.warning("Message")   # 而非 logger.info("[WARN] Message")
-   ```
-
-5. **日志级别可配置** — 当前硬编码 DEBUG 级别，应支持通过环境变量或配置文件调整。
+改进建议已迁移至 `docs/development_plan.md`。

@@ -791,5 +791,7 @@
   "Prediction samples: {count}": "Prediction samples: {count}",
   "Predicted regions: {count}": "Predicted regions: {count}",
   "Predicted Region": "Predicted Region",
-  "Predicted Probability": "Predicted Probability"
+  "Predicted Probability": "Predicted Probability",
+  "Status: Selected": "Status: Selected",
+  "Click export has been removed. Use the control panel export instead.": "Click export has been removed. Use the control panel export instead."
 }

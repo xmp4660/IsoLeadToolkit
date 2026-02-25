@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from core.state import app_state
-from .plotting_data import _get_analysis_data
+from .data import _get_analysis_data
 
 
 def _create_plot_dialog(title, width=800, height=500, parent=None):
@@ -259,3 +259,4 @@ def show_correlation_heatmap(parent_window=None):
     fig.tight_layout()
     canvas.draw()
     dialog.exec_()
+

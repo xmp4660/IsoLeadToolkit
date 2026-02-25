@@ -24,14 +24,6 @@ def read_data_frame(excel_file, sheet_name=None):
 
     df.columns = df.columns.astype(str).str.strip()
 
-    column_mapping = {
-        '省': 'Province', '省份': 'Province',
-        '市/县': 'City/County',
-        '遗址': 'Discovery site', '出土地': 'Discovery site',
-        '年代': 'Period'
-    }
-    df = df.rename(columns=column_mapping)
-
     for col in df.columns:
         numeric_col = pd.to_numeric(df[col], errors='coerce')
         non_null_count = numeric_col.notna().sum()

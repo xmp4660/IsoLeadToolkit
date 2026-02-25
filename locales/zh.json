@@ -791,5 +791,7 @@
   "Prediction samples: {count}": "预测样本数：{count}",
   "Predicted regions: {count}": "预测地区数：{count}",
   "Predicted Region": "预测地区",
-  "Predicted Probability": "预测概率"
+  "Predicted Probability": "预测概率",
+  "Status: Selected": "状态: 已选中",
+  "Click export has been removed. Use the control panel export instead.": "单击导出已移除，请使用控制面板中的导出功能。"
 }

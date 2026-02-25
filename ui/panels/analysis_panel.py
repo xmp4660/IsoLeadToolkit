@@ -288,7 +288,7 @@ class AnalysisPanel(BasePanel):
     def _on_show_correlation_heatmap(self):
         """显示相关性热力图"""
         try:
-            from visualization.plotting_analysis_qt import show_correlation_heatmap
+            from visualization.plotting.analysis_qt import show_correlation_heatmap
             show_correlation_heatmap(self)
         except Exception as e:
             logger.error(f"[ERROR] Failed to show correlation heatmap: {e}")
@@ -296,7 +296,7 @@ class AnalysisPanel(BasePanel):
     def _on_show_axis_correlation(self):
         """显示轴相关性"""
         try:
-            from visualization.plotting_analysis_qt import show_embedding_correlation
+            from visualization.plotting.analysis_qt import show_embedding_correlation
             show_embedding_correlation(self)
         except Exception as e:
             logger.error(f"[ERROR] Failed to show axis correlation: {e}")
@@ -304,7 +304,7 @@ class AnalysisPanel(BasePanel):
     def _on_show_shepard_diagram(self):
         """显示Shepard图"""
         try:
-            from visualization.plotting_analysis_qt import show_shepard_diagram
+            from visualization.plotting.analysis_qt import show_shepard_diagram
             show_shepard_diagram(self)
         except Exception as e:
             logger.error(f"[ERROR] Failed to show Shepard diagram: {e}")

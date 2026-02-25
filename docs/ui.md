@@ -413,7 +413,7 @@ control_panel.py
 
 panels/*
   ├→ core (app_state, CONFIG, translate)
-  ├→ visualization.events / plotting_style
+  ├→ visualization.events / plotting/style.py
   ├→ data.loader / data.endmember
   └→ dialogs/*
 
@@ -426,33 +426,4 @@ dialogs/*
 
 ## 改进建议
 
-### 高优先级
-
-1. **control_panel.py 过大 (5,700 行)** — ✅ 已拆分为独立面板类:
-   - `panels/data_panel.py` — 数据标签页
-   - `panels/display_panel.py` — 显示标签页
-   - `panels/analysis_panel.py` — 分析标签页
-   - `panels/export_panel.py` — 导出标签页
-   - `panels/legend_panel.py` — 图例标签页
-   - `panels/geo_panel.py` — 地球化学标签页
-   - `control_panel.py` — 仅保留组装逻辑和 `create_section_dialog()`
-
-2. **语言切换重建整个 UI** — `_rebuild_ui()` 仍会销毁并重建控件，可改为仅更新文本 (`setText`/`setTitle`)，保留控件状态。
-
-3. **标记图标渲染重复** — `main_window.py` 和 `control_panel.py` 各有一份 `_build_marker_icon()`，应提取到 `utils/icons.py`。
-
-### 中优先级
-
-4. **对话框缓存无失效** — `_section_dialogs` 缓存对话框实例，但语言切换后不会更新已缓存对话框的文本。
-
-5. **控制面板禁用但代码仍在** — `app.py` 中 `_setup_control_panel()` 直接设为 None，但 control_panel.py 仍有完整的嵌入面板逻辑。应清理或明确标记。
-
-6. **滑块防抖** — 使用 QTimer 实现，但每个滑块创建独立 timer。可改用统一的防抖装饰器。
-
-### 低优先级
-
-7. **对话框验证不一致** — 部分对话框在 `_ok_clicked()` 中验证，部分无验证。应统一模式。
-
-8. **无键盘快捷键** — 菜单操作无快捷键绑定。
-
-9. **状态面板重复初始化** — 旧 control_panel 中 `status_data_label` 重复赋值问题已随拆分消解。
+改进建议已迁移至 `docs/development_plan.md`。

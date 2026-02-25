@@ -9,7 +9,7 @@
 | 文件 | 行数 | 职责 |
 |------|------|------|
 | `__init__.py` | 34 | 模块入口，导出公共 API |
-| `loader.py` | 239 | Excel/CSV 数据加载与列映射 |
+| `loader.py` | 239 | Excel/CSV 数据加载与列类型检测 |
 | `geochemistry/` | — | 铅同位素地球化学计算引擎 (拆分模块) |
 | `geochemistry.py` | 30 | 兼容 shim (保持旧导入可用) |
 | `endmember.py` | 302 | 端元识别 (PCA + 地球化学过滤) |
@@ -21,7 +21,7 @@
 ## 1. loader.py — 数据加载
 
 ### 职责
-从 Excel/CSV 文件加载数据，自动检测列类型，映射中文列名。
+从 Excel/CSV 文件加载数据，自动检测列类型。
 
 ### 公共函数
 
@@ -30,7 +30,6 @@ def read_data_frame(excel_file: str, sheet_name: str = None) -> pd.DataFrame
 ```
 - 优先使用 `calamine` 引擎 (快速)，回退到 `openpyxl`
 - 自动检测数值列 (>50% 数值即为数值列)
-- 中文列名映射: `省 → Province`, `遗址 → Discovery site`, `时代 → Period` 等
 - NaN 替换为 `"empty"` 字符串
 
 ```python
@@ -47,7 +46,6 @@ def load_data(show_file_dialog=True, show_config_dialog=True) -> bool
 ```
 Excel/CSV 文件
   → read_data_frame() [calamine/openpyxl]
-  → 列名映射 (中→英)
   → 类型检测 (数值 vs 分类)
   → 对话框选择 (文件/工作表/列)
   → 验证
@@ -377,34 +375,4 @@ loader.py
 
 ## 改进建议
 
-### 高优先级
-
-1. **geochemistry.py 过大 (1369 行)** — 已拆分为:
-   - `geochemistry/engine.py` — GeochemistryEngine + 预设模型
-   - `geochemistry/age.py` — 年龄计算
-   - `geochemistry/delta.py` — Delta + V1V2
-   - `geochemistry/source.py` — 源区参数反演
-   - `geochemistry/isochron.py` — 等时线工具
-   - `geochemistry.py` — 兼容 shim (旧导入保留)
-
-2. **provenance_ml.py 缺少交叉验证** — 无训练/测试集划分，无 CV 指标。应添加 `cross_val_score` 或至少 train/test split 报告。
-
-3. **XGBoost tree_method='exact'** — 大数据集上很慢，应改为 `'hist'`。
-
-### 中优先级
-
-4. **loader.py 中文列名映射硬编码** — 应移到配置文件或 JSON 映射表。
-
-5. **GeochemistryEngine 全局单例** — 多线程不安全。当前单线程无问题，但若引入后台计算需加锁。
-
-6. **数值稳定性** — 多处使用 `1e-50` 作为除零保护，应统一为常量并考虑使用 `np.errstate`。
-
-7. **mixing.py 无误差传播** — 输入不确定度未传递到混合权重。
-
-### 低优先级
-
-8. **中英文注释混杂** — geochemistry/ 中中文注释和英文 docstring 混用，建议统一。
-
-9. **向后兼容别名** — `calculate_delta_values`, `calculate_v1v2`, `calculate_model_age` 等别名函数可在下个大版本移除。
-
-10. **endmember.py 硬编码阈值** — tolerance, clamp, PC1 方差阈值 (95%) 应可配置。
+改进建议已迁移至 `docs/development_plan.md`。

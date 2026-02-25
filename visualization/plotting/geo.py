@@ -4,8 +4,9 @@ import numpy as np
 
 from core.state import app_state
 from visualization.line_styles import resolve_line_style
-from visualization.plotting_data import _get_analysis_data
-from visualization.plotting_core import _get_subset_dataframe, _get_pb_columns
+from .data import _get_analysis_data
+from .core import _get_subset_dataframe, _get_pb_columns
+from .isochron import resolve_isochron_errors as _resolve_isochron_errors
 
 logger = logging.getLogger(__name__)
 
@@ -17,34 +18,6 @@ except ImportError:
     geochemistry = None
     calculate_all_parameters = None
 
-
-def _resolve_isochron_errors(df, size):
-    """Resolve sX, sY, rXY arrays from app_state settings."""
-    mode = getattr(app_state, 'isochron_error_mode', 'fixed')
-
-    if mode == 'columns':
-        sx_col = getattr(app_state, 'isochron_sx_col', '')
-        sy_col = getattr(app_state, 'isochron_sy_col', '')
-        rxy_col = getattr(app_state, 'isochron_rxy_col', '')
-
-        if sx_col in df.columns and sy_col in df.columns:
-            sx = df[sx_col].values.astype(float)
-            sy = df[sy_col].values.astype(float)
-            if rxy_col and rxy_col in df.columns:
-                rxy = df[rxy_col].values.astype(float)
-            else:
-                rxy = np.zeros_like(sx)
-            return sx, sy, rxy
-
-        logger.warning("[WARN] Isochron error columns not found; using fixed values.")
-
-    sx_val = float(getattr(app_state, 'isochron_sx_value', 0.001))
-    sy_val = float(getattr(app_state, 'isochron_sy_value', 0.001))
-    rxy_val = float(getattr(app_state, 'isochron_rxy_value', 0.0))
-    sx = np.full(size, sx_val, dtype=float)
-    sy = np.full(size, sy_val, dtype=float)
-    rxy = np.full(size, rxy_val, dtype=float)
-    return sx, sy, rxy
 
 def _draw_model_curves(ax, actual_algorithm, params_list):
     """Draw model curves for Pb evolution plots."""
@@ -261,67 +234,68 @@ def _draw_isochron_overlays(ax, actual_algorithm):
             )
 
             if mode == 'ISOCHRON1' and geochemistry:
+                age_ma = None
                 try:
                     age_ma, _ = geochemistry.calculate_pbpb_age_from_ratio(slope, slope_err, params)
                     if age_ma is not None and age_ma > 0:
                         # 保存年龄到结果
                         app_state.isochron_results[grp]['age_ma'] = age_ma
-
-                    # 动态构建标注
-                    label_text = _build_isochron_label(app_state.isochron_results[grp])
-                    if label_text:
-                        xlim = ax.get_xlim()
-                        ylim = ax.get_ylim()
-
-                        txt_x = min(x_max_g, xlim[1] * 0.95)
-                        txt_y = slope * txt_x + intercept
-
-                        if txt_y < ylim[0] or txt_y > ylim[1]:
-                            if txt_y > ylim[1]:
-                                txt_y = ylim[1] * 0.95
-                                txt_x = (txt_y - intercept) / slope if abs(slope) > 1e-10 else txt_x
-                            else:
-                                txt_y = ylim[0] + (ylim[1] - ylim[0]) * 0.05
-                                txt_x = (txt_y - intercept) / slope if abs(slope) > 1e-10 else txt_x
-
-                        ax.text(txt_x, txt_y, f" {label_text}", color=color, fontsize=9, va='center', ha='left', fontweight='bold')
                 except Exception as age_err:
                     logger.warning(f"[WARN] Failed to calculate isochron age for slope {slope:.6f}: {age_err}")
 
-                    if getattr(app_state, 'show_growth_curves', True):
-                        growth = geochemistry.calculate_isochron1_growth_curve(
-                            slope,
-                            intercept,
-                            age_ma,
-                            params=params,
-                            steps=100
-                        )
-                        if growth:
-                            x_growth = growth['x']
-                            y_growth = growth['y']
-                            mu_source = growth['mu_source']
-                            annot_text = f" μ={mu_source:.1f}"
+                # 动态构建标注
+                label_text = _build_isochron_label(app_state.isochron_results[grp])
+                if label_text:
+                    xlim = ax.get_xlim()
+                    ylim = ax.get_ylim()
 
-                            growth_style = resolve_line_style(
-                                app_state,
-                                'growth_curve',
-                                {
-                                    'color': None,
-                                    'linewidth': getattr(app_state, 'model_curve_width', 1.2),
-                                    'linestyle': ':',
-                                    'alpha': 0.6
-                                }
-                            )
-                            ax.plot(
-                                x_growth,
-                                y_growth,
-                                linestyle=growth_style['linestyle'],
-                                color=growth_style['color'] or color,
-                                alpha=growth_style['alpha'],
-                                linewidth=growth_style['linewidth'],
-                                zorder=1.5
-                            )
-                            ax.text(x_growth[0], y_growth[0], annot_text, fontsize=8, color=color, va='bottom', ha='right', alpha=0.8)
+                    txt_x = min(x_max_g, xlim[1] * 0.95)
+                    txt_y = slope * txt_x + intercept
+
+                    if txt_y < ylim[0] or txt_y > ylim[1]:
+                        if txt_y > ylim[1]:
+                            txt_y = ylim[1] * 0.95
+                            txt_x = (txt_y - intercept) / slope if abs(slope) > 1e-10 else txt_x
+                        else:
+                            txt_y = ylim[0] + (ylim[1] - ylim[0]) * 0.05
+                            txt_x = (txt_y - intercept) / slope if abs(slope) > 1e-10 else txt_x
+
+                    ax.text(txt_x, txt_y, f" {label_text}", color=color, fontsize=9, va='center', ha='left', fontweight='bold')
+
+                if getattr(app_state, 'show_growth_curves', True) and age_ma is not None and age_ma > 0:
+                    growth = geochemistry.calculate_isochron1_growth_curve(
+                        slope,
+                        intercept,
+                        age_ma,
+                        params=params,
+                        steps=100
+                    )
+                    if growth:
+                        x_growth = growth['x']
+                        y_growth = growth['y']
+                        mu_source = growth['mu_source']
+                        annot_text = f" μ={mu_source:.1f}"
+
+                        growth_style = resolve_line_style(
+                            app_state,
+                            'growth_curve',
+                            {
+                                'color': None,
+                                'linewidth': getattr(app_state, 'model_curve_width', 1.2),
+                                'linestyle': ':',
+                                'alpha': 0.6
+                            }
+                        )
+                        ax.plot(
+                            x_growth,
+                            y_growth,
+                            linestyle=growth_style['linestyle'],
+                            color=growth_style['color'] or color,
+                            alpha=growth_style['alpha'],
+                            linewidth=growth_style['linewidth'],
+                            zorder=1.5
+                        )
+                        ax.text(x_growth[0], y_growth[0], annot_text, fontsize=8, color=color, va='bottom', ha='right', alpha=0.8)
 
             
 
@@ -710,3 +684,4 @@ def _draw_equation_overlays(ax):
             zorder=1,
             label='_nolegend_'
         )
+

@@ -9,8 +9,8 @@ from matplotlib.patches import Patch
 
 from core.config import CONFIG
 from core.state import app_state
-from visualization import plotting_kde as kde_utils
-from visualization.plotting_style import (
+from . import kde as kde_utils
+from .style import (
     _apply_current_style,
     _enforce_plot_style,
     _apply_axis_text_style,
@@ -18,8 +18,8 @@ from visualization.plotting_style import (
     _legend_columns_for_layout,
     _style_legend,
 )
-from visualization.plotting_data import _get_analysis_data
-from visualization.plotting_core import (
+from .data import _get_analysis_data
+from .core import (
     _ensure_axes,
     _build_group_palette,
     get_umap_embedding,
@@ -30,7 +30,7 @@ from visualization.plotting_core import (
     _get_pb_columns,
     _find_age_column,
 )
-from visualization.plotting_geo import (
+from .geo import (
     _draw_model_curves,
     _draw_isochron_overlays,
     _draw_selected_isochron,
@@ -39,7 +39,7 @@ from visualization.plotting_geo import (
     _draw_model_age_lines_86,
     _draw_equation_overlays,
 )
-from visualization.plotting_ternary import _apply_ternary_stretch
+from .ternary import _apply_ternary_stretch
 
 logger = logging.getLogger(__name__)
 
@@ -159,14 +159,8 @@ def plot_embedding(group_col, algorithm, umap_params=None, tsne_params=None, pca
             flush=True,
         )
 
-        # Get embedding based on algorithm - normalize algorithm name
+        # Get embedding based on algorithm
         embedding = None
-        actual_algorithm = algorithm.strip().upper() if isinstance(algorithm, str) else str(algorithm)
-        if actual_algorithm == 'ROBUSTPCA':
-            actual_algorithm = 'RobustPCA'  # Keep case for display
-        if actual_algorithm in ('PB_MODELS_76', 'PB_MODELS_86'):
-            actual_algorithm = 'PB_EVOL_76' if actual_algorithm.endswith('_76') else 'PB_EVOL_86'
-
         logger.debug(f"[DEBUG] Actual algorithm (normalized): {actual_algorithm}")
 
         if actual_algorithm == 'UMAP':
@@ -1320,3 +1314,4 @@ def plot_3d_data(group_col, data_columns, size=60):
         logger.error(f"[ERROR] 3D plot failed: {err}")
         traceback.print_exc()
         return False
+

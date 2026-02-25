@@ -11,7 +11,9 @@ from matplotlib.patches import Ellipse
 from matplotlib.path import Path
 from core.state import app_state
 from core import state as state_module
+from core.localization import translate
 from matplotlib.widgets import RectangleSelector, LassoSelector
+from visualization.plotting.isochron import resolve_isochron_errors as _resolve_isochron_errors
 
 
 import scipy.stats
@@ -30,7 +32,16 @@ def draw_confidence_ellipse(x, y, ax, confidence=0.95, facecolor='none', **kwarg
     n_std = np.sqrt(chi2_val)
 
     cov = np.cov(x, y)
-    pearson = cov[0, 1]/np.sqrt(cov[0, 0] * cov[1, 1])
+    if not np.all(np.isfinite(cov)):
+        return None
+
+    var_x = cov[0, 0]
+    var_y = cov[1, 1]
+    if var_x <= 0 or var_y <= 0:
+        return None
+
+    pearson = cov[0, 1] / np.sqrt(var_x * var_y)
+    pearson = float(np.clip(pearson, -1.0, 1.0))
     
     ell_radius_x = np.sqrt(1 + pearson)
     ell_radius_y = np.sqrt(1 - pearson)
@@ -43,9 +54,10 @@ def draw_confidence_ellipse(x, y, ax, confidence=0.95, facecolor='none', **kwarg
     scale_y = np.sqrt(cov[1, 1]) * n_std
     mean_y = np.mean(y)
 
+    theta = 0.5 * np.arctan2(2 * cov[0, 1], var_x - var_y)
     transf = (
         matplotlib.transforms.Affine2D()
-        .rotate_deg(45)
+        .rotate(theta)
         .scale(scale_x, scale_y)
         .translate(mean_x, mean_y)
     )
@@ -346,35 +358,6 @@ def refresh_selection_overlay():
         logger.warning(f"[WARN] Unable to refresh selection overlay: {err}")
 
 
-def _resolve_isochron_errors(df, size):
-    """Resolve sX, sY, rXY arrays from app_state settings."""
-    mode = getattr(app_state, 'isochron_error_mode', 'fixed')
-
-    if mode == 'columns':
-        sx_col = getattr(app_state, 'isochron_sx_col', '')
-        sy_col = getattr(app_state, 'isochron_sy_col', '')
-        rxy_col = getattr(app_state, 'isochron_rxy_col', '')
-
-        if sx_col in df.columns and sy_col in df.columns:
-            sx = df[sx_col].values.astype(float)
-            sy = df[sy_col].values.astype(float)
-            if rxy_col and rxy_col in df.columns:
-                rxy = df[rxy_col].values.astype(float)
-            else:
-                rxy = np.zeros_like(sx)
-            return sx, sy, rxy
-
-        logger.warning("[WARN] Isochron error columns not found; using fixed values.")
-
-    sx_val = float(getattr(app_state, 'isochron_sx_value', 0.001))
-    sy_val = float(getattr(app_state, 'isochron_sy_value', 0.001))
-    rxy_val = float(getattr(app_state, 'isochron_rxy_value', 0.0))
-    sx = np.full(size, sx_val, dtype=float)
-    sy = np.full(size, sy_val, dtype=float)
-    rxy = np.full(size, rxy_val, dtype=float)
-    return sx, sy, rxy
-
-
 def calculate_selected_isochron():
     """Calculate isochron age for selected data points."""
     try:
@@ -673,7 +656,7 @@ def on_hover(event):
                 
                 txt = "\n".join(lines)
                 if sample_idx in app_state.selected_indices:
-                    txt += "\n状态: 已选中"
+                    txt += "\n" + translate("Status: Selected")
 
                 app_state.annotation.xy = (x, y)
                 app_state.annotation.set_text(txt)
@@ -736,7 +719,7 @@ def on_click(event):
                 refresh_selection_overlay()
             return
 
-        logger.info("[INFO] 单击导出已移除，请使用控制面板中的导出功能。")
+        logger.info(translate("Click export has been removed. Use the control panel export instead."))
         return
                 
     except Exception as e:

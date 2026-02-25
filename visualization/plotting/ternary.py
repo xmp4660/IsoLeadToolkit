@@ -93,3 +93,4 @@ def calculate_auto_ternary_factors():
         logger.error(f"[ERROR] Auto factor calculation failed: {e}")
         traceback.print_exc()
         return False
+

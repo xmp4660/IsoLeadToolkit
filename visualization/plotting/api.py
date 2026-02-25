@@ -5,16 +5,16 @@ Dimensionality Reduction Visualization
 Handles UMAP and t-SNE embedding computation and plot rendering
 """
 
-from visualization.plotting_analysis_qt import (
+from .analysis_qt import (
     show_scree_plot,
     show_pca_loadings,
     show_embedding_correlation,
     show_shepard_diagram,
     show_correlation_heatmap,
 )
-from visualization.plotting_style import refresh_plot_style
+from .style import refresh_plot_style
 
-from visualization.plotting_core import (
+from .core import (
     _lazy_import_umap,
     _lazy_import_mplot3d,
     _lazy_import_ellipse,
@@ -29,7 +29,7 @@ from visualization.plotting_core import (
     _get_pb_columns,
     _find_age_column,
 )
-from visualization.plotting_geo import (
+from .geo import (
     _resolve_isochron_errors,
     _draw_model_curves,
     _build_isochron_label,
@@ -43,11 +43,11 @@ from visualization.plotting_geo import (
     _draw_model_age_lines_86,
     _draw_equation_overlays,
 )
-from visualization.plotting_ternary import (
+from .ternary import (
     _apply_ternary_stretch,
     calculate_auto_ternary_factors,
 )
-from visualization.plotting_render import (
+from .render import (
     _notify_legend_panel,
     _build_legend_proxies,
     plot_embedding,
@@ -98,3 +98,4 @@ __all__ = [
     '_notify_legend_panel',
     '_build_legend_proxies',
 ]
+

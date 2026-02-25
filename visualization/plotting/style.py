@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib import font_manager
 from core.state import app_state
 from core.config import CONFIG
-from .style_manager import apply_custom_style
+from ..style_manager import apply_custom_style
 
 
 def _apply_current_style():
@@ -318,3 +318,4 @@ def refresh_plot_style():
             fig.canvas.draw_idle()
         except Exception:
             pass
+

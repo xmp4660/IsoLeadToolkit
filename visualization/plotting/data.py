@@ -61,3 +61,4 @@ def _get_analysis_data():
             indices = [indices[i] for i in range(len(indices)) if mask[i]]
 
     return X, indices
+

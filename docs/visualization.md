@@ -9,18 +9,18 @@
 | 文件 | 行数 | 职责 |
 |------|------|------|
 | `__init__.py` | 89 | 模块入口，导出公共 API |
-| `plotting.py` | ~200 | 渲染入口（汇总导出） |
-| `plotting_core.py` | ~600 | 嵌入计算 + 核心工具 |
-| `plotting_render.py` | ~1,400 | 嵌入渲染 + 2D/3D 绘制 |
-| `plotting_geo.py` | ~400 | 地球化学叠加/等时线 |
-| `plotting_ternary.py` | ~120 | 三元图工具 |
-| `plotting_embed.py` | 20 | 兼容入口 (shim) |
+| `plotting/api.py` | ~200 | 渲染入口（汇总导出） |
+| `plotting/core.py` | ~600 | 嵌入计算 + 核心工具 |
+| `plotting/render.py` | ~1,400 | 嵌入渲染 + 2D/3D 绘制 |
+| `plotting/geo.py` | ~400 | 地球化学叠加/等时线 |
+| `plotting/ternary.py` | ~120 | 三元图工具 |
+| `plotting/isochron.py` | 60 | 等时线误差配置与共享工具 |
 | `events.py` | 1,057 | 交互事件 (hover, 选择, 图例点击) |
-| `plotting_style.py` | 320 | 绘图样式 + 图例布局 |
+| `plotting/style.py` | 320 | 绘图样式 + 图例布局 |
 | `style_manager.py` | 224 | 调色板 + 字体 + UI 主题 |
-| `plotting_analysis_qt.py` | 261 | 诊断图 (scree, loadings, 相关性) |
-| `plotting_kde.py` | 127 | KDE 叠加渲染 |
-| `plotting_data.py` | 63 | 数据准备工具 (懒加载 ML 依赖) |
+| `plotting/analysis_qt.py` | 261 | 诊断图 (scree, loadings, 相关性) |
+| `plotting/kde.py` | 127 | KDE 叠加渲染 |
+| `plotting/data.py` | 63 | 数据准备工具 (懒加载 ML 依赖) |
 | `line_styles.py` | 22 | 线型解析工具 |
 
 ---
@@ -87,7 +87,7 @@ fig.canvas.draw_idle()
 
 ---
 
-## 1. plotting.py — 主渲染调度器
+## 1. plotting/api.py — 主渲染调度器
 
 ### 职责
 嵌入计算、主渲染函数、地球化学叠加、三元图支持。
@@ -204,23 +204,17 @@ def _find_age_column(columns) -> str | None
 
 ---
 
-## 2. plotting_core.py / plotting_render.py / plotting_geo.py / plotting_ternary.py
+## 2. plotting/core.py / plotting/render.py / plotting/geo.py / plotting/ternary.py
 
 ### 拆分职责
-- `plotting_core.py`：嵌入计算 + 核心工具函数
-- `plotting_render.py`：嵌入渲染 + 2D/3D 绘制
-- `plotting_geo.py`：地球化学叠加与等时线相关逻辑
-- `plotting_ternary.py`：三元图拉伸与自动因子
+- `plotting/core.py`：嵌入计算 + 核心工具函数
+- `plotting/render.py`：嵌入渲染 + 2D/3D 绘制
+- `plotting/geo.py`：地球化学叠加与等时线相关逻辑
+- `plotting/ternary.py`：三元图拉伸与自动因子
 
 ---
 
-## 3. plotting_embed.py — 兼容入口
-
-`plotting_embed.py` 已合并至 `plotting.py`。当前文件仅保留为兼容入口，避免外部导入中断。
-
----
-
-## 4. events.py — 交互事件
+## 3. events.py — 交互事件
 
 ### 职责
 处理所有用户交互: 悬停提示、点击选择、图例交互、选择工具。
@@ -300,7 +294,7 @@ def _resolve_sample_index(event) -> int | None
 
 ---
 
-## 4. plotting_style.py — 绘图样式
+## 4. plotting/style.py — 绘图样式
 
 ### 职责
 管理 matplotlib rcParams、坐标轴样式、图例布局。
@@ -409,7 +403,7 @@ class StyleManager:
 
 ---
 
-## 6. plotting_kde.py — KDE 渲染
+## 6. plotting/kde.py — KDE 渲染
 
 ### 职责
 KDE 等高线叠加和边际 KDE 分布。
@@ -430,7 +424,7 @@ def draw_marginal_kde(ax, df_plot, group_col, palette, unique_cats, x_col, y_col
 
 ---
 
-## 7. plotting_analysis_qt.py — 诊断图
+## 7. plotting/analysis_qt.py — 诊断图
 
 ### 职责
 Qt 对话框中的诊断分析图。
@@ -455,7 +449,7 @@ def show_correlation_heatmap(parent_window)
 
 ---
 
-## 8. plotting_data.py — 数据准备
+## 8. plotting/data.py — 数据准备
 
 ### 职责
 ML 算法的数据提取和懒加载。
@@ -489,68 +483,35 @@ def resolve_line_style(app_state, style_key: str, fallback: dict) -> dict
 ```
 style_manager.py (无内部依赖)
   ↓
-plotting_style.py ← style_manager, app_state
+plotting/style.py ← style_manager, app_state
   ↓
-plotting_data.py ← app_state, sklearn (懒加载)
+plotting/data.py ← app_state, sklearn (懒加载)
   ↓
-plotting_kde.py ← seaborn (懒加载), app_state
+plotting/kde.py ← seaborn (懒加载), app_state
   ↓
 line_styles.py ← app_state
   ↓
-plotting_core.py ← plotting_data, app_state, sklearn (懒加载)
+plotting/isochron.py ← app_state
   ↓
-plotting_geo.py ← plotting_core, line_styles, geochemistry
+plotting/core.py ← plotting/data.py, app_state, sklearn (懒加载)
   ↓
-plotting_ternary.py ← app_state, scipy
+plotting/geo.py ← plotting/core.py, line_styles, plotting/isochron.py, geochemistry
   ↓
-plotting_render.py ← plotting_core, plotting_geo, plotting_ternary, plotting_style, plotting_kde
+plotting/ternary.py ← app_state, scipy
   ↓
-plotting.py ← plotting_core, plotting_render, plotting_geo, plotting_ternary
+plotting/render.py ← plotting/core.py, plotting/geo.py, plotting/ternary.py, plotting/style.py, plotting/kde.py
   ↓
-plotting_embed.py → plotting.py (兼容入口)
+plotting/api.py ← plotting/core.py, plotting/render.py, plotting/geo.py, plotting/ternary.py
   ↓
-events.py ← plotting.py, app_state
+events.py ← plotting/api.py, app_state
   ↓
-plotting_analysis_qt.py ← plotting_data, PyQt5
+plotting/analysis_qt.py ← plotting/data.py, PyQt5
   ↓
-__init__.py ← 导出所有公共 API
+plotting/__init__.py ← 导出所有公共 API
 ```
 
 ---
 
 ## 改进建议
 
-### 高优先级
-
-1. **合并 plotting.py 和 plotting_embed.py** — ✅ 已完成 (plotting_embed.py 作为 shim)。
-
-2. **plot_embedding() 过长 (~757 行)** — 应拆分为子函数:
-   - `_render_scatter_groups()` — 散点渲染
-   - `_render_kde_overlay()` — KDE 叠加
-   - `_render_geo_overlays()` — 地球化学叠加
-   - `_render_legend()` — 图例
-   - `_render_title_labels()` — 标题和标签
-
-3. **_resolve_isochron_errors() 重复** — 在 plotting.py 和 events.py 中各有一份，应提取到共享工具模块。
-
-4. **events.py 中硬编码中文字符串** — `"状态: 已选中"`, `"单击导出已移除"` 等应使用 `translate()`。
-
-### 中优先级
-
-5. **无进度指示** — UMAP/t-SNE 在大数据集 (10k+) 上可能耗时数分钟，UI 冻结。应添加进度条或后台线程。
-
-6. **图例 bbox 偏移硬编码** — `1.08`, `1.32`, `-0.28` 等魔法数字应移到 CONFIG 或 app_state。
-
-7. **诊断图无导出功能** — scree plot, loadings 等无法保存为图片。应添加 "另存为" 按钮。
-
-8. **scatter_collections 全量迭代** — `refresh_plot_style()` 遍历所有散点集合，即使只有一个变更。
-
-### 低优先级
-
-9. **类型注解缺失** — 大部分函数无类型注解。
-
-10. **单元测试缺失** — 复杂的渲染逻辑无测试覆盖，重构风险高。
-
-11. **KDE 采样硬编码** — `max_points=5000` 应可配置。
-
-12. **等时线工具仅支持 206-207** — 应扩展 `calculate_selected_isochron()` 支持 206-208 模式。
+改进建议已迁移至 `docs/development_plan.md`。

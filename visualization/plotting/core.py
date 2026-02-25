@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 from core.config import CONFIG
 from core.cache import build_embedding_cache_key
 from core.state import app_state
-from visualization import plotting_data as data_utils
-from visualization.plotting_data import _lazy_import_ml, _get_analysis_data
+from . import data as data_utils
+from .data import _lazy_import_ml, _get_analysis_data
 
 logger = logging.getLogger(__name__)
 
@@ -331,3 +331,4 @@ def _find_age_column(columns):
         if "age" in low:
             return col
     return None
+
