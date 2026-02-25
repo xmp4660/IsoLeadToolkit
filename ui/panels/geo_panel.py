@@ -43,7 +43,7 @@ class GeoPanel(BasePanel):
             if current_model in available_models:
                 self.geo_model_combo.setCurrentText(current_model)
         except Exception as e:
-            logger.warning(f"[WARN] Failed to load geochemistry models: {e}")
+            logger.warning("Failed to load geochemistry models: %s", e)
             self.geo_model_combo.addItem("Default")
 
         self.geo_model_combo.currentTextChanged.connect(self._on_geo_model_change)
@@ -174,13 +174,13 @@ class GeoPanel(BasePanel):
                         self.geo_params[key].setValue(current_params[key])
 
                 app_state.geo_model_name = model_name
-                logger.info(f"[INFO] Loaded Geochemistry Model: {model_name}")
+                logger.info("Loaded Geochemistry Model: %s", model_name)
 
                 if app_state.render_mode in ('V1V2', 'PB_EVOL_76', 'PB_EVOL_86', 'PB_MU_AGE', 'PB_KAPPA_AGE'):
                     self._on_change()
 
         except Exception as e:
-            logger.error(f"[ERROR] Failed to load geochemistry model: {e}")
+            logger.error("Failed to load geochemistry model: %s", e)
             QMessageBox.warning(
                 self,
                 translate("Error"),
@@ -207,7 +207,7 @@ class GeoPanel(BasePanel):
                     params[key] = self.geo_params[key].value()
 
             engine.update_parameters(params)
-            logger.info("[INFO] Applied geochemistry parameters")
+            logger.info("Applied geochemistry parameters")
 
             if app_state.render_mode in ('V1V2', 'PB_EVOL_76', 'PB_EVOL_86', 'PB_MU_AGE', 'PB_KAPPA_AGE'):
                 self._on_change()
@@ -219,7 +219,7 @@ class GeoPanel(BasePanel):
             )
 
         except Exception as e:
-            logger.error(f"[ERROR] Failed to apply geochemistry parameters: {e}")
+            logger.error("Failed to apply geochemistry parameters: %s", e)
             QMessageBox.warning(
                 self,
                 translate("Error"),
@@ -241,7 +241,7 @@ class GeoPanel(BasePanel):
                 )
 
         except Exception as e:
-            logger.error(f"[ERROR] Failed to reset geochemistry parameters: {e}")
+            logger.error("Failed to reset geochemistry parameters: %s", e)
             QMessageBox.warning(
                 self,
                 translate("Error"),

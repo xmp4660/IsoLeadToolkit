@@ -111,6 +111,9 @@ Excel/CSV 文件
 | 诊断图未完全国际化 | visualization/plotting/analysis_qt.py | ✅ 已修复 |
 | plotting/api.py 导出私有 helper | visualization/plotting/api.py | ✅ 已修复 |
 | plotting/geo.py & plotting/render.py 顶层副作用 | visualization/plotting/geo.py, visualization/plotting/render.py | ✅ 已修复 |
+| ui 模块 docstring/导入顺序不规范 | ui/app.py, ui/main_window.py, ui/control_panel.py, ui/dialogs/* | ✅ 已修复 |
+| ui 模块日志前缀残留 | ui/app.py, ui/main_window.py, ui/panels/*, ui/dialogs/* | ✅ 已修复 |
+| ui 模块 core 导入入口不统一 | ui/dialogs/*, ui/control_panel.py, ui/panels/* | ✅ 已修复 |
 
 ---
 

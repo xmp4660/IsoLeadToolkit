@@ -196,7 +196,7 @@ tests/
 
 - 添加模块名和行号到日志格式
 - LoggerWriter 添加 `fileno()` 支持 faulthandler
-- 统一日志级别使用 (移除字符串前缀 `[INFO]`)
+- 统一日志级别使用 (移除字符串前缀 `[INFO]`) ✅ 已完成 (ui/ + visualization/ 全模块)
 
 ---
 
@@ -303,6 +303,12 @@ tests/
 ---
 
 ### ui/ 模块
+
+#### 规范修复
+
+1. **docstring/导入顺序不规范** — `app.py`, `main_window.py`, `control_panel.py`, `sheet_dialog.py`, `endmember_dialog.py`, `mixing_dialog.py` 中 logger 定义早于 docstring，导入顺序不规范。✅ 已完成
+2. **日志前缀残留** — `app.py`, `main_window.py`, `analysis_panel.py`, `data_panel.py`, `display_panel.py`, `export_panel.py`, `geo_panel.py`, `legend_panel.py`, `sheet_dialog.py`, `endmember_dialog.py`, `mixing_dialog.py`, `provenance_ml_dialog.py` 中约 50 处 `[INFO]`/`[WARN]`/`[ERROR]`/`[DEBUG]` 前缀及 f-string 日志，已统一为 `%s` 占位符。✅ 已完成
+3. **core 导入入口不统一** — `data_import_dialog.py`, `file_dialog.py`, `data_config.py`, `three_d_dialog.py`, `two_d_dialog.py`, `ternary_dialog.py`, `isochron_dialog.py`, `sheet_dialog.py`, `progress_dialog.py`, `control_panel.py` 中混用 `core.localization` 与 `core.state`，已统一为 `from core import ...`。✅ 已完成
 
 #### 高优先级
 

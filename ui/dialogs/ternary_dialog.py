@@ -9,8 +9,7 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout,
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
-from core.localization import translate
-from core.state import app_state
+from core import translate, app_state
 
 
 class Qt5TernaryDialog(QDialog):

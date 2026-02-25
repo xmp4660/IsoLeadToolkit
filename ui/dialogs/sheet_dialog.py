@@ -1,8 +1,6 @@
+"""Qt5 工作表选择对话框。"""
 import logging
-logger = logging.getLogger(__name__)
-"""
-Qt5 工作表选择对话框
-"""
+
 import pandas as pd
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout,
                               QLabel, QPushButton,
@@ -12,7 +10,9 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout,
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
-from core.localization import translate
+from core import translate
+
+logger = logging.getLogger(__name__)
 
 
 class Qt5SheetDialog(QDialog):
@@ -29,7 +29,7 @@ class Qt5SheetDialog(QDialog):
         try:
             self.sheets = list(pd.ExcelFile(file_path).sheet_names)
         except Exception as e:
-            logger.error(f"[ERROR] Could not load sheets: {e}")
+            logger.error("Could not load sheets: %s", e)
             QMessageBox.critical(self, translate("Error"),
                                translate("Failed to load Excel file: {error}").format(error=str(e)))
             return

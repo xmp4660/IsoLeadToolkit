@@ -291,7 +291,7 @@ class AnalysisPanel(BasePanel):
             from visualization.plotting.analysis_qt import show_correlation_heatmap
             show_correlation_heatmap(self)
         except Exception as e:
-            logger.error(f"[ERROR] Failed to show correlation heatmap: {e}")
+            logger.error("Failed to show correlation heatmap: %s", e)
 
     def _on_show_axis_correlation(self):
         """显示轴相关性"""
@@ -299,7 +299,7 @@ class AnalysisPanel(BasePanel):
             from visualization.plotting.analysis_qt import show_embedding_correlation
             show_embedding_correlation(self)
         except Exception as e:
-            logger.error(f"[ERROR] Failed to show axis correlation: {e}")
+            logger.error("Failed to show axis correlation: %s", e)
 
     def _on_show_shepard_diagram(self):
         """显示Shepard图"""
@@ -307,7 +307,7 @@ class AnalysisPanel(BasePanel):
             from visualization.plotting.analysis_qt import show_shepard_diagram
             show_shepard_diagram(self)
         except Exception as e:
-            logger.error(f"[ERROR] Failed to show Shepard diagram: {e}")
+            logger.error("Failed to show Shepard diagram: %s", e)
 
     def _sync_selection_buttons(self):
         """Sync selection button states with active tool."""
@@ -383,7 +383,7 @@ class AnalysisPanel(BasePanel):
             from visualization.events import toggle_selection_mode
             toggle_selection_mode('export')
         except Exception as err:
-            logger.warning(f"[WARN] Failed to toggle selection mode: {err}")
+            logger.warning("Failed to toggle selection mode: %s", err)
         self._sync_selection_buttons()
 
     def _on_toggle_ellipse_selection(self):
@@ -393,7 +393,7 @@ class AnalysisPanel(BasePanel):
             from visualization.events import refresh_selection_overlay
             refresh_selection_overlay()
         except Exception as err:
-            logger.warning(f"[WARN] Failed to toggle ellipse display: {err}")
+            logger.warning("Failed to toggle ellipse display: %s", err)
         self._sync_selection_buttons()
 
     def _on_toggle_lasso_selection(self):
@@ -402,7 +402,7 @@ class AnalysisPanel(BasePanel):
             from visualization.events import toggle_selection_mode
             toggle_selection_mode('lasso')
         except Exception as err:
-            logger.warning(f"[WARN] Failed to toggle custom shape selection: {err}")
+            logger.warning("Failed to toggle custom shape selection: %s", err)
         self._sync_selection_buttons()
 
     def _on_analyze_subset(self):
@@ -920,10 +920,10 @@ class AnalysisPanel(BasePanel):
             result = get_tooltip_configuration(self)
             if result:
                 app_state.tooltip_columns = result
-                logger.info(f"[INFO] Tooltip columns configured: {result}")
+                logger.info("Tooltip columns configured: %s", result)
                 self._on_change()
         except Exception as e:
-            logger.error(f"[ERROR] Failed to open tooltip configuration dialog: {e}")
+            logger.error("Failed to open tooltip configuration dialog: %s", e)
             QMessageBox.warning(
                 self,
                 translate("Error"),
@@ -1046,7 +1046,7 @@ class AnalysisPanel(BasePanel):
             from ui.dialogs.mixing_dialog import show_mixing_calculator
             show_mixing_calculator(self)
         except Exception as e:
-            logger.error(f"[ERROR] Failed to compute mixing: {e}")
+            logger.error("Failed to compute mixing: %s", e)
             QMessageBox.warning(
                 self,
                 translate("Error"),
@@ -1066,7 +1066,7 @@ class AnalysisPanel(BasePanel):
             from ui.dialogs.endmember_dialog import show_endmember_analysis
             show_endmember_analysis(self)
         except Exception as e:
-            logger.error(f"[ERROR] Endmember analysis failed: {e}")
+            logger.error("Endmember analysis failed: %s", e)
             QMessageBox.warning(
                 self,
                 translate("Error"),
@@ -1086,7 +1086,7 @@ class AnalysisPanel(BasePanel):
             from ui.dialogs.provenance_ml_dialog import show_provenance_ml
             show_provenance_ml(self)
         except Exception as e:
-            logger.error(f"[ERROR] Provenance ML failed: {e}")
+            logger.error("Provenance ML failed: %s", e)
             QMessageBox.warning(
                 self,
                 translate("Error"),
@@ -1111,5 +1111,5 @@ class AnalysisPanel(BasePanel):
     def _on_confidence_change(self, level):
         """置信水平变化"""
         app_state.confidence_level = level
-        logger.info(f"[INFO] Confidence level changed to: {level}")
+        logger.info("Confidence level changed to: %s", level)
         self._on_change()

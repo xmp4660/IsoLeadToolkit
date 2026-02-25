@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout,
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
-from core.localization import translate
+from core import translate
 
 
 class Qt5DataConfigDialog(QDialog):

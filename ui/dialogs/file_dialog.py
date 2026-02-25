@@ -9,8 +9,7 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout,
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
-from core.localization import translate, available_languages, set_language
-from core.state import app_state
+from core import translate, available_languages, set_language, app_state
 
 
 class Qt5FileDialog(QDialog):

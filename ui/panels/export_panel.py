@@ -170,7 +170,7 @@ class ExportPanel(BasePanel):
             from visualization.events import toggle_selection_mode
             toggle_selection_mode('export')
         except Exception as err:
-            logger.warning(f"[WARN] Failed to toggle selection mode: {err}")
+            logger.warning("Failed to toggle selection mode: %s", err)
         self._sync_selection_buttons()
 
     def _on_toggle_ellipse_selection(self):
@@ -180,7 +180,7 @@ class ExportPanel(BasePanel):
             from visualization.events import refresh_selection_overlay
             refresh_selection_overlay()
         except Exception as err:
-            logger.warning(f"[WARN] Failed to toggle ellipse display: {err}")
+            logger.warning("Failed to toggle ellipse display: %s", err)
         self._sync_selection_buttons()
 
     def _on_toggle_lasso_selection(self):
@@ -189,7 +189,7 @@ class ExportPanel(BasePanel):
             from visualization.events import toggle_selection_mode
             toggle_selection_mode('lasso')
         except Exception as err:
-            logger.warning(f"[WARN] Failed to toggle custom shape selection: {err}")
+            logger.warning("Failed to toggle custom shape selection: %s", err)
         self._sync_selection_buttons()
 
     # ------ 导出 ------

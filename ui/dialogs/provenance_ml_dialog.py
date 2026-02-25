@@ -372,7 +372,7 @@ class ProvenanceMLDialog(QDialog):
                     rows=len(df), cols=len(df.columns))
             )
         except Exception as exc:
-            logger.error(f"[ERROR] Failed to load training data: {exc}")
+            logger.error("Failed to load training data: %s", exc)
             self._training_df = None
             self.train_status_label.setText("")
             QMessageBox.warning(
@@ -554,7 +554,7 @@ class ProvenanceMLDialog(QDialog):
                 translate("ML training failed: {error}").format(error=str(exc)),
             )
         except Exception as exc:
-            logger.error(f"[ERROR] Provenance ML failed: {exc}")
+            logger.error("Provenance ML failed: %s", exc)
             QMessageBox.warning(
                 self, translate("Error"),
                 translate("ML training failed: {error}").format(error=str(exc)),

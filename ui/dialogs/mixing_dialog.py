@@ -1,8 +1,6 @@
+"""混合计算对话框。"""
 import logging
-logger = logging.getLogger(__name__)
-"""
-混合计算对话框
-"""
+
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
                               QLabel, QTableWidget, QTableWidgetItem, QMessageBox,
                               QHeaderView, QSizePolicy, QGroupBox)
@@ -11,6 +9,8 @@ from PyQt5.QtGui import QFont
 import numpy as np
 
 from core import app_state, translate
+
+logger = logging.getLogger(__name__)
 
 
 def show_mixing_calculator(parent=None):
@@ -157,7 +157,7 @@ class MixingCalculatorDialog(QDialog):
                     })
 
             except Exception as e:
-                logger.error(f"[ERROR] Failed to calculate mixing for {mixture_name}: {e}")
+                logger.error("Failed to calculate mixing for %s: %s", mixture_name, e)
                 continue
 
         # 显示结果

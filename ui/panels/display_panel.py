@@ -455,7 +455,7 @@ class DisplayPanel(BasePanel):
                 with open(theme_file, 'r', encoding='utf-8') as handle:
                     app_state.saved_themes = json.load(handle)
             except Exception as exc:
-                logger.warning(f"[WARN] Failed to load themes: {exc}")
+                logger.warning("Failed to load themes: %s", exc)
                 app_state.saved_themes = {}
 
         if self.theme_load_combo is None:

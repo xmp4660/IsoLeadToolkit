@@ -272,7 +272,7 @@ class LegendPanel(BasePanel):
                     if app_state.fig:
                         app_state.fig.canvas.draw_idle()
                 except Exception as e:
-                    logger.warning(f"[WARN] Failed to update color for {group}: {e}")
+                    logger.warning("Failed to update color for %s: %s", group, e)
 
     def _apply_marker_shape(self, group, shape_combo, swatch):
         self._ensure_marker_shape_map()
@@ -301,7 +301,7 @@ class LegendPanel(BasePanel):
         groups_to_show = list(groups)[:max_items]
 
         if len(groups) > max_items:
-            logger.warning(f"[WARN] Showing first {max_items} groups only.")
+            logger.warning("Showing first %d groups only.", max_items)
 
         for group in groups_to_show:
             item_widget = QWidget()
@@ -432,7 +432,7 @@ class LegendPanel(BasePanel):
                 if app_state.fig:
                     app_state.fig.canvas.draw_idle()
             except Exception as e:
-                logger.warning(f"[WARN] Failed to bring {group} to front: {e}")
+                logger.warning("Failed to bring %s to front: %s", group, e)
 
     def _on_legend_position_change(self, position):
         if position == 'outside right':

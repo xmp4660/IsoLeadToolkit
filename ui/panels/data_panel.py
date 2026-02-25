@@ -772,14 +772,14 @@ class DataPanel(BasePanel):
 
             # 更新状态
             app_state.pca_component_indices = [x_idx, y_idx]
-            logger.info(f"[INFO] PCA dimensions changed to: PC{x_idx+1} vs PC{y_idx+1}")
+            logger.info("PCA dimensions changed to: PC%d vs PC%d", x_idx+1, y_idx+1)
 
             # 如果当前是 PCA 或 RobustPCA 模式，刷新绘图
             if app_state.render_mode in ['PCA', 'RobustPCA']:
                 self._on_change()
 
         except Exception as e:
-            logger.error(f"[ERROR] Failed to change PCA dimensions: {e}")
+            logger.error("Failed to change PCA dimensions: %s", e)
 
     def _on_show_scree_plot(self):
         """显示 Scree Plot"""
@@ -787,7 +787,7 @@ class DataPanel(BasePanel):
             from visualization import show_scree_plot
             show_scree_plot(None)  # 传入 None，函数内部会创建新窗口
         except Exception as e:
-            logger.error(f"[ERROR] Failed to show scree plot: {e}")
+            logger.error("Failed to show scree plot: %s", e)
             QMessageBox.warning(
                 self,
                 translate("Error"),
@@ -800,7 +800,7 @@ class DataPanel(BasePanel):
             from visualization import show_pca_loadings
             show_pca_loadings(None)  # 传入 None，函数内部会创建新窗口
         except Exception as e:
-            logger.error(f"[ERROR] Failed to show PCA loadings: {e}")
+            logger.error("Failed to show PCA loadings: %s", e)
             QMessageBox.warning(
                 self,
                 translate("Error"),
@@ -880,7 +880,7 @@ class DataPanel(BasePanel):
         if x_col and y_col:
             app_state.selected_2d_cols = [x_col, y_col]
             app_state.selected_2d_confirmed = True
-            logger.debug(f"[DEBUG] 2D Axes Changed: X={x_col}, Y={y_col}")
+            logger.debug("2D Axes Changed: X=%s, Y=%s", x_col, y_col)
             self._on_change()
 
     def _show_2d_column_dialog(self):
@@ -891,7 +891,7 @@ class DataPanel(BasePanel):
         if result:
             app_state.selected_2d_cols = result
             app_state.selected_2d_confirmed = True
-            logger.info(f"[INFO] Selected 2D columns: {result}")
+            logger.info("Selected 2D columns: %s", result)
             self._on_change()
 
     def _show_3d_column_dialog(self):
@@ -902,7 +902,7 @@ class DataPanel(BasePanel):
         if result:
             app_state.selected_3d_cols = result
             app_state.selected_3d_confirmed = True
-            logger.info(f"[INFO] Selected 3D columns: {result}")
+            logger.info("Selected 3D columns: %s", result)
             self._on_change()
 
     def _show_ternary_column_dialog(self):
@@ -915,8 +915,8 @@ class DataPanel(BasePanel):
             app_state.ternary_stretch = result['stretch']
             app_state.ternary_factors = result['factors']
             app_state.selected_ternary_confirmed = True
-            logger.info(f"[INFO] Selected ternary columns: {result['columns']}")
-            logger.info(f"[INFO] Ternary stretch: {result['stretch']}, factors: {result['factors']}")
+            logger.info("Selected ternary columns: %s", result['columns'])
+            logger.info("Ternary stretch: %s, factors: %s", result['stretch'], result['factors'])
             self._on_change()
 
     def _on_model_curves_change(self, state):
@@ -1195,7 +1195,7 @@ class DataPanel(BasePanel):
         try:
             on_slider_change()
         except Exception as refresh_err:
-            logger.warning(f"[WARN] Failed to refresh plot: {refresh_err}")
+            logger.warning("Failed to refresh plot: %s", refresh_err)
 
         self._update_isochron_btn_text()
 
@@ -1414,10 +1414,10 @@ class DataPanel(BasePanel):
             result = get_tooltip_configuration(self)
             if result:
                 app_state.tooltip_columns = result
-                logger.info(f"[INFO] Tooltip columns configured: {result}")
+                logger.info("Tooltip columns configured: %s", result)
                 self._on_change()
         except Exception as e:
-            logger.error(f"[ERROR] Failed to open tooltip configuration dialog: {e}")
+            logger.error("Failed to open tooltip configuration dialog: %s", e)
             QMessageBox.warning(
                 self,
                 translate("Error"),

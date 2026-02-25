@@ -1,9 +1,8 @@
+"""Qt5 主窗口基类。
+
+提供标准的应用程序窗口框架。
+"""
 import logging
-logger = logging.getLogger(__name__)
-"""
-Qt5 主窗口基类
-提供标准的应用程序窗口框架
-"""
 from pathlib import Path
 import math
 
@@ -19,6 +18,8 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 from core import app_state, translate
+
+logger = logging.getLogger(__name__)
 
 # 默认图标尺寸
 DEFAULT_TOOLBAR_ICON_SIZE = QSize(24, 24)
@@ -223,7 +224,7 @@ class Qt5MainWindow(QMainWindow):
             self._legend_layout_state = layout_state
         except Exception as exc:
             import traceback
-            logger.error(f"[ERROR] Legend splitter layout failed: {exc}")
+            logger.error("Legend splitter layout failed: %s", exc)
             traceback.print_exc()
 
     def _build_marker_icon(self, color, marker, size=14):
@@ -314,7 +315,7 @@ class Qt5MainWindow(QMainWindow):
                 self._legend_list.addItem(item)
         except Exception as exc:
             import traceback
-            logger.error(f"[ERROR] Legend panel update failed: {exc}")
+            logger.error("Legend panel update failed: %s", exc)
             traceback.print_exc()
 
     def _refresh_plot(self):
@@ -391,7 +392,7 @@ class Qt5MainWindow(QMainWindow):
                 ui_theme=getattr(app_state, 'ui_theme', 'Modern Light')
             )
         except Exception as e:
-            logger.warning(f"[WARN] Failed to save session: {e}")
+            logger.warning("Failed to save session: %s", e)
 
         event.accept()
 
@@ -550,7 +551,7 @@ class Qt5MainWindow(QMainWindow):
             from visualization.events import toggle_selection_mode
             toggle_selection_mode(tool_type)
         except Exception as exc:
-            logger.warning(f"[WARN] Failed to toggle selection tool: {exc}")
+            logger.warning("Failed to toggle selection tool: %s", exc)
         self._sync_selection_tool_actions()
 
     def _sync_selection_tool_actions(self):
@@ -601,7 +602,7 @@ class Qt5MainWindow(QMainWindow):
                     from visualization.events import on_slider_change
                     on_slider_change()
                 except Exception as exc:
-                    logger.warning(f"[WARN] Failed to refresh plot after reload: {exc}")
+                    logger.warning("Failed to refresh plot after reload: %s", exc)
         else:
             self.statusBar().showMessage(translate("Failed to reload data"), 3000)
 
@@ -636,4 +637,4 @@ class Qt5MainWindow(QMainWindow):
         # 连接 legend click 事件
         canvas.mpl_connect('button_press_event', on_legend_click)
 
-        logger.info("[INFO] Event handlers connected successfully")
+        logger.info("Event handlers connected successfully")

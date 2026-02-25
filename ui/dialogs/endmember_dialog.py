@@ -1,9 +1,6 @@
-# -*- coding: utf-8 -*-
+"""端元识别对话框。"""
 import logging
-logger = logging.getLogger(__name__)
-"""
-端元识别对话框
-"""
+
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
                               QLabel, QTableWidget, QTableWidgetItem, QMessageBox,
                               QHeaderView, QSizePolicy, QGroupBox, QComboBox,
@@ -14,6 +11,8 @@ from PyQt5.QtGui import QFont
 import numpy as np
 
 from core import app_state, translate
+
+logger = logging.getLogger(__name__)
 
 
 def show_endmember_analysis(parent=None):
@@ -275,7 +274,7 @@ class EndmemberAnalysisDialog(QDialog):
             )
             self._display_results()
         except Exception as e:
-            logger.error(f"[ERROR] Endmember analysis failed: {e}")
+            logger.error("Endmember analysis failed: %s", e)
             QMessageBox.critical(
                 self, translate("Error"),
                 translate("Endmember analysis failed: {error}").format(error=str(e)))

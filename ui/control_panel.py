@@ -1,21 +1,22 @@
+"""Qt5 控制面板。
+
+提供算法参数调整和可视化设置。
+"""
 import logging
-logger = logging.getLogger(__name__)
-"""
-Qt5 控制面板
-提供算法参数调整和可视化设置
-"""
+
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
     QFrame, QScrollArea, QComboBox, QGroupBox, QTabWidget,
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 
-from core import translate, app_state
-from core.localization import available_languages
+from core import translate, app_state, available_languages
 from ui.panels import (
     DataPanel, DisplayPanel, AnalysisPanel,
     ExportPanel, LegendPanel, GeoPanel,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class Qt5ControlPanel(QWidget):
@@ -205,7 +206,7 @@ class Qt5ControlPanel(QWidget):
 
         self._language_change_pending = True
         try:
-            from core.localization import set_language
+            from core import set_language
             set_language(code)
         finally:
             QTimer.singleShot(0, self._rebuild_ui)
@@ -331,7 +332,7 @@ def create_control_panel(callback):
 def create_section_dialog(section_key, callback, parent=None):
     """Create a dialog that hosts a single control section."""
     from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QApplication, QScrollArea
-    from core.localization import set_language
+    from core import set_language
 
     section_key = (section_key or '').lower()
 
