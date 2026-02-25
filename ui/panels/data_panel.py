@@ -254,6 +254,7 @@ class DataPanel(BasePanel):
         self.labels['umap_min_dist'] = min_dist_label
 
         metric_label = QLabel(translate("metric:"))
+        metric_label.setProperty('translate_key', 'metric:')
         umap_layout.addWidget(metric_label)
 
         self.metric_combo = QComboBox()
@@ -322,7 +323,7 @@ class DataPanel(BasePanel):
         pca_layout = QVBoxLayout()
 
         n_comp_label = QLabel(translate("n_components:"))
-        pca_layout.addWidget(n_comp_label)
+        n_comp_label.setProperty('translate_key', 'n_components:')
 
         n_comp_spin = QSpinBox()
         n_comp_spin.setRange(2, 10)
@@ -342,6 +343,7 @@ class DataPanel(BasePanel):
         pca_layout.addWidget(pca_rs_spin)
 
         standardize_check = QCheckBox(translate("Standardize data"))
+        standardize_check.setProperty('translate_key', 'Standardize data')
         standardize_check.setChecked(app_state.standardize_data)
         standardize_check.stateChanged.connect(self._on_standardize_change)
         pca_layout.addWidget(standardize_check)
@@ -349,10 +351,12 @@ class DataPanel(BasePanel):
         pca_tools_layout = QHBoxLayout()
 
         scree_btn = QPushButton(translate("Scree Plot"))
+        scree_btn.setProperty('translate_key', 'Scree Plot')
         scree_btn.clicked.connect(self._on_show_scree_plot)
         pca_tools_layout.addWidget(scree_btn)
 
         loadings_btn = QPushButton(translate("Loadings"))
+        loadings_btn.setProperty('translate_key', 'Loadings')
         loadings_btn.clicked.connect(self._on_show_pca_loadings)
         pca_tools_layout.addWidget(loadings_btn)
 
@@ -391,6 +395,7 @@ class DataPanel(BasePanel):
         robust_pca_layout = QVBoxLayout()
 
         robust_n_comp_label = QLabel(translate("n_components:"))
+        robust_n_comp_label.setProperty('translate_key', 'n_components:')
         robust_pca_layout.addWidget(robust_n_comp_label)
 
         robust_n_comp_spin = QSpinBox()
@@ -413,6 +418,7 @@ class DataPanel(BasePanel):
         self.labels['robust_pca_support'] = support_label
 
         robust_rs_label = QLabel(translate("random_state:"))
+        robust_rs_label.setProperty('translate_key', 'random_state:')
         robust_pca_layout.addWidget(robust_rs_label)
 
         robust_rs_spin = QSpinBox()
@@ -424,10 +430,12 @@ class DataPanel(BasePanel):
         rpca_tools_layout = QHBoxLayout()
 
         rpca_scree_btn = QPushButton(translate("Scree Plot"))
+        rpca_scree_btn.setProperty('translate_key', 'Scree Plot')
         rpca_scree_btn.clicked.connect(self._on_show_scree_plot)
         rpca_tools_layout.addWidget(rpca_scree_btn)
 
         rpca_loadings_btn = QPushButton(translate("Loadings"))
+        rpca_loadings_btn.setProperty('translate_key', 'Loadings')
         rpca_loadings_btn.clicked.connect(self._on_show_pca_loadings)
         rpca_tools_layout.addWidget(rpca_loadings_btn)
 
@@ -466,16 +474,19 @@ class DataPanel(BasePanel):
         ternary_layout = QVBoxLayout()
 
         info_label = QLabel(translate("Using Standard Ternary Plot.\nData is plotted as relative proportions."))
+        info_label.setProperty('translate_key', 'Using Standard Ternary Plot.\nData is plotted as relative proportions.')
         info_label.setWordWrap(True)
         ternary_layout.addWidget(info_label)
 
         self.ternary_auto_zoom_check = QCheckBox(translate("Auto-Zoom to Data"))
+        self.ternary_auto_zoom_check.setProperty('translate_key', 'Auto-Zoom to Data')
         self.ternary_auto_zoom_check.setChecked(getattr(app_state, 'ternary_auto_zoom', False))
         self.ternary_auto_zoom_check.stateChanged.connect(self._on_ternary_zoom_change)
         ternary_layout.addWidget(self.ternary_auto_zoom_check)
 
         stretch_header = QHBoxLayout()
         stretch_label = QLabel(translate("Stretch Mode"))
+        stretch_label.setProperty('translate_key', 'Stretch Mode')
         stretch_header.addWidget(stretch_label)
         stretch_header.addStretch()
         self.ternary_scale_label = QLabel()
@@ -498,6 +509,7 @@ class DataPanel(BasePanel):
         ternary_layout.addWidget(self.ternary_scale_slider)
 
         self.ternary_stretch_check = QCheckBox(translate("Stretch to Fill"))
+        self.ternary_stretch_check.setProperty('translate_key', 'Stretch to Fill')
         self.ternary_stretch_check.setChecked(getattr(app_state, 'ternary_stretch', False))
         self.ternary_stretch_check.stateChanged.connect(self._on_ternary_stretch_change)
         ternary_layout.addWidget(self.ternary_stretch_check)
@@ -519,7 +531,9 @@ class DataPanel(BasePanel):
         t2_val = params.get('T2', 4570e6) / 1e6
 
         t1_layout = QHBoxLayout()
-        t1_layout.addWidget(QLabel(translate("T1 (Ma) - Model Age")))
+        t1_label = QLabel(translate("T1 (Ma) - Model Age"))
+        t1_label.setProperty('translate_key', 'T1 (Ma) - Model Age')
+        t1_layout.addWidget(t1_label)
         self.v1v2_t1_spin = QDoubleSpinBox()
         self.v1v2_t1_spin.setRange(0.0, 10000.0)
         self.v1v2_t1_spin.setDecimals(3)
@@ -529,7 +543,9 @@ class DataPanel(BasePanel):
         v1v2_layout.addLayout(t1_layout)
 
         t2_layout = QHBoxLayout()
-        t2_layout.addWidget(QLabel(translate("T2 (Ma) - Standard Earth Age")))
+        t2_label = QLabel(translate("T2 (Ma) - Standard Earth Age"))
+        t2_label.setProperty('translate_key', 'T2 (Ma) - Standard Earth Age')
+        t2_layout.addWidget(t2_label)
         self.v1v2_t2_spin = QDoubleSpinBox()
         self.v1v2_t2_spin.setRange(0.0, 10000.0)
         self.v1v2_t2_spin.setDecimals(3)
@@ -581,7 +597,9 @@ class DataPanel(BasePanel):
         )
 
         paleo_step_layout = QHBoxLayout()
-        paleo_step_layout.addWidget(QLabel(translate("Paleoisochron Step (Ma):")))
+        paleo_step_label = QLabel(translate("Paleoisochron Step (Ma):"))
+        paleo_step_label.setProperty('translate_key', 'Paleoisochron Step (Ma):')
+        paleo_step_layout.addWidget(paleo_step_label)
         self.paleo_step_spin = QSpinBox()
         self.paleo_step_spin.setRange(50, 5000)
         self.paleo_step_spin.setSingleStep(50)
@@ -600,12 +618,14 @@ class DataPanel(BasePanel):
 
         isochron_row = QHBoxLayout()
         self.calc_isochron_btn = QPushButton(translate("Calculate Isochron Age"))
+        self.calc_isochron_btn.setProperty('translate_key', 'Calculate Isochron Age')
         self.calc_isochron_btn.clicked.connect(self._on_calculate_isochron)
         if getattr(app_state, 'show_isochrons', False):
             self.calc_isochron_btn.setText(translate("Hide Isochron"))
         isochron_row.addWidget(self.calc_isochron_btn)
 
         isochron_settings_btn = QPushButton(translate("Isochron Settings"))
+        isochron_settings_btn.setProperty('translate_key', 'Isochron Settings')
         isochron_settings_btn.clicked.connect(self._on_isochron_settings)
         isochron_row.addWidget(isochron_settings_btn)
 
@@ -629,6 +649,7 @@ class DataPanel(BasePanel):
         twod_grid = QGridLayout()
 
         x_label = QLabel(translate("X Axis:"))
+        x_label.setProperty('translate_key', 'X Axis:')
         twod_grid.addWidget(x_label, 0, 0)
 
         self.xaxis_combo = QComboBox()
@@ -638,6 +659,7 @@ class DataPanel(BasePanel):
         twod_grid.addWidget(self.xaxis_combo, 0, 1)
 
         y_label = QLabel(translate("Y Axis:"))
+        y_label.setProperty('translate_key', 'Y Axis:')
         twod_grid.addWidget(y_label, 1, 0)
 
         self.yaxis_combo = QComboBox()

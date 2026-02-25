@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Callable
 
-from PyQt5.QtWidgets import QWidget, QGroupBox, QLabel, QPushButton, QCheckBox
+from PyQt5.QtWidgets import QWidget, QGroupBox, QLabel, QPushButton, QCheckBox, QRadioButton
 from PyQt5.QtCore import QTimer
 
 from core import app_state, translate
@@ -50,7 +50,7 @@ class BasePanel(QWidget):
         标记需要翻译的控件，语言切换时调用此方法即可就地刷新文本，
         无需销毁重建整个 UI。
 
-        支持的控件类型: QGroupBox (setTitle), QLabel/QPushButton/QCheckBox (setText)。
+        支持的控件类型: QGroupBox (setTitle), QLabel/QPushButton/QCheckBox/QRadioButton (setText)。
         """
         if root is None:
             root = self
@@ -61,7 +61,7 @@ class BasePanel(QWidget):
             translated = translate(key)
             if isinstance(child, QGroupBox):
                 child.setTitle(translated)
-            elif isinstance(child, (QLabel, QPushButton, QCheckBox)):
+            elif isinstance(child, (QLabel, QPushButton, QCheckBox, QRadioButton)):
                 child.setText(translated)
 
     def _on_change(self):

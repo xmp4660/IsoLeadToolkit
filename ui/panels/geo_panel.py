@@ -84,6 +84,7 @@ class GeoPanel(BasePanel):
         init_layout = QVBoxLayout()
 
         prim_label = QLabel(translate("Primordial (T1/T2):"))
+        prim_label.setProperty('translate_key', 'Primordial (T1/T2):')
         prim_label.setStyleSheet("font-weight: bold;")
         init_layout.addWidget(prim_label)
 
@@ -94,6 +95,7 @@ class GeoPanel(BasePanel):
         init_layout.addLayout(prim_grid)
 
         sk_label = QLabel(translate("Stacey-Kramers 2nd Stage:"))
+        sk_label.setProperty('translate_key', 'Stacey-Kramers 2nd Stage:')
         sk_label.setStyleSheet("font-weight: bold; margin-top: 10px;")
         init_layout.addWidget(sk_label)
 

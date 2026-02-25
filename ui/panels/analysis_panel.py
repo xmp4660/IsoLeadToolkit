@@ -71,6 +71,7 @@ class AnalysisPanel(BasePanel):
 
         kde_row = QHBoxLayout()
         self.tools_kde_check = QCheckBox(translate("Show Kernel Density"))
+        self.tools_kde_check.setProperty('translate_key', 'Show Kernel Density')
         self.tools_kde_check.setChecked(getattr(app_state, 'show_kde', False))
         self.tools_kde_check.stateChanged.connect(self._on_kde_change)
         kde_row.addWidget(self.tools_kde_check)
@@ -86,6 +87,7 @@ class AnalysisPanel(BasePanel):
 
         mkde_row = QHBoxLayout()
         self.tools_marginal_kde_check = QCheckBox(translate("Show Marginal KDE"))
+        self.tools_marginal_kde_check.setProperty('translate_key', 'Show Marginal KDE')
         self.tools_marginal_kde_check.setChecked(getattr(app_state, 'show_marginal_kde', False))
         self.tools_marginal_kde_check.stateChanged.connect(self._on_marginal_kde_change)
         mkde_row.addWidget(self.tools_marginal_kde_check)
@@ -107,10 +109,12 @@ class AnalysisPanel(BasePanel):
         equation_layout = QVBoxLayout()
 
         equation_hint = QLabel(translate("Manage equations and visibility."))
+        equation_hint.setProperty('translate_key', 'Manage equations and visibility.')
         equation_hint.setWordWrap(True)
         equation_layout.addWidget(equation_hint)
 
         add_eq_btn = QPushButton(translate("Add Equation"))
+        add_eq_btn.setProperty('translate_key', 'Add Equation')
         add_eq_btn.clicked.connect(self._open_add_equation_dialog)
         equation_layout.addWidget(add_eq_btn)
 
@@ -122,12 +126,14 @@ class AnalysisPanel(BasePanel):
         selection_layout = QVBoxLayout()
 
         self.selection_button = QPushButton(translate("Enable Selection"))
+        self.selection_button.setProperty('translate_key', 'Enable Selection')
         self.selection_button.setCheckable(True)
         self.selection_button.setFixedWidth(200)
         self.selection_button.clicked.connect(self._on_toggle_selection)
         selection_layout.addWidget(self.selection_button, 0, Qt.AlignHCenter)
 
         self.lasso_selection_button = QPushButton(translate("Custom Shape"))
+        self.lasso_selection_button.setProperty('translate_key', 'Custom Shape')
         self.lasso_selection_button.setCheckable(True)
         self.lasso_selection_button.setFixedWidth(200)
         self.lasso_selection_button.clicked.connect(self._on_toggle_lasso_selection)
@@ -144,16 +150,19 @@ class AnalysisPanel(BasePanel):
         analysis_layout = QVBoxLayout()
 
         corr_btn = QPushButton(translate("Correlation Heatmap"))
+        corr_btn.setProperty('translate_key', 'Correlation Heatmap')
         corr_btn.setFixedWidth(200)
         corr_btn.clicked.connect(self._on_show_correlation_heatmap)
         analysis_layout.addWidget(corr_btn, 0, Qt.AlignHCenter)
 
         axis_corr_btn = QPushButton(translate("Show Axis Corr."))
+        axis_corr_btn.setProperty('translate_key', 'Show Axis Corr.')
         axis_corr_btn.setFixedWidth(200)
         axis_corr_btn.clicked.connect(self._on_show_axis_correlation)
         analysis_layout.addWidget(axis_corr_btn, 0, Qt.AlignHCenter)
 
         shepard_btn = QPushButton(translate("Show Shepard Plot"))
+        shepard_btn.setProperty('translate_key', 'Show Shepard Plot')
         shepard_btn.setFixedWidth(200)
         shepard_btn.clicked.connect(self._on_show_shepard_diagram)
         analysis_layout.addWidget(shepard_btn, 0, Qt.AlignHCenter)
@@ -166,11 +175,13 @@ class AnalysisPanel(BasePanel):
         subset_layout = QVBoxLayout()
 
         analyze_btn = QPushButton(translate("Analyze Subset"))
+        analyze_btn.setProperty('translate_key', 'Analyze Subset')
         analyze_btn.setFixedWidth(200)
         analyze_btn.clicked.connect(self._on_analyze_subset)
         subset_layout.addWidget(analyze_btn, 0, Qt.AlignHCenter)
 
         reset_btn = QPushButton(translate("Reset Data"))
+        reset_btn.setProperty('translate_key', 'Reset Data')
         reset_btn.setFixedWidth(200)
         reset_btn.clicked.connect(self._on_reset_data)
         subset_layout.addWidget(reset_btn, 0, Qt.AlignHCenter)
@@ -183,7 +194,9 @@ class AnalysisPanel(BasePanel):
         mixing_layout = QVBoxLayout()
 
         group_name_layout = QHBoxLayout()
-        group_name_layout.addWidget(QLabel(translate("Group Name:")))
+        group_name_label = QLabel(translate("Group Name:"))
+        group_name_label.setProperty('translate_key', 'Group Name:')
+        group_name_layout.addWidget(group_name_label)
         self.mixing_group_name_edit = QLineEdit()
         self.mixing_group_name_edit.setPlaceholderText(translate("Enter group name"))
         group_name_layout.addWidget(self.mixing_group_name_edit)
@@ -192,11 +205,13 @@ class AnalysisPanel(BasePanel):
         mixing_btn_layout = QHBoxLayout()
 
         endmember_btn = QPushButton(translate("Set as Endmember"))
+        endmember_btn.setProperty('translate_key', 'Set as Endmember')
         endmember_btn.setFixedWidth(170)
         endmember_btn.clicked.connect(self._on_set_endmember)
         mixing_btn_layout.addWidget(endmember_btn)
 
         mixture_btn = QPushButton(translate("Set as Mixture"))
+        mixture_btn.setProperty('translate_key', 'Set as Mixture')
         mixture_btn.setFixedWidth(170)
         mixture_btn.clicked.connect(self._on_set_mixture)
         mixing_btn_layout.addWidget(mixture_btn)
@@ -210,11 +225,13 @@ class AnalysisPanel(BasePanel):
         mixing_action_layout = QHBoxLayout()
 
         clear_mixing_btn = QPushButton(translate("Clear Mixing Groups"))
+        clear_mixing_btn.setProperty('translate_key', 'Clear Mixing Groups')
         clear_mixing_btn.setFixedWidth(170)
         clear_mixing_btn.clicked.connect(self._on_clear_mixing_groups)
         mixing_action_layout.addWidget(clear_mixing_btn)
 
         compute_mixing_btn = QPushButton(translate("Compute Mixing"))
+        compute_mixing_btn.setProperty('translate_key', 'Compute Mixing')
         compute_mixing_btn.setFixedWidth(170)
         compute_mixing_btn.clicked.connect(self._on_compute_mixing)
         mixing_action_layout.addWidget(compute_mixing_btn)
@@ -230,10 +247,12 @@ class AnalysisPanel(BasePanel):
         endmember_layout = QVBoxLayout()
 
         endmember_hint = QLabel(translate("Identify lead isotope endmembers using PCA."))
+        endmember_hint.setProperty('translate_key', 'Identify lead isotope endmembers using PCA.')
         endmember_hint.setWordWrap(True)
         endmember_layout.addWidget(endmember_hint)
 
         endmember_btn = QPushButton(translate("Run Endmember Analysis"))
+        endmember_btn.setProperty('translate_key', 'Run Endmember Analysis')
         endmember_btn.setFixedWidth(200)
         endmember_btn.clicked.connect(self._on_run_endmember_analysis)
         endmember_layout.addWidget(endmember_btn, 0, Qt.AlignHCenter)
@@ -247,10 +266,12 @@ class AnalysisPanel(BasePanel):
         provenance_layout = QVBoxLayout()
 
         provenance_hint = QLabel(translate("Run ML provenance classification using DBSCAN, SMOTE and XGBoost."))
+        provenance_hint.setProperty('translate_key', 'Run ML provenance classification using DBSCAN, SMOTE and XGBoost.')
         provenance_hint.setWordWrap(True)
         provenance_layout.addWidget(provenance_hint)
 
         provenance_btn = QPushButton(translate("Run Provenance ML"))
+        provenance_btn.setProperty('translate_key', 'Run Provenance ML')
         provenance_btn.setFixedWidth(200)
         provenance_btn.clicked.connect(self._on_run_provenance_ml)
         provenance_layout.addWidget(provenance_btn, 0, Qt.AlignHCenter)
@@ -263,14 +284,18 @@ class AnalysisPanel(BasePanel):
         confidence_layout = QVBoxLayout()
 
         self.ellipse_selection_button = QPushButton(translate("Draw Ellipse"))
+        self.ellipse_selection_button.setProperty('translate_key', 'Draw Ellipse')
         self.ellipse_selection_button.setCheckable(True)
         self.ellipse_selection_button.setFixedWidth(200)
         self.ellipse_selection_button.clicked.connect(self._on_toggle_ellipse_selection)
         confidence_layout.addWidget(self.ellipse_selection_button, 0, Qt.AlignHCenter)
 
         self.confidence_68_radio = QRadioButton(translate("68% (1σ)"))
+        self.confidence_68_radio.setProperty('translate_key', '68% (1σ)')
         self.confidence_95_radio = QRadioButton(translate("95% (2σ)"))
+        self.confidence_95_radio.setProperty('translate_key', '95% (2σ)')
         self.confidence_99_radio = QRadioButton(translate("99% (3σ)"))
+        self.confidence_99_radio.setProperty('translate_key', '99% (3σ)')
 
         current_level = getattr(app_state, 'confidence_level', 0.95)
         if abs(current_level - 0.68) < 0.01:

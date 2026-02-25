@@ -285,6 +285,7 @@ class LegendPanel(BasePanel):
             item_layout.addWidget(shape_combo)
 
             top_btn = QPushButton(translate("Top"))
+            top_btn.setProperty('translate_key', 'Top')
             top_btn.setFixedWidth(50)
             top_btn.clicked.connect(lambda checked=False, g=group: self._bring_to_front(g))
             item_layout.addWidget(top_btn)

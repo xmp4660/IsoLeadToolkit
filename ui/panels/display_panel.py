@@ -97,7 +97,9 @@ class DisplayPanel(BasePanel):
         theme_group.setProperty('translate_key', 'Interface Theme')
         theme_layout = QVBoxLayout()
         theme_row = QHBoxLayout()
-        theme_row.addWidget(QLabel(translate("UI Theme:")))
+        ui_theme_label = QLabel(translate("UI Theme:"))
+        ui_theme_label.setProperty('translate_key', 'UI Theme:')
+        theme_row.addWidget(ui_theme_label)
         self.ui_theme_combo = QComboBox()
         try:
             from visualization.style_manager import style_manager_instance
@@ -119,20 +121,26 @@ class DisplayPanel(BasePanel):
         saved_group.setProperty('translate_key', 'Saved Plot Settings')
         saved_layout = QVBoxLayout()
         name_row = QHBoxLayout()
-        name_row.addWidget(QLabel(translate("Theme Name:")))
+        theme_name_label = QLabel(translate("Theme Name:"))
+        theme_name_label.setProperty('translate_key', 'Theme Name:')
+        name_row.addWidget(theme_name_label)
         self.theme_name_edit = QLineEdit()
         name_row.addWidget(self.theme_name_edit)
         save_btn = QPushButton(translate("Save"))
+        save_btn.setProperty('translate_key', 'Save')
         save_btn.clicked.connect(self._save_theme)
         name_row.addWidget(save_btn)
         saved_layout.addLayout(name_row)
 
         load_row = QHBoxLayout()
-        load_row.addWidget(QLabel(translate("Load Theme:")))
+        load_theme_label = QLabel(translate("Load Theme:"))
+        load_theme_label.setProperty('translate_key', 'Load Theme:')
+        load_row.addWidget(load_theme_label)
         self.theme_load_combo = QComboBox()
         self.theme_load_combo.currentTextChanged.connect(self._load_theme)
         load_row.addWidget(self.theme_load_combo)
         delete_btn = QPushButton(translate("Delete"))
+        delete_btn.setProperty('translate_key', 'Delete')
         delete_btn.clicked.connect(self._delete_theme)
         load_row.addWidget(delete_btn)
         saved_layout.addLayout(load_row)
@@ -146,7 +154,9 @@ class DisplayPanel(BasePanel):
         general_layout = QVBoxLayout()
 
         palette_row = QHBoxLayout()
-        palette_row.addWidget(QLabel(translate("Palette")))
+        palette_label = QLabel(translate("Palette"))
+        palette_label.setProperty('translate_key', 'Palette')
+        palette_row.addWidget(palette_label)
         self.color_combo = QComboBox()
         try:
             from visualization.style_manager import style_manager_instance
@@ -172,7 +182,9 @@ class DisplayPanel(BasePanel):
             all_fonts = ['<Default>']
 
         primary_row = QHBoxLayout()
-        primary_row.addWidget(QLabel(translate("Primary Font (English)")))
+        primary_font_label = QLabel(translate("Primary Font (English)"))
+        primary_font_label.setProperty('translate_key', 'Primary Font (English)')
+        primary_row.addWidget(primary_font_label)
         self.primary_font_combo = QComboBox()
         self.primary_font_combo.addItems(all_fonts)
         current_primary = getattr(app_state, 'custom_primary_font', '') or '<Default>'
@@ -182,7 +194,9 @@ class DisplayPanel(BasePanel):
         font_layout.addLayout(primary_row)
 
         cjk_row = QHBoxLayout()
-        cjk_row.addWidget(QLabel(translate("CJK Font (Chinese)")))
+        cjk_font_label = QLabel(translate("CJK Font (Chinese)"))
+        cjk_font_label.setProperty('translate_key', 'CJK Font (Chinese)')
+        cjk_row.addWidget(cjk_font_label)
         self.cjk_font_combo = QComboBox()
         self.cjk_font_combo.addItems(all_fonts)
         current_cjk = getattr(app_state, 'custom_cjk_font', '') or '<Default>'
@@ -210,6 +224,7 @@ class DisplayPanel(BasePanel):
         font_layout.addLayout(size_grid)
 
         self.show_title_check = QCheckBox(translate("Show Plot Title"))
+        self.show_title_check.setProperty('translate_key', 'Show Plot Title')
         self.show_title_check.setChecked(getattr(app_state, 'show_plot_title', False))
         self.show_title_check.stateChanged.connect(self._on_style_change)
         font_layout.addWidget(self.show_title_check)
@@ -222,7 +237,9 @@ class DisplayPanel(BasePanel):
         marker_group.setProperty('translate_key', 'Marker Settings')
         marker_layout = QVBoxLayout()
         marker_size_row = QHBoxLayout()
-        marker_size_row.addWidget(QLabel(translate("Size")))
+        marker_size_label = QLabel(translate("Size"))
+        marker_size_label.setProperty('translate_key', 'Size')
+        marker_size_row.addWidget(marker_size_label)
         self.marker_size_spin = QSpinBox()
         self.marker_size_spin.setRange(10, 500)
         self.marker_size_spin.setValue(int(getattr(app_state, 'plot_marker_size', 60)))
@@ -231,7 +248,9 @@ class DisplayPanel(BasePanel):
         marker_layout.addLayout(marker_size_row)
 
         marker_alpha_row = QHBoxLayout()
-        marker_alpha_row.addWidget(QLabel(translate("Opacity")))
+        marker_alpha_label = QLabel(translate("Opacity"))
+        marker_alpha_label.setProperty('translate_key', 'Opacity')
+        marker_alpha_row.addWidget(marker_alpha_label)
         self.marker_alpha_spin = QDoubleSpinBox()
         self.marker_alpha_spin.setRange(0.1, 1.0)
         self.marker_alpha_spin.setSingleStep(0.05)
@@ -247,6 +266,7 @@ class DisplayPanel(BasePanel):
         axes_group.setProperty('translate_key', 'Axes & Lines')
         axes_layout = QVBoxLayout()
         auto_layout_btn = QPushButton(translate("Auto Layout"))
+        auto_layout_btn.setProperty('translate_key', 'Auto Layout')
         auto_layout_btn.clicked.connect(self._apply_auto_layout)
         axes_layout.addWidget(auto_layout_btn)
 
@@ -284,6 +304,7 @@ class DisplayPanel(BasePanel):
         grid_grid = make_group("Grid")
         row = 0
         self.grid_check = QCheckBox(translate("Show Grid"))
+        self.grid_check.setProperty('translate_key', 'Show Grid')
         self.grid_check.setChecked(getattr(app_state, 'plot_style_grid', False))
         self.grid_check.stateChanged.connect(self._on_style_change)
         row = add_row(grid_grid, "Show Grid", self.grid_check, row)
