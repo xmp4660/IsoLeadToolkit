@@ -79,10 +79,14 @@ class DisplayPanel(BasePanel):
         self._is_initialized = True
         return widget
 
-    def _set_legend_position_button(self, location):
+    def _set_legend_position_button(self, inside_location, outside_location=None):
         panel = getattr(self, 'legend_panel', None)
-        if panel is not None and hasattr(panel, '_set_legend_position_button'):
-            panel._set_legend_position_button(location)
+        if panel is None:
+            return
+        if hasattr(panel, '_set_legend_inside_position_button'):
+            panel._set_legend_inside_position_button(inside_location)
+        if hasattr(panel, '_set_legend_outside_position_button'):
+            panel._set_legend_outside_position_button(outside_location)
 
 
 
@@ -147,29 +151,6 @@ class DisplayPanel(BasePanel):
         saved_group.setLayout(saved_layout)
         layout.addWidget(saved_group)
         self._refresh_theme_list()
-
-        # General Settings
-        general_group = QGroupBox(translate("General Settings"))
-        general_group.setProperty('translate_key', 'General Settings')
-        general_layout = QVBoxLayout()
-
-        palette_row = QHBoxLayout()
-        palette_label = QLabel(translate("Palette"))
-        palette_label.setProperty('translate_key', 'Palette')
-        palette_row.addWidget(palette_label)
-        self.color_combo = QComboBox()
-        try:
-            from visualization.style_manager import style_manager_instance
-            palette_names = style_manager_instance.get_palette_names()
-        except Exception:
-            palette_names = ['vibrant', 'bright', 'muted']
-        self.color_combo.addItems(palette_names)
-        self.color_combo.setCurrentText(getattr(app_state, 'color_scheme', 'vibrant'))
-        self.color_combo.currentTextChanged.connect(self._on_style_change)
-        palette_row.addWidget(self.color_combo)
-        general_layout.addLayout(palette_row)
-        general_group.setLayout(general_layout)
-        layout.addWidget(general_group)
 
         # Font Settings
         font_group = QGroupBox(translate("Font Settings"))
@@ -506,7 +487,7 @@ class DisplayPanel(BasePanel):
 
         theme_data = {
             'grid': bool(self.grid_check.isChecked()) if self.grid_check else False,
-            'color_scheme': self.color_combo.currentText() if self.color_combo else 'vibrant',
+            'color_scheme': self.color_combo.currentText() if self.color_combo else getattr(app_state, 'color_scheme', 'vibrant'),
             'primary_font': self.primary_font_combo.currentText() if self.primary_font_combo else '',
             'cjk_font': self.cjk_font_combo.currentText() if self.cjk_font_combo else '',
             'font_sizes': {k: v.value() for k, v in self.font_size_spins.items()},
@@ -549,6 +530,7 @@ class DisplayPanel(BasePanel):
             'title_weight': self.title_weight_combo.currentText() if self.title_weight_combo else 'bold',
             'title_pad': self.title_pad_spin.value() if self.title_pad_spin else 20.0,
             'legend_location': getattr(app_state, 'legend_location', 'outside_right'),
+            'legend_position': getattr(app_state, 'legend_position', None),
             'legend_frame_on': bool(self.legend_frame_on_check.isChecked()) if self.legend_frame_on_check else True,
             'legend_frame_alpha': self.legend_frame_alpha_spin.value() if self.legend_frame_alpha_spin else 0.95,
             'legend_frame_facecolor': self.legend_frame_face_edit.text() if self.legend_frame_face_edit else '#ffffff',
@@ -589,6 +571,8 @@ class DisplayPanel(BasePanel):
             self.grid_check.setChecked(bool(data.get('grid', False)))
         if self.color_combo:
             self.color_combo.setCurrentText(data.get('color_scheme', 'vibrant'))
+        else:
+            app_state.color_scheme = data.get('color_scheme', getattr(app_state, 'color_scheme', 'vibrant'))
 
         primary_font = data.get('primary_font', '') or '<Default>'
         if self.primary_font_combo:
@@ -688,10 +672,15 @@ class DisplayPanel(BasePanel):
         if self.legend_frame_edge_edit:
             self.legend_frame_edge_edit.setText(data.get('legend_frame_edgecolor', '#cbd5f5'))
 
-        legend_loc = data.get('legend_location', 'outside_right')
-        app_state.legend_location = legend_loc
-        app_state.legend_position = legend_loc
-        self._set_legend_position_button(legend_loc)
+        legend_outside = data.get('legend_location', None)
+        legend_inside = data.get('legend_position', None)
+
+        if legend_outside not in {'outside_left', 'outside_right'}:
+            legend_outside = None
+
+        app_state.legend_location = legend_outside
+        app_state.legend_position = legend_inside
+        self._set_legend_position_button(legend_inside, legend_outside)
 
         self._on_style_change()
 

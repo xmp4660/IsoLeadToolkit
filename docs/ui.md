@@ -73,8 +73,9 @@ class Qt5MainWindow(QMainWindow):
 │ 图例面板  │  matplotlib 画布                       │
 │ (可选位置) │                                      │
 │          │                                      │
-│ - 组名列表 │                                      │
-│ - 颜色标记 │                                      │
+│ - 组名 + 显隐 │                                    │
+│ - 颜色/形状 │                                     │
+│ - 双击置顶 │                                      │
 │          ├──────────────────────────────────────┤
 │          │  matplotlib 工具栏                     │
 └──────────┴──────────────────────────────────────┘
@@ -82,15 +83,23 @@ class Qt5MainWindow(QMainWindow):
 └─────────────────────────────────────────────────┘
 ```
 
-### 图例面板位置
+### 图例位置
+
+**外部图例面板 (`legend_location`)**
 
 | 位置键 | 说明 |
 |--------|------|
 | `outside_left` | 水平分割器，图例在左 (默认) |
 | `outside_right` | 水平分割器，图例在右 |
-| `outside_top` | 垂直分割器，图例在上 |
-| `outside_bottom` | 垂直分割器，图例在下 |
-| `inside` | 图例隐藏，嵌入 matplotlib 图内 |
+| `None` | 关闭外部图例面板 |
+
+**图内图例 (`legend_position`)**
+
+- 位置值: `upper left`, `upper center`, `upper right`, `center left`, `center`,
+  `center right`, `lower left`, `lower center`, `lower right`
+- `None` 代表关闭图内图例
+- 图内图例与外部图例可同时启用
+- 在图例面板中再次点击已选位置可取消显示
 
 ### 菜单操作
 
@@ -113,10 +122,10 @@ def _show_section_dialog(self, section_key: str)
     # 对话框缓存在 self._section_dialogs 中
 
 def _apply_legend_panel_layout(self)
-    """根据 app_state.legend_location 调整图例面板位置"""
+    """根据 app_state.legend_location 调整外部图例面板位置"""
 
 def _update_legend_panel(self, title, handles, labels)
-    """更新图例列表 (颜色 + 标记图标)"""
+    """更新图例列表 (颜色/形状、显隐、双击置顶)"""
 
 def _build_marker_icon(self, marker, color, size=16) -> QIcon
     """委托到 utils.icons.build_marker_icon()"""
@@ -124,6 +133,9 @@ def _build_marker_icon(self, marker, color, size=16) -> QIcon
 def closeEvent(self, event)
     """关闭时保存会话参数"""
 ```
+
+外部图例面板支持:
+颜色与形状菜单、分组显隐、双击置顶（将对应散点置于最上层）。
 
 ### 选择工具
 
@@ -179,7 +191,6 @@ ui/
 #### Display (显示)
 - UI 主题 (Modern Light/Dark, Scientific Blue, Retro Lab)
 - 保存/加载绘图主题
-- 调色板选择
 - 字体设置 (主字体 + CJK 字体)
 - 字体大小 (标题/标签/刻度/图例)
 - 标记大小/透明度
@@ -192,6 +203,8 @@ ui/
 - 脊柱显示 (上/右)
 - 标签/标题样式 (颜色/粗细/间距)
 - 图例框样式
+
+调色板/色阶选择已移至 Legend 面板的自动样式配置。
 
 #### Analysis (分析)
 - 相关性热图
@@ -206,11 +219,13 @@ ui/
 - 格式选项
 
 #### Legend (图例)
-- 组可见性切换
-- 图例位置
-- 图例列数
-- 组标记形状/颜色
-- 全部显示/隐藏
+- 图例位置 (外部 OUT L/OUT R，图内九宫格)
+- 图内图例样式 (列数仅影响图内图例，含微调步长与方向微调)
+- 自动样式 (色阶、形状集合、基准形状、自动分配)
+- 自定义色阶/形状阶梯 (图形化选择)
+
+补充说明:
+色阶下拉框以色条显示，形状相关选择器与菜单仅显示图标。
 
 #### Geochemistry (地球化学)
 - 地球化学模型选择
@@ -289,7 +304,10 @@ def _delete_theme(self)   # 删除已保存主题
 - 选择状态同步
 
 ### LegendPanel
-- 分组可见性/颜色/形状/位置/列数
+- 图例位置 (外部/图内)
+- 图内图例样式 (列数、偏移微调)
+- 自动样式 (色阶/形状集合/基准形状)
+- 自定义色阶/形状阶梯
 
 ### GeoPanel
 - 模型选择与参数管理

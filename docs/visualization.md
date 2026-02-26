@@ -56,6 +56,9 @@
 | `selection_mode` / `selection_tool` | 选择工具状态 | events.py |
 | `selected_indices` / `selected_isochron_data` | 选择结果 | events.py |
 | `plot_style_grid` / `color_scheme` | 样式选项 | plotting/style.py |
+| `legend_position` / `legend_columns` | 图内图例位置与列数 | plotting/render.py, plotting/style.py |
+| `legend_offset` / `legend_nudge_step` | 图内图例偏移与微调步长 | plotting/style.py |
+| `legend_location` | 外部图例面板位置 (UI 使用) | ui/main_window.py |
 | `custom_primary_font` / `custom_cjk_font` | 字体配置 | plotting/style.py, plotting/render.py |
 | `plot_dpi` / `plot_facecolor` / `axes_facecolor` | 全局绘图样式 | plotting/style.py |
 | `isochron_error_mode` / `isochron_*_col` | 等时线误差配置 | plotting/isochron.py |
@@ -150,6 +153,10 @@ on_slider_change() [events.py]
   ↓
 fig.canvas.draw_idle()
 ```
+
+补充说明:
+图内图例仅在 `legend_position` 有效且分组数量不超过 30 时绘制。
+`legend_columns > 0` 会覆盖自动列数，`legend_offset` 用于微调图内图例位置。
 
 ---
 
@@ -507,14 +514,16 @@ def _apply_axis_text_style(ax)
 
 ```python
 def _legend_layout_config(ax, show_marginal_kde=False)
-    """解析图例位置 → (loc, bbox, mode, borderaxespad)"""
+    """解析图内图例位置 → (loc, bbox, mode, borderaxespad)，支持 legend_offset 微调"""
 
 def _legend_columns_for_layout(labels, ax, location_key) -> int | None
-    """自动计算图例列数"""
+    """自动计算图例列数 (外部图例固定 1 列，图内可自动或手动)"""
 
 def _style_legend(legend, show_marginal_kde=False)
     """应用图例样式 (框架, 透明度, 颜色)"""
 ```
+
+`legend_offset` 以坐标轴比例为单位，用于微调图内图例锚点位置。
 
 ### 样式刷新
 

@@ -9,9 +9,10 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout,
                               QHBoxLayout, QDockWidget, QToolBar,
                               QStatusBar, QMenuBar, QAction, QStyle,
                               QSplitter, QSizePolicy, QListWidget,
-                              QListWidgetItem, QAbstractItemView, QLabel)
+                              QListWidgetItem, QAbstractItemView, QLabel,
+                              QPushButton, QCheckBox, QMenu)
 from PyQt5.QtCore import Qt, QSize, QSettings
-from PyQt5.QtGui import QIcon, QFont, QKeySequence
+from PyQt5.QtGui import QIcon, QKeySequence, QColor, QCursor
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -73,7 +74,7 @@ class Qt5MainWindow(QMainWindow):
         legend_layout.addWidget(legend_title)
         legend_list = QListWidget()
         legend_list.setSelectionMode(QAbstractItemView.NoSelection)
-        legend_list.setUniformItemSizes(True)
+        legend_list.setUniformItemSizes(False)
         legend_list.setIconSize(QSize(14, 14))
         legend_layout.addWidget(legend_list, 1)
         self.legend_panel.setMinimumWidth(160)
@@ -185,8 +186,10 @@ class Qt5MainWindow(QMainWindow):
 
     def _apply_legend_panel_layout(self):
         try:
-            location_key = getattr(app_state, 'legend_location', 'outside_left') or 'outside_left'
-            is_outside = location_key.startswith('outside_')
+            location_key = getattr(app_state, 'legend_location', None)
+            if location_key not in {'outside_left', 'outside_right'}:
+                location_key = None
+            is_outside = bool(location_key)
             if not hasattr(self, 'legend_splitter'):
                 return
 
@@ -201,16 +204,10 @@ class Qt5MainWindow(QMainWindow):
                 self.legend_splitter.setSizes([0, 1])
                 return
 
-            if location_key in {'outside_left', 'outside_right'}:
-                if self.legend_splitter.orientation() != Qt.Horizontal:
-                    self.legend_splitter.setOrientation(Qt.Horizontal)
-                first = self.legend_panel if location_key == 'outside_left' else self.plot_container
-                second = self.plot_container if location_key == 'outside_left' else self.legend_panel
-            else:
-                if self.legend_splitter.orientation() != Qt.Vertical:
-                    self.legend_splitter.setOrientation(Qt.Vertical)
-                first = self.legend_panel if location_key == 'outside_top' else self.plot_container
-                second = self.plot_container if location_key == 'outside_top' else self.legend_panel
+            if self.legend_splitter.orientation() != Qt.Horizontal:
+                self.legend_splitter.setOrientation(Qt.Horizontal)
+            first = self.legend_panel if location_key == 'outside_left' else self.plot_container
+            second = self.plot_container if location_key == 'outside_left' else self.legend_panel
 
             if self.legend_splitter.indexOf(first) != 0:
                 self.legend_splitter.insertWidget(0, first)
@@ -222,10 +219,7 @@ class Qt5MainWindow(QMainWindow):
 
             sizes = self.legend_splitter.sizes()
             if len(sizes) >= 2 and min(sizes) == 0:
-                if location_key in {'outside_left', 'outside_right'}:
-                    self.legend_splitter.setSizes([200, 800])
-                else:
-                    self.legend_splitter.setSizes([180, 800])
+                self.legend_splitter.setSizes([200, 800])
 
             self._legend_layout_state = layout_state
         except Exception as exc:
@@ -236,28 +230,191 @@ class Qt5MainWindow(QMainWindow):
     def _build_marker_icon(self, color, marker, size=14):
         return build_marker_icon(color, marker, size)
 
+    def _ensure_marker_shape_map(self):
+        if not hasattr(self, '_marker_shape_map'):
+            self._marker_shape_map = {
+                translate("Circle (o)"): 'o',
+                translate("Square (s)"): 's',
+                translate("Triangle Up (^)"): '^',
+                translate("Triangle Down (v)"): 'v',
+                translate("Diamond (D)"): 'D',
+                translate("Pentagon (P)"): 'P',
+                translate("Star (*)"): '*',
+                translate("Plus (+)"): '+',
+                translate("Cross (x)"): 'x',
+                translate("X (X)"): 'X',
+            }
+
+    def _update_marker_swatch(self, group, swatch):
+        color = app_state.current_palette.get(group, '#cccccc')
+        marker = app_state.group_marker_map.get(group, getattr(app_state, 'plot_marker_shape', 'o'))
+        icon = self._build_marker_icon(color, marker, size=16)
+        swatch.setIcon(icon)
+        swatch.setIconSize(QSize(16, 16))
+        swatch.setStyleSheet("border: 1px solid #111827; border-radius: 3px; background: transparent;")
+
+    def _attach_double_click(self, widget, group):
+        def _handler(event, g=group):
+            self._bring_to_front(g)
+            try:
+                event.accept()
+            except Exception:
+                pass
+        widget.mouseDoubleClickEvent = _handler
+
+    def _sync_legend_panel_ui(self, refresh=False):
+        panel = getattr(app_state, 'control_panel_ref', None)
+        if panel is None or not hasattr(panel, 'legend_checkboxes'):
+            return
+        try:
+            if refresh and hasattr(panel, '_update_group_list'):
+                panel._update_group_list()
+            elif hasattr(panel, 'sync_legend_ui'):
+                panel.sync_legend_ui()
+        except Exception:
+            pass
+
+    def _pick_color(self, group, swatch):
+        from PyQt5.QtWidgets import QColorDialog
+        current_color = app_state.current_palette.get(group, '#cccccc')
+        color = QColorDialog.getColor(QColor(current_color), self, f"Color for {group}")
+        if color.isValid():
+            new_hex = color.name()
+            app_state.current_palette[group] = new_hex
+            self._update_marker_swatch(group, swatch)
+
+            if hasattr(app_state, 'group_to_scatter') and group in app_state.group_to_scatter:
+                sc = app_state.group_to_scatter[group]
+                try:
+                    sc.set_color(new_hex)
+                    sc.set_edgecolor("#1e293b")
+                    if app_state.fig:
+                        app_state.fig.canvas.draw_idle()
+                except Exception as exc:
+                    logger.warning("Failed to update color for %s: %s", group, exc)
+            self._sync_legend_panel_ui(refresh=True)
+
+    def _set_group_shape_value(self, group, marker_value, swatch):
+        self._ensure_marker_shape_map()
+        marker = marker_value or getattr(app_state, 'plot_marker_shape', 'o')
+        app_state.group_marker_map[group] = marker
+        self._update_marker_swatch(group, swatch)
+        self._sync_legend_panel_ui(refresh=True)
+        self._refresh_plot()
+
+    def _show_color_shape_menu(self, group, swatch):
+        self._ensure_marker_shape_map()
+        menu = QMenu(self)
+
+        color_action = QAction(translate("Color..."), self)
+        color_action.triggered.connect(lambda checked=False, g=group, btn=swatch: self._pick_color(g, btn))
+        menu.addAction(color_action)
+
+        shape_menu = menu.addMenu(translate("Shape"))
+        current_marker = app_state.group_marker_map.get(group, getattr(app_state, 'plot_marker_shape', 'o'))
+        for label, value in self._marker_shape_map.items():
+            icon = self._build_marker_icon('#94a3b8', value, size=14)
+            action = QAction(icon, "", self)
+            action.setCheckable(True)
+            action.setChecked(value == current_marker)
+            action.triggered.connect(
+                lambda checked=False, g=group, v=value, btn=swatch: self._set_group_shape_value(g, v, btn)
+            )
+            shape_menu.addAction(action)
+
+        menu.exec_(QCursor.pos())
+
+    def _on_group_checkbox_change(self, group, state):
+        if not app_state.last_group_col or app_state.df_global is None:
+            return
+
+        groups = list(app_state.available_groups or app_state.df_global[app_state.last_group_col].unique())
+        if app_state.visible_groups is None:
+            current_visible = set(groups)
+        else:
+            current_visible = set(app_state.visible_groups)
+
+        if state == Qt.Checked:
+            current_visible.add(group)
+        else:
+            current_visible.discard(group)
+
+        if len(current_visible) == len(groups):
+            app_state.visible_groups = None
+        else:
+            app_state.visible_groups = sorted(current_visible)
+
+        self._sync_legend_panel_ui()
+        self._refresh_plot()
+
+    def _bring_to_front(self, group):
+        if hasattr(app_state, 'group_to_scatter') and group in app_state.group_to_scatter:
+            sc = app_state.group_to_scatter[group]
+            try:
+                max_z = 2
+                if hasattr(app_state, 'scatter_collections'):
+                    for c in app_state.scatter_collections:
+                        max_z = max(max_z, c.get_zorder())
+
+                sc.set_zorder(max_z + 1)
+                if app_state.fig:
+                    app_state.fig.canvas.draw_idle()
+            except Exception as exc:
+                logger.warning("Failed to bring %s to front: %s", group, exc)
+
     def _update_legend_panel(self, title, handles, labels):
         try:
             if not hasattr(self, '_legend_list') or self._legend_list is None:
                 return
-            location_key = getattr(app_state, 'legend_location', 'outside_left') or 'outside_left'
-            if not location_key.startswith('outside_'):
-                return
             self._apply_legend_panel_layout()
+            location_key = getattr(app_state, 'legend_location', None)
+            if location_key not in {'outside_left', 'outside_right'}:
+                return
 
             if self._legend_title_label is not None:
                 self._legend_title_label.setText(str(title))
 
             self._legend_list.clear()
-            palette = getattr(app_state, 'current_palette', {})
-            marker_map = getattr(app_state, 'group_marker_map', {})
+            if not app_state.last_group_col or app_state.df_global is None:
+                return
 
-            for label in labels:
-                color = palette.get(label, '#94a3b8')
-                marker = marker_map.get(label, getattr(app_state, 'plot_marker_shape', 'o'))
-                icon = self._build_marker_icon(color, marker)
-                item = QListWidgetItem(icon, str(label))
+            groups = app_state.df_global[app_state.last_group_col].unique()
+            self._ensure_marker_shape_map()
+            visible = set(app_state.visible_groups) if app_state.visible_groups is not None else set(groups)
+
+            max_items = 100
+            groups_to_show = list(groups)[:max_items]
+
+            if len(groups) > max_items:
+                logger.warning("Showing first %d groups only.", max_items)
+
+            for group in groups_to_show:
+                item_widget = QWidget()
+                item_layout = QHBoxLayout()
+                item_layout.setContentsMargins(4, 2, 4, 2)
+                item_layout.setSpacing(6)
+
+                color_btn = QPushButton()
+                color_btn.setFixedSize(22, 22)
+                self._update_marker_swatch(group, color_btn)
+                color_btn.setCursor(QCursor(Qt.PointingHandCursor))
+                color_btn.clicked.connect(lambda checked=False, g=group, btn=color_btn: self._show_color_shape_menu(g, btn))
+                item_layout.addWidget(color_btn)
+
+                checkbox = QCheckBox(str(group))
+                checkbox.setChecked(group in visible)
+                checkbox.stateChanged.connect(lambda state, g=group: self._on_group_checkbox_change(g, state))
+                item_layout.addWidget(checkbox, 1)
+
+                item_widget.setLayout(item_layout)
+                self._attach_double_click(item_widget, group)
+                self._attach_double_click(color_btn, group)
+                self._attach_double_click(checkbox, group)
+
+                item = QListWidgetItem()
+                item.setSizeHint(item_widget.sizeHint())
                 self._legend_list.addItem(item)
+                self._legend_list.setItemWidget(item, item_widget)
         except Exception as exc:
             import traceback
             logger.error("Legend panel update failed: %s", exc)
@@ -296,7 +453,11 @@ class Qt5MainWindow(QMainWindow):
             self.statusBar().showMessage(translate("Ready"))
 
         if hasattr(self, '_legend_title_label') and self._legend_title_label is not None:
-            self._legend_title_label.setText(translate("Legend"))
+            last_title = getattr(app_state, 'legend_last_title', None)
+            if last_title:
+                self._legend_title_label.setText(str(last_title))
+            else:
+                self._legend_title_label.setText(translate("Legend"))
 
     def _restore_state(self):
         """恢复窗口状态"""

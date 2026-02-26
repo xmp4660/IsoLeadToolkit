@@ -236,13 +236,17 @@ class AppState:
         }
         self.show_plot_title = False
         self.legend_columns = 0  # 0 means auto
-        self.legend_position = 'outside_left'  # Legend position
+        self.legend_position = None  # In-plot legend position; None hides the in-plot legend
         self.hidden_groups = set()  # Hidden groups in legend
         self.legend_display_mode = 'inline'  # inline | window
         self.legend_update_callback = None
         self.legend_last_title = None
         self.legend_last_handles = None
         self.legend_last_labels = None
+        self.legend_offset = (0.0, 0.0)  # In-plot legend nudge (axes fraction)
+        self.legend_nudge_step = 0.02  # Step size for legend nudge
+        self.custom_palettes = {}
+        self.custom_shape_sets = {}
         self.v1_value = 0.0  # V1 parameter for geochemistry
         self.v2_value = 0.0  # V2 parameter for geochemistry
         self.plot_marker_size = 60
@@ -286,7 +290,7 @@ class AppState:
         self.title_color = '#111827'
         self.title_weight = 'bold'
         self.title_pad = 20.0
-        self.legend_location = 'outside_left'
+        self.legend_location = 'outside_left'  # Outside legend panel location
         self.legend_frame_on = True
         self.legend_frame_alpha = 0.95
         self.legend_frame_facecolor = '#ffffff'

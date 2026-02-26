@@ -46,7 +46,7 @@ from .ternary import _apply_ternary_stretch
 logger = logging.getLogger(__name__)
 
 try:
-    from .events import refresh_selection_overlay
+    from ..events import refresh_selection_overlay
 except ImportError:
     refresh_selection_overlay = None
 
@@ -648,26 +648,27 @@ def plot_embedding(
             _notify_legend_panel(group_col, legend_handles, legend_labels)
 
             if len(unique_cats) <= 30:
-                location_key = getattr(app_state, 'legend_location', 'outside_right') or 'outside_right'
-                if location_key.startswith('outside_'):
-                    legend = None
-                else:
-                    legend = None
-                auto_ncol = _legend_columns_for_layout(legend_labels, app_state.ax, location_key)
-                if auto_ncol is None:
-                    ncol = app_state.legend_columns if getattr(app_state, 'legend_columns', 0) > 0 else (2 if len(unique_cats) > 15 else 1)
-                else:
-                    ncol = auto_ncol
+                inside_location = getattr(app_state, 'legend_position', None)
+                if inside_location and not str(inside_location).startswith('outside_'):
+                    location_key = inside_location
+                    auto_ncol = _legend_columns_for_layout(legend_labels, app_state.ax, location_key)
+                    if auto_ncol is None:
+                        ncol = app_state.legend_columns if getattr(app_state, 'legend_columns', 0) > 0 else (2 if len(unique_cats) > 15 else 1)
+                    else:
+                        ncol = auto_ncol
 
-                legend_kwargs = {
-                    'title': group_col,
-                    'frameon': True,
-                    'fancybox': True,
-                    'ncol': ncol,
-                }
+                    legend_kwargs = {
+                        'title': group_col,
+                        'frameon': True,
+                        'fancybox': True,
+                        'ncol': ncol,
+                    }
 
-                if not location_key.startswith('outside_'):
-                    loc, bbox, mode, borderaxespad = _legend_layout_config(app_state.ax, show_marginal_kde=show_marginal_kde)
+                    loc, bbox, mode, borderaxespad = _legend_layout_config(
+                        app_state.ax,
+                        show_marginal_kde=show_marginal_kde,
+                        location_key=location_key,
+                    )
                     legend_kwargs['loc'] = loc
                     legend_kwargs['bbox_to_anchor'] = bbox if bbox else None
                     if mode:
@@ -679,17 +680,17 @@ def plot_embedding(
                     else:
                         legend = app_state.ax.legend(**legend_kwargs)
 
-                if legend is not None:
-                    try:
-                        if legend_kwargs.get('bbox_to_anchor'):
-                            legend.set_bbox_to_anchor(legend_kwargs['bbox_to_anchor'], transform=app_state.ax.transAxes)
-                    except Exception:
-                        pass
-                _style_legend(legend, show_marginal_kde=show_marginal_kde)
+                    if legend is not None:
+                        try:
+                            if legend_kwargs.get('bbox_to_anchor'):
+                                legend.set_bbox_to_anchor(legend_kwargs['bbox_to_anchor'], transform=app_state.ax.transAxes)
+                        except Exception:
+                            pass
+                    _style_legend(legend, show_marginal_kde=show_marginal_kde, location_key=location_key)
 
-                if legend is not None and not is_kde_mode:
-                    for leg_patch, sc in zip(legend.get_patches(), scatters):
-                        app_state.legend_to_scatter[leg_patch] = sc
+                    if legend is not None and not is_kde_mode:
+                        for leg_patch, sc in zip(legend.get_patches(), scatters):
+                            app_state.legend_to_scatter[leg_patch] = sc
             else:
                 logger.info("Too many categories for standard legend. Use Control Panel legend.")
         except Exception as e:
@@ -1072,26 +1073,27 @@ def plot_2d_data(group_col: str, data_columns: list[str], size: int = 60, show_k
             _notify_legend_panel(group_col, legend_handles, legend_labels)
 
             if len(unique_cats) <= 30:
-                location_key = getattr(app_state, 'legend_location', 'outside_right') or 'outside_right'
-                if location_key.startswith('outside_'):
-                    legend = None
-                else:
-                    legend = None
-                auto_ncol = _legend_columns_for_layout(legend_labels, app_state.ax, location_key)
-                if auto_ncol is None:
-                    ncol = app_state.legend_columns if getattr(app_state, 'legend_columns', 0) > 0 else (2 if len(unique_cats) > 15 else 1)
-                else:
-                    ncol = auto_ncol
+                inside_location = getattr(app_state, 'legend_position', None)
+                if inside_location and not str(inside_location).startswith('outside_'):
+                    location_key = inside_location
+                    auto_ncol = _legend_columns_for_layout(legend_labels, app_state.ax, location_key)
+                    if auto_ncol is None:
+                        ncol = app_state.legend_columns if getattr(app_state, 'legend_columns', 0) > 0 else (2 if len(unique_cats) > 15 else 1)
+                    else:
+                        ncol = auto_ncol
 
-                legend_kwargs = {
-                    'title': group_col,
-                    'frameon': True,
-                    'fancybox': True,
-                    'ncol': ncol,
-                }
+                    legend_kwargs = {
+                        'title': group_col,
+                        'frameon': True,
+                        'fancybox': True,
+                        'ncol': ncol,
+                    }
 
-                if not location_key.startswith('outside_'):
-                    loc, bbox, mode, borderaxespad = _legend_layout_config(app_state.ax, show_marginal_kde=show_marginal_kde)
+                    loc, bbox, mode, borderaxespad = _legend_layout_config(
+                        app_state.ax,
+                        show_marginal_kde=show_marginal_kde,
+                        location_key=location_key,
+                    )
                     legend_kwargs['loc'] = loc
                     legend_kwargs['bbox_to_anchor'] = bbox if bbox else None
                     if mode:
@@ -1103,17 +1105,17 @@ def plot_2d_data(group_col: str, data_columns: list[str], size: int = 60, show_k
                     else:
                         legend = app_state.ax.legend(**legend_kwargs)
 
-                if legend:
-                    try:
-                        if legend_kwargs.get('bbox_to_anchor'):
-                            legend.set_bbox_to_anchor(legend_kwargs['bbox_to_anchor'], transform=app_state.ax.transAxes)
-                        _style_legend(legend, show_marginal_kde=show_marginal_kde)
+                    if legend:
+                        try:
+                            if legend_kwargs.get('bbox_to_anchor'):
+                                legend.set_bbox_to_anchor(legend_kwargs['bbox_to_anchor'], transform=app_state.ax.transAxes)
+                            _style_legend(legend, show_marginal_kde=show_marginal_kde, location_key=location_key)
 
-                        if not show_kde:
-                            for leg_patch, sc in zip(legend.get_patches(), scatters):
-                                app_state.legend_to_scatter[leg_patch] = sc
-                    except Exception as e:
-                        logger.warning(f"Legend styling failed: {e}")
+                            if not show_kde:
+                                for leg_patch, sc in zip(legend.get_patches(), scatters):
+                                    app_state.legend_to_scatter[leg_patch] = sc
+                        except Exception as e:
+                            logger.warning(f"Legend styling failed: {e}")
 
             else:
                 logger.info("Too many categories for standard legend. Use Control Panel legend.")
@@ -1266,26 +1268,27 @@ def plot_3d_data(group_col: str, data_columns: list[str], size: int = 60) -> boo
 
         try:
             if len(unique_cats) <= 30:
-                location_key = getattr(app_state, 'legend_location', 'outside_right') or 'outside_right'
-                if location_key.startswith('outside_'):
-                    legend = None
-                else:
-                    legend = None
-                auto_ncol = _legend_columns_for_layout(legend_labels, app_state.ax, location_key)
-                if auto_ncol is None:
-                    ncol = app_state.legend_columns if getattr(app_state, 'legend_columns', 0) > 0 else (2 if len(unique_cats) > 15 else 1)
-                else:
-                    ncol = auto_ncol
+                inside_location = getattr(app_state, 'legend_position', None)
+                if inside_location and not str(inside_location).startswith('outside_'):
+                    location_key = inside_location
+                    auto_ncol = _legend_columns_for_layout(legend_labels, app_state.ax, location_key)
+                    if auto_ncol is None:
+                        ncol = app_state.legend_columns if getattr(app_state, 'legend_columns', 0) > 0 else (2 if len(unique_cats) > 15 else 1)
+                    else:
+                        ncol = auto_ncol
 
-                legend_kwargs = {
-                    'title': group_col,
-                    'frameon': True,
-                    'fancybox': True,
-                    'ncol': ncol,
-                }
+                    legend_kwargs = {
+                        'title': group_col,
+                        'frameon': True,
+                        'fancybox': True,
+                        'ncol': ncol,
+                    }
 
-                if not location_key.startswith('outside_'):
-                    loc, bbox, mode, borderaxespad = _legend_layout_config(app_state.ax, show_marginal_kde=False)
+                    loc, bbox, mode, borderaxespad = _legend_layout_config(
+                        app_state.ax,
+                        show_marginal_kde=False,
+                        location_key=location_key,
+                    )
                     legend_kwargs['loc'] = loc
                     legend_kwargs['bbox_to_anchor'] = bbox if bbox else None
                     if mode:
@@ -1296,7 +1299,7 @@ def plot_3d_data(group_col: str, data_columns: list[str], size: int = 60) -> boo
                     if bbox:
                         legend.set_bbox_to_anchor(bbox, transform=app_state.ax.transAxes)
 
-                _style_legend(legend, show_marginal_kde=False)
+                    _style_legend(legend, show_marginal_kde=False, location_key=location_key)
             else:
                 logger.info("Too many categories for standard legend. Use Control Panel legend.")
         except Exception as legend_err:

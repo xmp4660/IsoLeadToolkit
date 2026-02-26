@@ -177,56 +177,55 @@ def _apply_axis_text_style(ax):
         pass
 
 
-def _legend_layout_config(ax=None, show_marginal_kde=False):
-    """Resolve legend location, bbox, and layout options."""
-    loc = getattr(app_state, 'legend_location', 'outside_right') or 'outside_right'
-    mode = None
-    borderaxespad = None
-    if loc == 'outside_right':
-        bbox_x = _LEGEND_BBOX_RIGHT_KDE if show_marginal_kde else _LEGEND_BBOX_RIGHT
-        return 'upper left', (bbox_x, 0.0, 0.2, 1.0), 'expand', 0.0
-    if loc == 'outside_left':
-        bbox_x = _LEGEND_BBOX_LEFT_KDE if show_marginal_kde else _LEGEND_BBOX_LEFT
-        return 'upper right', (bbox_x, 0.0, 0.2, 1.0), 'expand', 0.0
-    if loc == 'outside_top':
-        return 'lower left', (0.0, _LEGEND_BBOX_TOP_Y, 1.0, 0.2), 'expand', 0.0
-    if loc == 'outside_bottom':
-        return 'upper left', (0.0, _LEGEND_BBOX_BOTTOM_Y, 1.0, 0.2), 'expand', 0.0
-    return loc, None, mode, borderaxespad
+def _legend_layout_config(ax=None, show_marginal_kde=False, location_key=None):
+    """Resolve in-plot legend location, bbox, and layout options."""
+    loc = location_key if location_key else getattr(app_state, 'legend_position', None)
+    if not loc:
+        return 'best', None, None, None
+    if isinstance(loc, str) and loc.startswith('outside_'):
+        return 'best', None, None, None
+    offsets = getattr(app_state, 'legend_offset', (0.0, 0.0)) or (0.0, 0.0)
+    try:
+        dx, dy = float(offsets[0]), float(offsets[1])
+    except Exception:
+        dx, dy = 0.0, 0.0
+    if dx == 0.0 and dy == 0.0:
+        return loc, None, None, None
 
-
-def _legend_location_config(show_marginal_kde=False):
-    """Resolve legend location and optional bbox anchor."""
-    loc, bbox, _mode, _pad = _legend_layout_config(show_marginal_kde=show_marginal_kde)
-    return loc, bbox
+    anchor_map = {
+        'upper left': (0.0, 1.0),
+        'upper center': (0.5, 1.0),
+        'upper right': (1.0, 1.0),
+        'center left': (0.0, 0.5),
+        'center': (0.5, 0.5),
+        'center right': (1.0, 0.5),
+        'lower left': (0.0, 0.0),
+        'lower center': (0.5, 0.0),
+        'lower right': (1.0, 0.0),
+    }
+    base = anchor_map.get(loc)
+    if base is None:
+        return loc, None, None, None
+    bbox = (base[0] + dx, base[1] + dy)
+    return loc, bbox, None, None
 
 
 def _legend_columns_for_layout(labels, ax, location_key):
-    """Compute legend columns for outside layouts."""
+    """Compute legend columns for auto layouts."""
     if not labels:
         return 1
     if location_key in {'outside_left', 'outside_right'}:
         return 1
-    if location_key in {'outside_top', 'outside_bottom'}:
-        fig = getattr(ax, 'figure', None)
-        dpi = getattr(fig, 'dpi', 100) if fig is not None else 100
-        fig_width_px = (fig.get_figwidth() * dpi) if fig is not None else 800
-        legend_size = getattr(app_state, 'plot_font_sizes', {}).get('legend', 10)
-        avg_len = sum(len(str(label)) for label in labels) / max(len(labels), 1)
-        est_label_px = (avg_len * 0.6 + 2.0) * (legend_size * dpi / 72.0) + 26.0
-        usable = fig_width_px * 0.9
-        ncol = max(1, int(usable / max(est_label_px, 1.0)))
-        return min(len(labels), max(1, ncol))
     return None
 
 
-def _style_legend(legend, show_marginal_kde=False):
+def _style_legend(legend, show_marginal_kde=False, location_key=None):
     """Apply legend styling from app_state."""
     if legend is None:
         return
     legend_ax = getattr(app_state, 'legend_ax', None)
     if legend_ax is None or legend.axes is not legend_ax:
-        loc, bbox, _mode, _pad = _legend_layout_config(show_marginal_kde=show_marginal_kde)
+        loc, bbox, _mode, _pad = _legend_layout_config(show_marginal_kde=show_marginal_kde, location_key=location_key)
         try:
             legend.set_loc(loc)
         except Exception:
