@@ -233,16 +233,31 @@ class Qt5MainWindow(QMainWindow):
     def _ensure_marker_shape_map(self):
         if not hasattr(self, '_marker_shape_map'):
             self._marker_shape_map = {
+                translate("Point (.)"): '.',
+                translate("Pixel (,)"): ',',
                 translate("Circle (o)"): 'o',
-                translate("Square (s)"): 's',
-                translate("Triangle Up (^)"): '^',
                 translate("Triangle Down (v)"): 'v',
-                translate("Diamond (D)"): 'D',
-                translate("Pentagon (P)"): 'P',
+                translate("Triangle Up (^)"): '^',
+                translate("Triangle Left (<)"): '<',
+                translate("Triangle Right (>)"): '>',
+                translate("Tri Down (1)"): '1',
+                translate("Tri Up (2)"): '2',
+                translate("Tri Left (3)"): '3',
+                translate("Tri Right (4)"): '4',
+                translate("Octagon (8)"): '8',
+                translate("Square (s)"): 's',
+                translate("Pentagon (p)"): 'p',
+                translate("Plus Filled (P)"): 'P',
                 translate("Star (*)"): '*',
+                translate("Hexagon 1 (h)"): 'h',
+                translate("Hexagon 2 (H)"): 'H',
+                translate("Diamond (D)"): 'D',
                 translate("Plus (+)"): '+',
                 translate("Cross (x)"): 'x',
                 translate("X (X)"): 'X',
+                translate("Thin Diamond (d)"): 'd',
+                translate("Vline (|)"): '|',
+                translate("Hline (_)"): '_',
             }
 
     def _update_marker_swatch(self, group, swatch):

@@ -13,7 +13,9 @@ from PyQt5.QtGui import QBrush, QColor, QIcon, QPainter, QPen, QPixmap, QPolygon
 logger = logging.getLogger(__name__)
 
 # 填充型标记集合
-_FILLED_MARKERS = {'o', 's', '^', 'v', 'D', 'P', '*'}
+_FILLED_MARKERS = {
+    '.', ',', 'o', 's', '^', 'v', '<', '>', 'D', 'd', 'p', 'P', '*', 'h', 'H', '8'
+}
 
 
 def build_marker_icon(color: str, marker: str, size: int = 16) -> QIcon:
@@ -59,7 +61,13 @@ def _draw_marker_shape(
     painter: QPainter, marker: str, cx: float, cy: float, r: float
 ) -> None:
     """绘制标记形状到 painter。"""
-    if marker == 'o':
+    if marker == '.':
+        rr = r * 0.35
+        painter.drawEllipse(QPointF(cx, cy), rr, rr)
+    elif marker == ',':
+        rr = r * 0.35
+        painter.drawRect(QRectF(cx - rr, cy - rr, rr * 2, rr * 2))
+    elif marker == 'o':
         painter.drawEllipse(QPointF(cx, cy), r, r)
     elif marker == 's':
         painter.drawRect(QRectF(cx - r, cy - r, r * 2, r * 2))
@@ -69,15 +77,46 @@ def _draw_marker_shape(
     elif marker == 'v':
         points = [QPointF(cx - r, cy - r), QPointF(cx + r, cy - r), QPointF(cx, cy + r)]
         painter.drawPolygon(QPolygonF(points))
+    elif marker == '<':
+        points = [QPointF(cx - r, cy), QPointF(cx + r, cy - r), QPointF(cx + r, cy + r)]
+        painter.drawPolygon(QPolygonF(points))
+    elif marker == '>':
+        points = [QPointF(cx + r, cy), QPointF(cx - r, cy - r), QPointF(cx - r, cy + r)]
+        painter.drawPolygon(QPolygonF(points))
+    elif marker == '1':
+        rr = r * 0.85
+        points = [QPointF(cx - rr, cy - rr), QPointF(cx + rr, cy - rr), QPointF(cx, cy + rr)]
+        painter.drawPolygon(QPolygonF(points))
+    elif marker == '2':
+        rr = r * 0.85
+        points = [QPointF(cx, cy - rr), QPointF(cx - rr, cy + rr), QPointF(cx + rr, cy + rr)]
+        painter.drawPolygon(QPolygonF(points))
+    elif marker == '3':
+        rr = r * 0.85
+        points = [QPointF(cx - rr, cy), QPointF(cx + rr, cy - rr), QPointF(cx + rr, cy + rr)]
+        painter.drawPolygon(QPolygonF(points))
+    elif marker == '4':
+        rr = r * 0.85
+        points = [QPointF(cx + rr, cy), QPointF(cx - rr, cy - rr), QPointF(cx - rr, cy + rr)]
+        painter.drawPolygon(QPolygonF(points))
+    elif marker == '8':
+        points = _regular_polygon_points(cx, cy, r, 8, rotation=math.pi / 8.0)
+        painter.drawPolygon(QPolygonF(points))
+    elif marker == 'p':
+        points = _regular_polygon_points(cx, cy, r, 5, rotation=math.pi / 2.0)
+        painter.drawPolygon(QPolygonF(points))
     elif marker == 'D':
         points = [QPointF(cx, cy - r), QPointF(cx + r, cy), QPointF(cx, cy + r), QPointF(cx - r, cy)]
         painter.drawPolygon(QPolygonF(points))
-    elif marker == 'P':
-        points = []
-        for i in range(5):
-            angle = (math.pi / 2.0) + (i * 2.0 * math.pi / 5.0)
-            points.append(QPointF(cx + r * math.cos(angle), cy - r * math.sin(angle)))
+    elif marker == 'd':
+        rx = r * 0.6
+        points = [QPointF(cx, cy - r), QPointF(cx + rx, cy), QPointF(cx, cy + r), QPointF(cx - rx, cy)]
         painter.drawPolygon(QPolygonF(points))
+    elif marker == 'P':
+        bar = r * 0.7
+        span = r * 1.6
+        painter.drawRect(QRectF(cx - bar / 2, cy - span / 2, bar, span))
+        painter.drawRect(QRectF(cx - span / 2, cy - bar / 2, span, bar))
     elif marker == '*':
         points = []
         outer = r
@@ -87,6 +126,12 @@ def _draw_marker_shape(
             radius = outer if i % 2 == 0 else inner
             points.append(QPointF(cx + radius * math.cos(angle), cy - radius * math.sin(angle)))
         painter.drawPolygon(QPolygonF(points))
+    elif marker == 'h':
+        points = _regular_polygon_points(cx, cy, r, 6, rotation=0.0)
+        painter.drawPolygon(QPolygonF(points))
+    elif marker == 'H':
+        points = _regular_polygon_points(cx, cy, r, 6, rotation=math.pi / 6.0)
+        painter.drawPolygon(QPolygonF(points))
     elif marker in {'+', 'x', 'X'}:
         if marker == '+':
             painter.drawLine(QPointF(cx - r, cy), QPointF(cx + r, cy))
@@ -94,5 +139,21 @@ def _draw_marker_shape(
         else:
             painter.drawLine(QPointF(cx - r, cy - r), QPointF(cx + r, cy + r))
             painter.drawLine(QPointF(cx - r, cy + r), QPointF(cx + r, cy - r))
+    elif marker == '|':
+        painter.drawLine(QPointF(cx, cy - r), QPointF(cx, cy + r))
+    elif marker == '_':
+        painter.drawLine(QPointF(cx - r, cy), QPointF(cx + r, cy))
     else:
         painter.drawEllipse(QPointF(cx, cy), r, r)
+
+
+def _regular_polygon_points(
+    cx: float, cy: float, r: float, sides: int, rotation: float = 0.0
+) -> list[QPointF]:
+    points = []
+    if sides < 3:
+        return points
+    for i in range(sides):
+        angle = rotation + (i * 2.0 * math.pi / sides)
+        points.append(QPointF(cx + r * math.cos(angle), cy - r * math.sin(angle)))
+    return points
