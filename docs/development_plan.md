@@ -362,3 +362,39 @@ tests/
    logger.warning("Message")   # 而非 logger.info("[WARN] Message")
    ```
 5. **日志级别可配置** — 支持通过环境变量 `ISOTOPES_LOG_LEVEL` 调整日志级别 (默认 DEBUG)。✅ 已完成
+
+---
+
+### geochemistry/ 模块
+
+#### 已完成
+
+1. **源区反演函数统一** — 提取 `_invert_mu`, `_invert_omega`, `_invert_kappa` 三个核心函数，公共 API 改为薄委托层。✅ 已完成
+   - 变更: `data/geochemistry/source.py`
+
+2. **自动匹配单/双阶段算法** — `calculate_all_parameters()` 根据 `resolve_age_model()` 自动选择参考参数 (单阶段→CDT, 两阶段→模型参考)。✅ 已完成
+   - 变更: `data/geochemistry/__init__.py`
+
+3. **初始比值函数复用** — `calculate_initial_ratio_64/74/84` 改为调用 `calculate_model_mu/kappa`，消除内联重复。✅ 已完成
+   - 变更: `data/geochemistry/source.py`
+
+4. **PB_EVOL_86 等时线支持** — 添加 ISOCHRON2 模式，支持 208/206 等时线拟合、年龄计算 (需 207/206 辅助)、κ 生长曲线。✅ 已完成
+   - 变更: `visualization/plotting/geo.py`
+
+5. **等时线标签 age=0 bug 修复** — `_build_isochron_label()` 改为显式 None 检查，支持 age=0 显示。✅ 已完成
+   - 变更: `visualization/plotting/geo.py`
+
+6. **模式年龄解析提取** — 新增 `_resolve_model_age()` 辅助函数，统一 206-207 和 206-208 模式年龄构造线的年龄解析逻辑。✅ 已完成
+   - 变更: `visualization/plotting/geo.py`
+
+7. **确定性随机采样** — 模式年龄构造线采样改用 `RandomState(42)`，确保结果可复现。✅ 已完成
+   - 变更: `visualization/plotting/geo.py`
+
+8. **古等时线失败日志** — `calculate_paleoisochron_line()` 返回 None 时记录 debug 日志。✅ 已完成
+   - 变更: `visualization/plotting/geo.py`
+
+9. **x_min 硬编码移除** — 古等时线 x 范围不再强制从 0 开始，改为使用实际 xlim。✅ 已完成
+   - 变更: `visualization/plotting/geo.py`
+
+10. **详细计算文档** — 新增 `docs/geochemistry.md`，包含 15 章节的完整公式推导、物理常数、预设模型、数值实现细节。✅ 已完成
+    - 变更: `docs/geochemistry.md`

@@ -116,8 +116,10 @@ def _build_isochron_label(result_dict):
     """根据 isochron_label_options 动态构建等时线标注文本。"""
     opts = getattr(app_state, 'isochron_label_options', {})
     parts = []
-    age = result_dict.get('age') or result_dict.get('age_ma')
-    if opts.get('show_age', True) and age is not None and age > 0:
+    age = result_dict.get('age')
+    if age is None:
+        age = result_dict.get('age_ma')
+    if opts.get('show_age', True) and age is not None and age >= 0:
         parts.append(f"{age:.0f} Ma")
     if opts.get('show_n_points', True) and result_dict.get('n_points'):
         parts.append(f"n={result_dict['n_points']}")
@@ -140,6 +142,8 @@ def _draw_isochron_overlays(ax, actual_algorithm):
     try:
         if actual_algorithm == 'PB_EVOL_76':
             mode = 'ISOCHRON1'
+        elif actual_algorithm == 'PB_EVOL_86':
+            mode = 'ISOCHRON2'
         else:
             return
 
@@ -162,9 +166,14 @@ def _draw_isochron_overlays(ax, actual_algorithm):
         col_208 = "208Pb/204Pb"
 
         x_col = col_206
-        y_col = col_207
+        if mode == 'ISOCHRON1':
+            y_col = col_207
+        else:
+            y_col = col_208
         if x_col not in df.columns or y_col not in df.columns:
             return
+        # ISOCHRON2 also needs 207 column for age calculation and growth curves
+        need_207_for_86 = mode == 'ISOCHRON2' and col_207 in df.columns
 
         df_subset = df.iloc[indices]
 
@@ -279,8 +288,7 @@ def _draw_isochron_overlays(ax, actual_algorithm):
                 age_ma = None
                 try:
                     age_ma, _ = geochemistry.calculate_pbpb_age_from_ratio(slope, slope_err, params)
-                    if age_ma is not None and age_ma > 0:
-                        # 保存年龄到结果
+                    if age_ma is not None and age_ma >= 0:
                         app_state.isochron_results[grp]['age_ma'] = age_ma
                 except Exception as age_err:
                     logger.warning("Failed to calculate isochron age for slope %.6f: %s", slope, age_err)
@@ -339,7 +347,87 @@ def _draw_isochron_overlays(ax, actual_algorithm):
                         )
                         ax.text(x_growth[0], y_growth[0], annot_text, fontsize=8, color=color, va='bottom', ha='right', alpha=0.8)
 
-            
+            elif mode == 'ISOCHRON2' and geochemistry:
+                # PB_EVOL_86: 208/204 vs 206/204 等时线
+                # 年龄需要 207/206 斜率，尝试从同组 207 数据获取
+                age_ma = None
+                slope_207 = None
+                intercept_207 = None
+
+                if need_207_for_86:
+                    try:
+                        # 用同组数据拟合 207/206 等时线以获取年龄
+                        if grp == 'All Data':
+                            y207_grp = pd.to_numeric(df_subset[col_207], errors='coerce').values
+                        else:
+                         y207_grp = pd.to_numeric(df_subset.loc[df_subset.index[mask], col_207], errors='coerce').values
+                        y207_grp = y207_grp[valid]
+                        if len(y207_grp) >= 2:
+                            fit_207 = geochemistry.york_regression(x_grp, sx_grp, y207_grp, sy_grp, rxy_grp)
+                            slope_207 = fit_207['b']
+                            intercept_207 = fit_207['a']
+                            age_ma, _ = geochemistry.calculate_pbpb_age_from_ratio(slope_207, fit_207['sb'], params)
+                            if age_ma is not None and age_ma >= 0:
+                                app_state.isochron_results[grp]['age_ma'] = age_ma
+                    except Exception as age_err:
+                        logger.warning("Failed to calculate 86 isochron age for group %s: %s", grp, age_err)
+
+                # 动态构建标注
+                label_text = _build_isochron_label(app_state.isochron_results[grp])
+                if label_text:
+                    xlim = ax.get_xlim()
+                    ylim = ax.get_ylim()
+
+                    txt_x = min(x_max_g, xlim[1] * 0.95)
+                    txt_y = slope * txt_x + intercept
+
+                    if txt_y < ylim[0] or txt_y > ylim[1]:
+                        if txt_y > ylim[1]:
+                            txt_y = ylim[1] * 0.95
+                            txt_x = (txt_y - intercept) / slope if abs(slope) > _SLOPE_EPSILON else txt_x
+                        else:
+                            txt_y = ylim[0] + (ylim[1] - ylim[0]) * 0.05
+                            txt_x = (txt_y - intercept) / slope if abs(slope) > _SLOPE_EPSILON else txt_x
+
+                    ax.text(txt_x, txt_y, f" {label_text}", color=color, fontsize=9, va='center', ha='left', fontweight='bold')
+
+                # 生长曲线 (需要 207/206 斜率 + 208/206 斜率)
+                if getattr(app_state, 'show_growth_curves', True) and age_ma is not None and age_ma > 0 and slope_207 is not None:
+                    growth = geochemistry.calculate_isochron2_growth_curve(
+                        slope,
+                        slope_207,
+                        intercept_207,
+                        age_ma,
+                        params=params,
+                        steps=100
+                    )
+                    if growth:
+                        x_growth = growth['x']
+                        y_growth = growth['y']
+                        kappa_source = growth.get('kappa_source')
+                        annot_text = f" κ={kappa_source:.2f}" if kappa_source else ""
+
+                        growth_style = resolve_line_style(
+                            app_state,
+                            'growth_curve',
+                            {
+                                'color': None,
+                                'linewidth': getattr(app_state, 'model_curve_width', 1.2),
+                                'linestyle': ':',
+                                'alpha': 0.6
+                            }
+                        )
+                        ax.plot(
+                            x_growth,
+                            y_growth,
+                            linestyle=growth_style['linestyle'],
+                            color=growth_style['color'] or color,
+                            alpha=growth_style['alpha'],
+                            linewidth=growth_style['linewidth'],
+                            zorder=1.5
+                        )
+                        if annot_text:
+                            ax.text(x_growth[0], y_growth[0], annot_text, fontsize=8, color=color, va='bottom', ha='right', alpha=0.8)
 
     except Exception as err:
         logger.warning("Failed to draw isochron overlays: %s", err)
@@ -508,7 +596,7 @@ def _draw_paleoisochrons(ax, actual_algorithm, ages, params):
     try:
         app_state.paleoisochron_label_data = []
         xlim = ax.get_xlim()
-        x_min = max(0, xlim[0])
+        x_min = xlim[0]
         x_max = xlim[1]
         x_vals = np.linspace(x_min, x_max, 200)
 
@@ -519,6 +607,7 @@ def _draw_paleoisochrons(ax, actual_algorithm, ages, params):
                 algorithm=actual_algorithm
             )
             if not params_line:
+                logger.debug("Paleoisochron returned None for age=%s Ma, algorithm=%s", age, actual_algorithm)
                 continue
             slope, intercept = params_line
 
@@ -579,20 +668,32 @@ def refresh_paleoisochron_labels():
             continue
         _position_paleo_label(ax, text_artist, entry.get('slope', 0), entry.get('intercept', 0), age=entry.get('age'))
 
+def _resolve_model_age(pb206, pb207, params):
+    """Resolve model age and T1 override from Pb data and model params.
+
+    Returns:
+        tuple: (t_model, t1_override) where t_model is age array (Ma)
+               and t1_override is T1 in years for calculate_modelcurve.
+    """
+    geochemistry, _ = _lazy_import_geochemistry()
+    t_sk = geochemistry.calculate_two_stage_age(pb206, pb207, params=params)
+    t_cdt = geochemistry.calculate_single_stage_age(pb206, pb207, params=params)
+    if params.get('Tsec', 0.0) <= 0:
+        t_model = t_cdt
+        t1_override = params.get('T2', params.get('T1', None))
+    else:
+        t_model = np.where(np.isfinite(t_sk), t_sk, t_cdt)
+        t1_override = params.get('Tsec', None)
+    return t_model, t1_override
+
+
 def _draw_model_age_lines(ax, pb206, pb207, params):
     """Draw model age construction lines for 206/204 vs 207/204."""
     geochemistry, _ = _lazy_import_geochemistry()
     if geochemistry is None:
         return
     try:
-        t_sk = geochemistry.calculate_two_stage_age(pb206, pb207, params=params)
-        t_cdt = geochemistry.calculate_single_stage_age(pb206, pb207, params=params)
-        if params.get('Tsec', 0.0) <= 0:
-            t_model = t_cdt
-            t1_override = params.get('T2', params.get('T1', None))
-        else:
-            t_model = np.where(np.isfinite(t_sk), t_sk, t_cdt)
-            t1_override = params.get('Tsec', None)
+        t_model, t1_override = _resolve_model_age(pb206, pb207, params)
 
         curve = geochemistry.calculate_modelcurve(t_model, params=params, T1=t1_override / 1e6 if t1_override else None)
         x_curve = np.asarray(curve['Pb206_204'])
@@ -601,21 +702,22 @@ def _draw_model_age_lines(ax, pb206, pb207, params):
         max_lines = 200
         idxs = np.arange(len(pb206))
         if len(idxs) > max_lines:
-            idxs = np.random.choice(idxs, size=max_lines, replace=False)
+            rng = np.random.RandomState(42)
+            idxs = rng.choice(idxs, size=max_lines, replace=False)
 
+        age_style = resolve_line_style(
+            app_state,
+            'model_age_line',
+            {
+                'color': '#cbd5f5',
+                'linewidth': getattr(app_state, 'model_age_line_width', 0.7),
+                'linestyle': '-',
+                'alpha': 0.7
+            }
+        )
         for i in idxs:
             if np.isnan(pb206[i]) or np.isnan(pb207[i]) or np.isnan(x_curve[i]) or np.isnan(y_curve[i]):
                 continue
-            age_style = resolve_line_style(
-                app_state,
-                'model_age_line',
-                {
-                    'color': '#cbd5f5',
-                    'linewidth': getattr(app_state, 'model_age_line_width', 0.7),
-                    'linestyle': '-',
-                    'alpha': 0.7
-                }
-            )
             ax.plot(
                 [x_curve[i], pb206[i]], [y_curve[i], pb207[i]],
                 color=age_style['color'],
@@ -630,19 +732,12 @@ def _draw_model_age_lines(ax, pb206, pb207, params):
         logger.warning("Failed to draw model age lines: %s", err)
 
 def _draw_model_age_lines_86(ax, pb206, pb207, pb208, params):
-    """Draw model age construction lines for 206/204 vs 208/204."""
+    """Draw model age construion lines for 206/204 vs 208/204."""
     geochemistry, _ = _lazy_import_geochemistry()
     if geochemistry is None:
         return
     try:
-        t_sk = geochemistry.calculate_two_stage_age(pb206, pb207, params=params)
-        t_cdt = geochemistry.calculate_single_stage_age(pb206, pb207, params=params)
-        if params.get('Tsec', 0.0) <= 0:
-            t_model = t_cdt
-            t1_override = params.get('T2', params.get('T1', None))
-        else:
-            t_model = np.where(np.isfinite(t_sk), t_sk, t_cdt)
-            t1_override = params.get('Tsec', None)
+        t_model, t1_override = _resolve_model_age(pb206, pb207, params)
 
         curve = geochemistry.calculate_modelcurve(t_model, params=params, T1=t1_override / 1e6 if t1_override else None)
         x_curve = np.asarray(curve['Pb206_204'])
@@ -651,21 +746,22 @@ def _draw_model_age_lines_86(ax, pb206, pb207, pb208, params):
         max_lines = 200
         idxs = np.arange(len(pb206))
         if len(idxs) > max_lines:
-            idxs = np.random.choice(idxs, size=max_lines, replace=False)
+            rng = np.random.RandomState(42)
+            idxs = rng.choice(idxs, size=max_lines, replace=False)
 
+        age_style = resolve_line_style(
+            app_state,
+            'model_age_line',
+            {
+                'color': '#cbd5f5',
+                'linewidth': getattr(app_state, 'model_age_line_width', 0.7),
+                'linestyle': '-',
+                'alpha': 0.7
+            }
+        )
         for i in idxs:
             if np.isnan(pb206[i]) or np.isnan(pb208[i]) or np.isnan(x_curve[i]) or np.isnan(z_curve[i]):
                 continue
-            age_style = resolve_line_style(
-                app_state,
-                'model_age_line',
-                {
-                    'color': '#cbd5f5',
-                    'linewidth': getattr(app_state, 'model_age_line_width', 0.7),
-                    'linestyle': '-',
-                    'alpha': 0.7
-                }
-            )
             ax.plot(
                 [x_curve[i], pb206[i]], [z_curve[i], pb208[i]],
                 color=age_style['color'],

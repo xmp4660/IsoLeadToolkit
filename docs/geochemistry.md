@@ -991,3 +991,125 @@ V1V2 (Geokit) 模型中:
 calculate_all_parameters(Pb206, Pb207, Pb208, t_Ma=None, a=None, b=None, c=None)
 → dict  # 含 19 个键的完整结果集 (见 §11.2)
 ```
+
+---
+
+## 15. 绘图模块集成
+
+### 15.1 概述
+
+地球化学计算结果通过 `visualization/plotting/geo.py` 渲染到 matplotlib 图表上。该模块支持两种 Pb 演化图模式:
+
+| 模式 | X 轴 | Y 轴 | 等时线类型 |
+|------|------|------|-----------|
+| `PB_EVOL_76` | ²⁰⁶Pb/²⁰⁴Pb | ²⁰⁷Pb/²⁰⁴Pb | ISOCHRON1 |
+| `PB_EVOL_86` | ²⁰⁶Pb/²⁰⁴Pb | ²⁰⁸Pb/²⁰⁴Pb | ISOCHRON2 |
+
+### 15.2 等时线拟合与年龄计算
+
+#### 15.2.1 ISOCHRON1 (207/206)
+
+1. 对每组数据执行 York 回归 (`york_regression`)
+2. 从斜率计算 Pb-Pb 年龄 (`calculate_pbpb_age_from_ratio`)
+3. 绘制等时线回归线
+4. 可选: 绘制源区生长曲线 (`calculate_isochron1_growth_curve`)
+
+#### 15.2.2 ISOCHRON2 (208/206)
+
+1. 对 208/206 数据执行 York 回归获取斜率
+2. 同时对同组 207/206 数据执行 York 回归获取年龄
+3. 从 207/206 斜率计算 Pb-Pb 年龄
+4. 绘制 208/206 等时线回归线
+5. 可选: 绘制 κ 生长曲线 (`calculate_isochron2_growth_curve`)
+
+**关键点:** ISOCHRON2 的年龄计算依赖 207/206 斜率，而非 208/206 斜率。这是因为 ²⁰⁷Pb-²⁰⁶Pb 年龄方程有唯一解，而 ²⁰⁸Pb-²⁰⁶Pb 斜率还依赖于 κ (Th/U 比)。
+
+### 15.3 等时线标签
+
+等时线标签内容由 `app_state.isochron_label_options` 控制:
+
+| 选项 | 默认 | 说明 |
+|------|------|------|
+| `show_age` | True | 显示年龄 (Ma) |
+| `show_n_points` | True | 显示数据点数 |
+| `show_mswd` | False | 显示 MSWD |
+| `show_r_squared` | False | 显示 R² |
+| `show_slope` | False | 显示斜率 |
+
+标签构建函数 `_build_isochron_label()` 根据选项动态组装文本。
+
+### 15.4 模式年龄构造线
+
+模式年龄构造线连接样品点与模型曲线上对应年龄的点，直观展示样品偏离模型的程度。
+
+**年龄解析逻辑 (`_resolve_model_age`):**
+
+```python
+if Tsec <= 0:
+    t_model = tCDT  # 单阶段年龄
+    T1_override = T2
+else:
+    t_model = tSK if finite else tCDT  # 两阶段优先
+    T1_override = Tsec
+```
+
+**绘制流程:**
+1. 计算每个样品的模式年龄
+2. 调用 `calculate_modelcurve(t_model)` 获取模型曲线上对应点
+3. 绘制样品点到模型点的连线
+4. 在模型点处绘制小圆点标记
+
+**采样策略:** 当样品数超过 200 时，使用确定性随机采样 (`RandomState(42)`) 选取 200 个样品绘制，避免图表过于拥挤。
+
+### 15.5 古等时线
+
+古等时线是参考年龄的等时线，用于判断样品年龄分布。
+
+**绘制流程:**
+1. 从 `app_state.paleoisochron_ages` 获取年龄列表
+2. 对每个年龄调用 `calculate_paleoisochron_line(age, algorithm)`
+3. 绘制等时线并在合适位置标注年龄
+
+**标签定位:** 标签位置根据等时线斜率和图表边界动态计算，避免超出可视区域。
+
+### 15.6 模型曲线
+
+Stacey-Kramers 模型曲线展示地幔铅同位素演化轨迹。
+
+**绘制内容:**
+1. 主演化曲线 (0 → T₁ Ma)
+2. 年龄标记点 (可配置间隔)
+3. 年龄标签
+
+**实现:** `_draw_model_curves()` 调用 `calculate_modelcurve()` 生成曲线数据。
+
+### 15.7 Mu/Kappa 古等时线
+
+在 `PB_MU_AGE` 和 `PB_KAPPA_AGE` 图中，绘制特定 μ 或 κ 值的古等时线。
+
+**实现:** `_draw_mu_kappa_paleoisochrons()` 根据图类型选择合适的参数范围和标签格式。
+
+### 15.8 误差配置
+
+等时线回归的误差参数通过 `visualization/plotting/isochron.py` 的 `resolve_isochron_errors()` 解析:
+
+| 模式 | 配置来源 |
+|------|---------|
+| `columns` | 从 DataFrame 列读取 (sx_col, sy_col, rxy_col) |
+| `fixed` | 使用固定值 (sx_value, sy_value, rxy_value) |
+
+**回退逻辑:** 若指定列不存在，自动回退到固定值模式并记录警告。
+
+### 15.9 线型配置
+
+所有地球化学叠加线的样式通过 `line_styles.py` 的 `resolve_line_style()` 统一管理:
+
+| 样式键 | 用途 |
+|--------|------|
+| `model_curve` | 模型演化曲线 |
+| `isochron` | 等时线回归线 |
+| `growth_curve` | 生长曲线 |
+| `paleoisochron` | 古等时线 |
+| `model_age_line` | 模式年龄构造线 |
+
+每个样式支持 `color`, `linewidth`, `linestyle`, `alpha` 四个属性。

@@ -160,16 +160,27 @@ def calculate_v1v2_coordinates(d_alpha, d_beta, d_gamma, params=None)
 
 ### 源区参数反演 (source.py)
 
+所有源区反演函数共享统一的核心算法，仅参考参数不同:
+
 ```python
-# 原始铅参考（单阶段，使用 T2/a0/b0）
+# 内部核心函数 (统一反演算法)
+def _invert_mu(x, y, t_Ma, X_ref, Y_ref, T_ref, params)    # μ 反演核心
+def _invert_omega(z, t_Ma, Z_ref, T_ref, params)           # ω 反演核心
+def _invert_kappa(x, z, t_Ma, X_ref, Z_ref, T_ref, params) # κ 反演核心
+
+# 原始铅参考（单阶段，使用 T2/a0/b0/c0）
 def calculate_source_mu(Pb206_204_S, Pb207_204_S, t_Ma, params=None)     # μ (238U/204Pb)
 def calculate_source_omega(Pb208_204_S, t_Ma, params=None)                # ω (232Th/204Pb)
 def calculate_source_nu(mu, params=None)                                   # ν = μ × U_ratio
 
-# 模型参考（使用 T1/a1/b1，适用于任何模型）
+# 模型参考（使用 T1/a1/b1/c1，适用于任何模型）
 def calculate_model_mu(Pb206_204_S, Pb207_204_S, t_Ma, params=None)       # CalcMu
 def calculate_model_kappa(Pb208_204_S, Pb206_204_S, t_Ma, params=None)    # CalcKa
 ```
+
+`calculate_all_parameters()` 根据 `resolve_age_model()` 自动选择参考参数:
+- 单阶段模型 → 使用 CDT 参考 (a0/b0/c0, T2)
+- 两阶段模型 → 使用模型参考 (a1/b1/c1, T1)
 
 ### 初始比值反演 (source.py)
 

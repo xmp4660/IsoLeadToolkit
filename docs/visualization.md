@@ -132,9 +132,11 @@ on_slider_change() [events.py]
   ↓
 可选: 地球化学叠加 (PB_EVOL_76/86, geochemistry 惰性导入)
   ├─ _draw_model_curves() → SK 模型曲线
-  ├─ _draw_isochron_overlays() → York 回归线 + 年龄标签
+  ├─ _draw_isochron_overlays() → York 回归线 + 年龄标签 + 生长曲线
+  │    ├─ ISOCHRON1 (76): 直接从 207/206 斜率计算年龄
+  │    └─ ISOCHRON2 (86): 需 207/206 辅助计算年龄，绘制 κ 生长曲线
   ├─ _draw_paleoisochrons() → 参考古等时线
-  └─ _draw_model_age_lines() → 模式年龄构造线
+  └─ _draw_model_age_lines() / _draw_model_age_lines_86() → 模式年龄构造线
   ↓
 渲染图例:
   ├─ _legend_layout_config() → 位置/bbox
@@ -259,8 +261,13 @@ def plot_3d_data(group_col, data_columns, size=60) -> bool
 def _draw_model_curves(ax, algorithm, params_list)
     """绘制 Stacey-Kramers 模型曲线 + 年龄标记点"""
 
-def _draw_isochron_overlays(ax, algorithm)
-    """绘制等时线回归线 + 年龄/MSWD 标签"""
+def _draw_isochron_overlays(ax, algorithm, df, indices)
+    """绘制等时线回归线 + 年龄/MSWD 标签 + 生长曲线"""
+    # ISOCHRON1: 207/206 等时线，直接计算年龄
+    # ISOCHRON2: 208/206 等时线，需 207/206 辅助计算年龄
+
+def _build_isochron_label(result_dict) -> str
+    """根据 isochron_label_options 动态构建等时线标签"""
 
 def _draw_selected_isochron(ax)
     """高亮当前选中的等时线"""
@@ -268,11 +275,17 @@ def _draw_selected_isochron(ax)
 def _draw_paleoisochrons(ax, algorithm, ages, params)
     """绘制参考古等时线 (0-3000 Ma)"""
 
+def _resolve_model_age(pb206, pb207, params) -> tuple
+    """解析模式年龄 (tCDT/tSK) 和 T1 覆盖值"""
+
 def _draw_model_age_lines(ax, pb206, pb207, params)
     """绘制 206-207 模式年龄构造线"""
 
 def _draw_model_age_lines_86(ax, pb206, pb207, pb208, params)
     """绘制 206-208 模式年龄构造线"""
+
+def _draw_mu_kappa_paleoisochrons(ax, algorithm, params)
+    """绘制 Mu/Kappa 图的古等时线"""
 
 def _draw_equation_overlays(ax)
     """绘制自定义方程/线叠加"""
@@ -365,14 +378,51 @@ def get_embedding(algorithm, ...) -> np.ndarray | None
 ### plotting/geo.py — 地球化学叠加
 
 **功能范围:**
-1. Stacey-Kramers 模型曲线绘制。
-2. York 回归等时线拟合与标签生成。
-3. 古等时线与增长曲线绘制。
-4. 模式年龄构造线 (206-207 / 206-208)。
+1. Stacey-Kramers 模型曲线绘制
+2. York 回归等时线拟合与标签生成 (ISOCHRON1 + ISOCHRON2)
+3. 古等时线与增长曲线绘制
+4. 模式年龄构造线 (206-207 / 206-208)
+5. Mu/Kappa 古等时线 (PB_MU_AGE / PB_KAPPA_AGE 图)
+
+**等时线模式:**
+
+| 模式 | 坐标系 | 年龄计算 | 生长曲线 |
+|------|--------|---------|---------|
+| ISOCHRON1 | 207/204 vs 206/204 | 直接从斜率 | μ 曲线 |
+| ISOCHRON2 | 208/204 vs 206/204 | 需 207/206 辅助 | κ 曲线 |
+
+**关键函数:**
+
+```python
+def _draw_isochron_overlays(ax, actual_algorithm, df, indices)
+    """绘制等时线回归线 + 年龄标签 + 生长曲线"""
+    # ISOCHRON1: 直接从 207/206 斜率计算年龄
+    # ISOCHRON2: 需要同时拟合 207/206 获取年龄，再绘制 208/206 等时线
+
+def _build_isochron_label(result_dict) -> str
+    """根据 isochron_label_options 动态构建标签"""
+    # 支持: age, n_points, mswd, r_squared, slope
+
+def _resolve_model_age(pb206, pb207, params) -> tuple
+    """解析模式年龄和 T1 覆盖值"""
+    # Tsec <= 0 → 单阶段 (tCDT, T2)
+    # Tsec > 0 → 两阶段优先 (tSK, Tsec)
+
+def _draw_model_age_lines(ax, pb206, pb207, params)
+    """绘制 206-207 模式年龄构造线"""
+    # 确定性采样 (RandomState(42))，最多 200 条
+
+def _draw_model_age_lines_86(ax, pb206, pb207, pb208, params)
+    """绘制 206-208 模式年龄构造线"""
+
+def _draw_mu_kappa_paleoisochrons(ax, actual_algorithm, params)
+    """绘制 Mu/Kappa 图的古等时线"""
+```
 
 **实现约束:**
-1. `data.geochemistry` 采用惰性导入。
-2. 缺失依赖时功能降级，不影响其他模式。
+1. `data.geochemistry` 采用惰性导入
+2. 缺失依赖时功能降级，不影响其他模式
+3. 大数据集使用确定性随机采样避免图表拥挤
 
 ### plotting/ternary.py — 三元图工具
 
