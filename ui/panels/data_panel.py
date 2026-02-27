@@ -47,6 +47,7 @@ class DataPanel(BasePanel):
         self.geochem_plot_group = None
         self.modeling_show_model_check = None
         self.modeling_show_paleoisochron_check = None
+        self.modeling_show_plumbotectonics_check = None
         self.modeling_show_model_age_check = None
         self.modeling_show_isochron_check = None
         self.modeling_use_real_age_check = None
@@ -72,6 +73,9 @@ class DataPanel(BasePanel):
         self.rpca_x_spin = None
         self.rpca_y_spin = None
         self.metric_combo = None
+        self.plumbotectonics_model_label = None
+        self.plumbotectonics_model_combo = None
+        self.plumbotectonics_model_keys = []
 
     def build(self) -> QWidget:
         widget = self._build_data_section()
@@ -190,6 +194,8 @@ class DataPanel(BasePanel):
             (translate("V1-V2 Diagram"), "V1V2"),
             (translate("PB_EVOL_76"), "PB_EVOL_76"),
             (translate("PB_EVOL_86"), "PB_EVOL_86"),
+            (translate("PLUMBOTECTONICS_76"), "PLUMBOTECTONICS_76"),
+            (translate("PLUMBOTECTONICS_86"), "PLUMBOTECTONICS_86"),
             (translate("PB_MU_AGE"), "PB_MU_AGE"),
             (translate("PB_KAPPA_AGE"), "PB_KAPPA_AGE"),
         ]
@@ -602,6 +608,26 @@ class DataPanel(BasePanel):
             style_key='paleoisochron'
         )
 
+        self.modeling_show_plumbotectonics_check = _add_geochem_toggle(
+            "Show Plumbotectonics Curves",
+            getattr(app_state, 'show_plumbotectonics_curves', True),
+            self._on_plumbotectonics_curves_change,
+            style_key='plumbotectonics_curve'
+        )
+
+        plumb_row = QHBoxLayout()
+        self.plumbotectonics_model_label = QLabel(translate("Plumbotectonics Model"))
+        self.plumbotectonics_model_label.setProperty('translate_key', 'Plumbotectonics Model')
+        plumb_row.addWidget(self.plumbotectonics_model_label)
+
+        self.plumbotectonics_model_combo = QComboBox()
+        self.plumbotectonics_model_combo.currentIndexChanged.connect(self._on_plumbotectonics_model_change)
+        plumb_row.addWidget(self.plumbotectonics_model_combo)
+        plumb_row.addStretch()
+        geochem_layout.addLayout(plumb_row)
+
+        self._refresh_plumbotectonics_models()
+
         paleo_step_layout = QHBoxLayout()
         paleo_step_label = QLabel(translate("Paleoisochron Step (Ma):"))
         paleo_step_label.setProperty('translate_key', 'Paleoisochron Step (Ma):')
@@ -767,16 +793,27 @@ class DataPanel(BasePanel):
             self._refresh_2d_axis_combos()
 
         if self.geochem_plot_group is not None:
-            self.geochem_plot_group.setVisible(mode in ('PB_EVOL_76', 'PB_EVOL_86', 'PB_MU_AGE', 'PB_KAPPA_AGE'))
+            self.geochem_plot_group.setVisible(
+                mode in (
+                    'PB_EVOL_76', 'PB_EVOL_86', 'PB_MU_AGE', 'PB_KAPPA_AGE',
+                    'PLUMBOTECTONICS_76', 'PLUMBOTECTONICS_86'
+                )
+            )
 
         is_pb_evol = mode in ('PB_EVOL_76', 'PB_EVOL_86')
         is_pb_evol_76 = mode == 'PB_EVOL_76'
+        is_plumbotectonics = mode in ('PLUMBOTECTONICS_76', 'PLUMBOTECTONICS_86')
 
         if self.modeling_show_model_check is not None:
             self.modeling_show_model_check.setVisible(is_pb_evol)
             swatch = getattr(self.modeling_show_model_check, '_style_swatch', None)
             if swatch is not None:
                 swatch.setVisible(is_pb_evol)
+        if self.modeling_show_plumbotectonics_check is not None:
+            self.modeling_show_plumbotectonics_check.setVisible(is_plumbotectonics)
+            swatch = getattr(self.modeling_show_plumbotectonics_check, '_style_swatch', None)
+            if swatch is not None:
+                swatch.setVisible(is_plumbotectonics)
         if self.modeling_show_model_age_check is not None:
             self.modeling_show_model_age_check.setVisible(is_pb_evol)
             swatch = getattr(self.modeling_show_model_age_check, '_style_swatch', None)
@@ -789,6 +826,15 @@ class DataPanel(BasePanel):
             self.isochron_settings_btn.setVisible(is_pb_evol_76)
         if self.isochron_swatch is not None:
             self.isochron_swatch.setVisible(is_pb_evol_76)
+
+        if self.plumbotectonics_model_label is not None:
+            self.plumbotectonics_model_label.setVisible(is_plumbotectonics)
+            self.plumbotectonics_model_label.setEnabled(is_plumbotectonics)
+        if self.plumbotectonics_model_combo is not None:
+            self.plumbotectonics_model_combo.setVisible(is_plumbotectonics)
+            self.plumbotectonics_model_combo.setEnabled(is_plumbotectonics)
+            if is_plumbotectonics:
+                self._refresh_plumbotectonics_models()
 
         self._refresh_mu_kappa_age_controls()
 
@@ -1019,6 +1065,15 @@ class DataPanel(BasePanel):
         )
         self._on_change()
 
+    def _on_plumbotectonics_curves_change(self, state):
+        """Plumbotectonics 模型曲线显示变化"""
+        app_state.show_plumbotectonics_curves = (state == Qt.Checked)
+        self._sync_geochem_toggle_widgets(
+            app_state.show_plumbotectonics_curves,
+            getattr(self, 'modeling_show_plumbotectonics_check', None)
+        )
+        self._on_change()
+
     def _on_paleoisochron_change(self, state):
         """古等时线显示变化"""
         app_state.show_paleoisochrons = (state == Qt.Checked)
@@ -1124,6 +1179,46 @@ class DataPanel(BasePanel):
             return
         label = getattr(app_state, 'mu_kappa_age_col', None) or translate("Not Selected")
         self.mu_kappa_age_label.setText(label)
+
+    def _refresh_plumbotectonics_models(self):
+        """刷新 Plumbotectonics 曲线模型列表"""
+        combo = getattr(self, 'plumbotectonics_model_combo', None)
+        if combo is None:
+            return
+        try:
+            from visualization.plotting.geo import get_plumbotectonics_variants
+            variants = get_plumbotectonics_variants()
+        except Exception:
+            variants = []
+
+        combo.blockSignals(True)
+        combo.clear()
+        self.plumbotectonics_model_keys = []
+        if variants:
+            for key, label in variants:
+                combo.addItem(translate(label), key)
+                self.plumbotectonics_model_keys.append(key)
+            current_key = str(getattr(app_state, 'plumbotectonics_variant', '0'))
+            if current_key in self.plumbotectonics_model_keys:
+                combo.setCurrentIndex(self.plumbotectonics_model_keys.index(current_key))
+            else:
+                combo.setCurrentIndex(0)
+                app_state.plumbotectonics_variant = self.plumbotectonics_model_keys[0]
+            combo.setEnabled(True)
+        else:
+            combo.addItem(translate("No plumbotectonics data"))
+            combo.setEnabled(False)
+        combo.blockSignals(False)
+
+    def _on_plumbotectonics_model_change(self, index):
+        """Plumbotectonics 曲线模型切换"""
+        if not self.plumbotectonics_model_keys:
+            return
+        if index < 0 or index >= len(self.plumbotectonics_model_keys):
+            return
+        app_state.plumbotectonics_variant = self.plumbotectonics_model_keys[index]
+        if app_state.render_mode in ('PLUMBOTECTONICS_76', 'PLUMBOTECTONICS_86'):
+            self._on_change()
 
     def _refresh_mu_kappa_age_controls(self):
         """刷新 Mu/Kappa 年龄列控件状态"""
@@ -1320,6 +1415,8 @@ class DataPanel(BasePanel):
 
             if style_key == 'model_curve':
                 app_state.model_curve_width = style_ref['linewidth']
+            elif style_key == 'plumbotectonics_curve':
+                app_state.plumbotectonics_curve_width = style_ref['linewidth']
             elif style_key == 'paleoisochron':
                 app_state.paleoisochron_width = style_ref['linewidth']
             elif style_key == 'model_age_line':

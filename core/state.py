@@ -35,6 +35,7 @@ class AppState:
         # Geochemistry plot toggles
         self.show_model_curves = True
         self.show_paleoisochrons = True
+        self.show_plumbotectonics_curves = True
         self.show_model_age_lines = True
         self.show_isochrons = False  # Default to False for isochron overlays
         self.use_real_age_for_mu_kappa = False  # Use selected age column for PB_MU_AGE/PB_KAPPA_AGE
@@ -84,6 +85,12 @@ class AppState:
                 'linestyle': '-',
                 'alpha': 0.8
             },
+            'plumbotectonics_curve': {
+                'color': None,
+                'linewidth': 1.2,
+                'linestyle': '-',
+                'alpha': 0.85
+            },
             'growth_curve': {
                 'color': None,
                 'linewidth': 1.2,
@@ -121,6 +128,7 @@ class AppState:
         self.paleoisochron_ages = list(
             range(self.paleoisochron_max_age, self.paleoisochron_min_age - 1, -self.paleoisochron_step)
         )
+        self.plumbotectonics_variant = '0'
         self.model_curve_models = None  # None means all preset models
             
         # PCA/RobustPCA Dimension Selection
@@ -187,6 +195,8 @@ class AppState:
         self.marginal_axes = None  # (top_ax, right_ax) for marginal KDE
         self.paleoisochron_label_data = []  # Track paleoisochron labels for updates
         self.paleo_label_refreshing = False
+        self.plumbotectonics_label_data = []
+        self.plumbotectonics_isoage_label_data = []
         self.mixing_groups = {'endmembers': {}, 'mixtures': {}}
         self.mixing_results = []
         self.mixing_calc_cols = []
@@ -283,6 +293,7 @@ class AppState:
         self.scatter_edgecolor = '#1e293b'
         self.scatter_edgewidth = 0.4
         self.model_curve_width = 1.2
+        self.plumbotectonics_curve_width = 1.2
         self.paleoisochron_width = 0.9
         self.model_age_line_width = 0.7
         self.isochron_line_width = 1.5

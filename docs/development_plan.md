@@ -236,6 +236,10 @@ tests/
 5. **API 暴露过多** — `plotting/api.py` 导出私有 helper，需收敛 `__all__`。✅ 已完成
 6. **顶层副作用** — `plotting/geo.py` 与 `plotting/render.py` 顶层导入并记录日志，需改为惰性加载。✅ 已完成
 
+#### 新增功能
+
+1. **Plumbotectonics 演化曲线模式** — 新增 `PLUMBOTECTONICS_76/86` 渲染模式，支持模型切换与同年龄连线等时线，数据内置至 `data/plumbotectonics_data.py`。✅ 已完成
+
 #### 规范审查发现
 
 **高优先级:**

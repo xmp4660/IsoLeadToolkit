@@ -40,6 +40,8 @@ from .geo import (
     _draw_model_age_lines,
     _draw_model_age_lines_86,
     _draw_mu_kappa_paleoisochrons,
+    _draw_plumbotectonics_curves,
+    _draw_plumbotectonics_isoage_lines,
     _draw_equation_overlays,
 )
 from .ternary import _apply_ternary_stretch
@@ -236,7 +238,10 @@ def plot_embedding(
                 logger.error(f"V1V2 calculation failed: {e}")
                 return False
 
-        elif actual_algorithm in ('PB_EVOL_76', 'PB_EVOL_86', 'PB_MU_AGE', 'PB_KAPPA_AGE'):
+        elif actual_algorithm in (
+            'PB_EVOL_76', 'PB_EVOL_86', 'PB_MU_AGE', 'PB_KAPPA_AGE',
+            'PLUMBOTECTONICS_76', 'PLUMBOTECTONICS_86'
+        ):
             logger.debug("Computing Geochemistry embedding for %s", actual_algorithm)
             geochemistry, _ = _lazy_import_geochemistry()
             if geochemistry is None:
@@ -292,7 +297,7 @@ def plot_embedding(
                     kappa_vals = geochemistry.calculate_model_kappa(pb208, pb206, t_ma)
                     embedding = np.column_stack((t_ma, kappa_vals))
             else:
-                if actual_algorithm == 'PB_EVOL_76':
+                if actual_algorithm in ('PB_EVOL_76', 'PLUMBOTECTONICS_76'):
                     embedding = np.column_stack((pb206, pb207))
                 else:
                     embedding = np.column_stack((pb206, pb208))
@@ -746,6 +751,10 @@ def plot_embedding(
             title = f'Geochem - Pb Evolution / Model Curves (206-207){subset_info}\nColored by {group_col}'
         elif actual_algorithm == 'PB_EVOL_86':
             title = f'Geochem - Pb Evolution / Model Curves (206-208){subset_info}\nColored by {group_col}'
+        elif actual_algorithm == 'PLUMBOTECTONICS_76':
+            title = f'Geochem - Plumbotectonics (206-207){subset_info}\nColored by {group_col}'
+        elif actual_algorithm == 'PLUMBOTECTONICS_86':
+            title = f'Geochem - Plumbotectonics (206-208){subset_info}\nColored by {group_col}'
         elif actual_algorithm == 'PB_MU_AGE':
             title = f'Geochem - Mu vs Age{subset_info}\nColored by {group_col}'
         elif actual_algorithm == 'PB_KAPPA_AGE':
@@ -778,10 +787,10 @@ def plot_embedding(
         if actual_algorithm == 'V1V2':
             app_state.ax.set_xlabel("V1")
             app_state.ax.set_ylabel("V2")
-        elif actual_algorithm == 'PB_EVOL_76':
+        elif actual_algorithm in ('PB_EVOL_76', 'PLUMBOTECTONICS_76'):
             app_state.ax.set_xlabel("206Pb/204Pb")
             app_state.ax.set_ylabel("207Pb/204Pb")
-        elif actual_algorithm in ('PB_EVOL_86',):
+        elif actual_algorithm in ('PB_EVOL_86', 'PLUMBOTECTONICS_86'):
             app_state.ax.set_xlabel("206Pb/204Pb")
             app_state.ax.set_ylabel("208Pb/204Pb")
         elif actual_algorithm == 'PB_MU_AGE':
@@ -835,6 +844,12 @@ def plot_embedding(
                             if col_208:
                                 pb208 = pd.to_numeric(df_subset[col_208], errors='coerce').values
                                 _draw_model_age_lines_86(app_state.ax, pb206, pb207, pb208, params)
+
+        if actual_algorithm in ('PLUMBOTECTONICS_76', 'PLUMBOTECTONICS_86'):
+            if getattr(app_state, 'show_paleoisochrons', True):
+                _draw_plumbotectonics_isoage_lines(app_state.ax, actual_algorithm)
+            if getattr(app_state, 'show_plumbotectonics_curves', True):
+                _draw_plumbotectonics_curves(app_state.ax, actual_algorithm)
 
         if actual_algorithm in ('PB_MU_AGE', 'PB_KAPPA_AGE'):
             if getattr(app_state, 'show_paleoisochrons', True):

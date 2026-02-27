@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from core import app_state
+from data.plumbotectonics_data import PLUMBOTECTONICS_SECTIONS
 from visualization.line_styles import resolve_line_style
 from .data import _get_analysis_data, _lazy_import_geochemistry
 from .core import _get_subset_dataframe, _get_pb_columns
@@ -71,6 +72,242 @@ def _draw_model_curves(ax, actual_algorithm, params_list):
         except Exception as err:
             logger.warning("Failed to draw model curve: %s", err)
 
+
+def _load_plumbotectonics_data():
+    return PLUMBOTECTONICS_SECTIONS
+
+
+def _plumbotectonics_section_name(section, index):
+    label = (section.get('label') or '').strip()
+    if label:
+        return label
+    return f"Model {index + 1}"
+
+
+def get_plumbotectonics_variants():
+    """Return available plumbotectonics model variants."""
+    sections = _load_plumbotectonics_data()
+    if not sections:
+        return []
+    variants = []
+    for idx, section in enumerate(sections):
+        variants.append((str(idx), _plumbotectonics_section_name(section, idx)))
+    return variants
+
+
+def _select_plumbotectonics_section(sections):
+    if not sections:
+        return None
+    variant = getattr(app_state, 'plumbotectonics_variant', None)
+    try:
+        idx = int(variant)
+    except Exception:
+        idx = None
+    if idx is not None and 0 <= idx < len(sections):
+        return sections[idx]
+    return sections[0]
+
+
+def _fit_plumbotectonics_curve(x_vals, y_vals, n_points=200):
+    x_arr = np.asarray(x_vals, dtype=float)
+    y_arr = np.asarray(y_vals, dtype=float)
+    valid = np.isfinite(x_arr) & np.isfinite(y_arr)
+    x_arr = x_arr[valid]
+    y_arr = y_arr[valid]
+    if x_arr.size < 2:
+        return x_arr, y_arr
+
+    order = np.argsort(x_arr)
+    x_sorted = x_arr[order]
+    y_sorted = y_arr[order]
+
+    unique_x, inv = np.unique(x_sorted, return_inverse=True)
+    if unique_x.size < 2:
+        return unique_x, y_sorted[:unique_x.size]
+    y_accum = np.zeros_like(unique_x, dtype=float)
+    counts = np.zeros_like(unique_x, dtype=float)
+    for idx, group_idx in enumerate(inv):
+        y_accum[group_idx] += y_sorted[idx]
+        counts[group_idx] += 1
+    y_unique = np.divide(y_accum, counts, out=np.zeros_like(y_accum), where=counts > 0)
+
+    x_min = float(unique_x.min())
+    x_max = float(unique_x.max())
+    if not np.isfinite(x_min) or not np.isfinite(x_max) or x_min == x_max:
+        return unique_x, y_unique
+
+    x_fit = np.linspace(x_min, x_max, int(n_points))
+    try:
+        from scipy.interpolate import PchipInterpolator
+        y_fit = PchipInterpolator(unique_x, y_unique)(x_fit)
+    except Exception:
+        y_fit = np.interp(x_fit, unique_x, y_unique)
+    return x_fit, y_fit
+
+
+def _plumbotectonics_color(name):
+    key = str(name).lower()
+    if 'mantle' in key or '地幔' in key:
+        return '#0ea5e9'
+    if 'upper' in key or '上地壳' in key:
+        return '#f97316'
+    if 'lower' in key or '下地壳' in key:
+        return '#22c55e'
+    if 'orogene' in key or 'orogen' in key:
+        return '#a855f7'
+    return '#64748b'
+
+def _plumbotectonics_marker(name):
+    key = str(name).lower()
+    if 'mantle' in key or '地幔' in key:
+        return 'o'
+    if 'lower' in key or '下地壳' in key:
+        return 's'
+    if 'upper' in key or '上地壳' in key:
+        return '^'
+    if 'orogene' in key or 'orogen' in key:
+        return 'D'
+    return 'o'
+
+
+def _draw_plumbotectonics_curves(ax, actual_algorithm):
+    """Draw Plumbotectonics model curves using fitted data points."""
+    sections = _load_plumbotectonics_data()
+    section = _select_plumbotectonics_section(sections)
+    if not section:
+        return
+
+    y_key = 'pb207' if str(actual_algorithm).endswith('_76') else 'pb208'
+
+    base_style = resolve_line_style(
+        app_state,
+        'plumbotectonics_curve',
+        {
+            'color': None,
+            'linewidth': getattr(app_state, 'plumbotectonics_curve_width', 1.2),
+            'linestyle': '-',
+            'alpha': 0.85
+        }
+    )
+
+    variant_label = section.get('label')
+    if variant_label:
+        logger.info("Plumbotectonics model variant: %s", variant_label)
+
+    for group in section.get('groups', []):
+        name = str(group.get('name', ''))
+        x_vals = group.get('pb206', [])
+        y_vals = group.get(y_key, [])
+        x_fit, y_fit = _fit_plumbotectonics_curve(x_vals, y_vals)
+        if len(x_fit) < 2:
+            continue
+        color = base_style['color'] or _plumbotectonics_color(name)
+        marker = _plumbotectonics_marker(name)
+        ax.plot(
+            x_fit,
+            y_fit,
+            color=color,
+            linewidth=base_style['linewidth'],
+            linestyle=base_style['linestyle'],
+            alpha=base_style['alpha'],
+            zorder=1.2,
+            label='_nolegend_'
+        )
+        ax.plot(
+            x_vals,
+            y_vals,
+            linestyle='None',
+            marker=marker,
+            markersize=4.5,
+            color=color,
+            alpha=min(base_style['alpha'] + 0.1, 1.0),
+            zorder=1.3,
+            label='_nolegend_'
+        )
+
+
+def _draw_plumbotectonics_isoage_lines(ax, actual_algorithm):
+    """Draw same-age connection lines (paleoisochrons) for Plumbotectonics."""
+    sections = _load_plumbotectonics_data()
+    section = _select_plumbotectonics_section(sections)
+    if not section:
+        return
+
+    y_key = 'pb207' if str(actual_algorithm).endswith('_76') else 'pb208'
+    groups = [g for g in section.get('groups', []) if g.get('pb206') and g.get(y_key)]
+    if not groups:
+        return
+
+    lengths = []
+    for g in groups:
+        lengths.append(len(g.get('t', [])))
+        lengths.append(len(g.get('pb206', [])))
+        lengths.append(len(g.get(y_key, [])))
+    n_points = min(lengths) if lengths else 0
+    if n_points < 2:
+        return
+
+    paleo_style = resolve_line_style(
+        app_state,
+        'paleoisochron',
+        {
+            'color': '#94a3b8',
+            'linewidth': getattr(app_state, 'paleoisochron_width', 0.9),
+            'linestyle': '--',
+            'alpha': 0.85
+        }
+    )
+
+    app_state.plumbotectonics_isoage_label_data = []
+
+    for idx in range(n_points):
+        pts = []
+        t_val = None
+        for g in groups:
+            try:
+                t_val = float(g.get('t', [])[idx])
+                x_val = float(g.get('pb206', [])[idx])
+                y_val = float(g.get(y_key, [])[idx])
+            except (TypeError, ValueError, IndexError):
+                continue
+            if not (np.isfinite(t_val) and np.isfinite(x_val) and np.isfinite(y_val)):
+                continue
+            pts.append((x_val, y_val))
+
+        if len(pts) < 2:
+            continue
+
+        pts.sort(key=lambda p: p[0])
+        x_line = [p[0] for p in pts]
+        y_line = [p[1] for p in pts]
+        ax.plot(
+            x_line,
+            y_line,
+            linestyle=paleo_style['linestyle'],
+            color=paleo_style['color'],
+            linewidth=paleo_style['linewidth'],
+            alpha=paleo_style['alpha'],
+            zorder=1.05,
+            label='_nolegend_'
+        )
+
+        if t_val is not None and len(x_line) >= 2:
+            text_artist = ax.text(
+                x_line[0], y_line[0],
+                "",
+                color=paleo_style['color'],
+                fontsize=8,
+                va='center',
+                ha='left',
+                alpha=paleo_style['alpha']
+            )
+            app_state.plumbotectonics_isoage_label_data.append({
+                'text': text_artist,
+                'x_line': x_line,
+                'y_line': y_line,
+                'age': t_val * 1000.0,
+            })
+            _position_isoage_label_on_line(ax, text_artist, x_line, y_line, age_ma=t_val * 1000.0)
 
 def _draw_mu_kappa_paleoisochrons(ax, ages):
     """Draw paleoisochron ages as vertical guides for Mu/Kappa plots."""
@@ -598,6 +835,141 @@ def _position_paleo_label(ax, text_artist, slope, intercept, age=None):
     if age is not None:
         text_artist.set_text(f" {age:.0f} Ma")
 
+
+def _position_curve_label_left(ax, text_artist, x_vals, y_vals):
+    """Position a curve label near the left edge, aligned with local slope."""
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+    x_span = xlim[1] - xlim[0]
+    y_span = ylim[1] - ylim[0]
+    if x_span == 0 or y_span == 0:
+        return
+
+    pad_x = x_span * 0.02
+    pad_y = y_span * 0.02
+    x_anchor = xlim[0] + pad_x
+
+    x_arr = np.asarray(x_vals, dtype=float)
+    y_arr = np.asarray(y_vals, dtype=float)
+    valid = np.isfinite(x_arr) & np.isfinite(y_arr)
+    x_arr = x_arr[valid]
+    y_arr = y_arr[valid]
+    if x_arr.size < 2:
+        return
+
+    order = np.argsort(x_arr)
+    x_sorted = x_arr[order]
+    y_sorted = y_arr[order]
+
+    x_min = float(x_sorted.min())
+    x_max = float(x_sorted.max())
+    if x_anchor < x_min:
+        x_anchor = x_min
+    elif x_anchor > x_max:
+        x_anchor = x_max
+
+    y_anchor = np.interp(x_anchor, x_sorted, y_sorted)
+    if not np.isfinite(y_anchor):
+        return
+
+    idx = np.searchsorted(x_sorted, x_anchor)
+    if idx <= 0:
+        i0, i1 = 0, 1
+    elif idx >= len(x_sorted):
+        i0, i1 = len(x_sorted) - 2, len(x_sorted) - 1
+    else:
+        i0, i1 = max(idx - 1, 0), min(idx, len(x_sorted) - 1)
+
+    dx = x_sorted[i1] - x_sorted[i0]
+    if abs(dx) < _SLOPE_EPSILON:
+        slope = 0.0
+    else:
+        slope = (y_sorted[i1] - y_sorted[i0]) / dx
+
+    angle = _label_angle_for_slope(ax, x_anchor, y_anchor, slope, dx=x_span * 0.02)
+    y_anchor = min(max(y_anchor, ylim[0] + pad_y), ylim[1] - pad_y)
+    text_artist.set_position((x_anchor, y_anchor))
+    text_artist.set_rotation(angle)
+    text_artist.set_rotation_mode('anchor')
+    text_artist.set_ha('left')
+    text_artist.set_va('center')
+    text_artist.set_clip_on(True)
+
+
+def _position_isoage_label_on_line(ax, text_artist, x_line, y_line, age_ma=None):
+    """Position an isoage label along its line (not at the axes edge)."""
+    if not x_line or not y_line:
+        return
+    if len(x_line) != len(y_line):
+        return
+
+    x_arr = np.asarray(x_line, dtype=float)
+    y_arr = np.asarray(y_line, dtype=float)
+    valid = np.isfinite(x_arr) & np.isfinite(y_arr)
+    x_arr = x_arr[valid]
+    y_arr = y_arr[valid]
+    if x_arr.size < 2:
+        return
+
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+    x_span = xlim[1] - xlim[0]
+    y_span = ylim[1] - ylim[0]
+    if x_span == 0 or y_span == 0:
+        return
+
+    line_xmin = float(np.min(x_arr))
+    line_xmax = float(np.max(x_arr))
+    line_ymin = float(np.min(y_arr))
+    line_ymax = float(np.max(y_arr))
+    if line_xmax < xlim[0] or line_xmin > xlim[1] or line_ymax < ylim[0] or line_ymin > ylim[1]:
+        text_artist.set_visible(False)
+        return
+    text_artist.set_visible(True)
+
+    pad_x = x_span * 0.08
+    pad_y = y_span * 0.08
+    x_min = xlim[0] + pad_x
+    x_max = xlim[1] - pad_x
+    y_min = ylim[0] + pad_y
+    y_max = ylim[1] - pad_y
+
+    cx = (xlim[0] + xlim[1]) / 2
+    cy = (ylim[0] + ylim[1]) / 2
+
+    best = None
+    for i in range(len(x_arr) - 1):
+        x0, y0 = float(x_arr[i]), float(y_arr[i])
+        x1, y1 = float(x_arr[i + 1]), float(y_arr[i + 1])
+        if not (np.isfinite(x0) and np.isfinite(y0) and np.isfinite(x1) and np.isfinite(y1)):
+            continue
+        for t in (0.25, 0.5, 0.75):
+            x_t = x0 + (x1 - x0) * t
+            y_t = y0 + (y1 - y0) * t
+            if x_t < x_min or x_t > x_max or y_t < y_min or y_t > y_max:
+                continue
+            dist = (x_t - cx) ** 2 + (y_t - cy) ** 2
+            if best is None or dist < best[0]:
+                best = (dist, x_t, y_t, x0, y0, x1, y1)
+
+    if best is None:
+        text_artist.set_visible(False)
+        return
+
+    _, x_mid, y_mid, x0, y0, x1, y1 = best
+    dx = x1 - x0
+    slope = 0.0 if abs(dx) < _SLOPE_EPSILON else (y1 - y0) / dx
+    angle = _label_angle_for_slope(ax, x_mid, y_mid, slope, dx=x_span * 0.02)
+    text_artist.set_position((x_mid, y_mid))
+    text_artist.set_rotation(angle)
+
+    text_artist.set_rotation_mode('anchor')
+    text_artist.set_ha('center')
+    text_artist.set_va('center')
+    text_artist.set_clip_on(True)
+    if age_ma is not None:
+        text_artist.set_text(f" {age_ma:.0f} Ma")
+
 def _draw_paleoisochrons(ax, actual_algorithm, ages, params):
     """Draw paleoisochron reference lines for given ages."""
     geochemistry, _ = _lazy_import_geochemistry()
@@ -670,13 +1042,33 @@ def refresh_paleoisochron_labels():
 
     label_data = getattr(app_state, 'paleoisochron_label_data', [])
     if not label_data:
-        return
+        label_data = []
 
     for entry in label_data:
         text_artist = entry.get('text')
         if text_artist is None:
             continue
         _position_paleo_label(ax, text_artist, entry.get('slope', 0), entry.get('intercept', 0), age=entry.get('age'))
+
+    curve_labels = getattr(app_state, 'plumbotectonics_label_data', [])
+    for entry in curve_labels:
+        text_artist = entry.get('text')
+        if text_artist is None:
+            continue
+        _position_curve_label_left(ax, text_artist, entry.get('x_vals', []), entry.get('y_vals', []))
+
+    isoage_labels = getattr(app_state, 'plumbotectonics_isoage_label_data', [])
+    for entry in isoage_labels:
+        text_artist = entry.get('text')
+        if text_artist is None:
+            continue
+        _position_isoage_label_on_line(
+            ax,
+            text_artist,
+            entry.get('x_line', []),
+            entry.get('y_line', []),
+            age_ma=entry.get('age'),
+        )
 
 def _resolve_model_age(pb206, pb207, params):
     """Resolve model age and T1 override from Pb data and model params.
