@@ -34,6 +34,8 @@
     继续补齐返回类型注解与签名；`loader.py` 同步切换到 `from core import CONFIG, app_state` 统一导入入口。
 - 本轮新增进展：`data/geochemistry/delta.py` 主入口 `calculate_deltas()` 完成返回类型补齐，
     `resolve_age_model()` 参数类型进一步明确，降低静态检查歧义。
+- 本轮新增进展：数据导入向导已新增“初始渲染模式”选择（2D/3D/Ternary/UMAP/tSNE/PCA/RobustPCA），
+    并在 `load_data()` 接入导入结果，避免默认触发高耗时 UMAP；数据预览改为“所有列 + 前10行”。
 - 仍未完成（保持原计划）：AppState 分层的全量字段迁移与调用切换、P2 类型注解全覆盖，以及测试框架/配置外部化/插件系统。
 
 ## 执行策略调整（2026-03-07）

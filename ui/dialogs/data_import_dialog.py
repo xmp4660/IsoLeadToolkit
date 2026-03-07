@@ -258,10 +258,19 @@ class Qt5DataImportDialog(QDialog):
         if not hasattr(self, 'render_mode_combo') or self.render_mode_combo is None:
             return
 
+        current_value = self.render_mode_combo.currentData()
+
         options = [
             (translate("2D Scatter (Fast)"), '2D'),
             (translate("3D Scatter"), '3D'),
             (translate("Ternary"), 'Ternary'),
+            (translate("V1-V2 Diagram"), 'V1V2'),
+            (translate("Pb Evolution 206-207"), 'PB_EVOL_76'),
+            (translate("Pb Evolution 206-208"), 'PB_EVOL_86'),
+            (translate("Mu vs Age"), 'PB_MU_AGE'),
+            (translate("Kappa vs Age"), 'PB_KAPPA_AGE'),
+            (translate("Plumbotectonics 206-207"), 'PLUMBOTECTONICS_76'),
+            (translate("Plumbotectonics 206-208"), 'PLUMBOTECTONICS_86'),
             (translate("UMAP"), 'UMAP'),
             (translate("t-SNE"), 'tSNE'),
             (translate("PCA"), 'PCA'),
@@ -271,7 +280,8 @@ class Qt5DataImportDialog(QDialog):
         self.render_mode_combo.clear()
         for label, value in options:
             self.render_mode_combo.addItem(label, value)
-        idx = self.render_mode_combo.findData(self.default_render_mode)
+        preferred_value = current_value if current_value is not None else self.default_render_mode
+        idx = self.render_mode_combo.findData(preferred_value)
         if idx < 0:
             idx = self.render_mode_combo.findData('2D')
         if idx >= 0:
