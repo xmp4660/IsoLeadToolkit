@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox,
     QGroupBox, QGridLayout, QSpinBox, QDoubleSpinBox, QToolButton,
     QDialog, QDialogButtonBox, QListWidget, QListWidgetItem, QLineEdit,
-    QAbstractItemView, QMessageBox, QColorDialog,
+    QAbstractItemView, QMessageBox, QColorDialog, QToolBox,
 )
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QColor, QPainter, QPixmap, QIcon
@@ -36,6 +36,19 @@ class LegendPanel(BasePanel):
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
+
+        section_toolbox = QToolBox()
+        section_toolbox.setObjectName('legend_section_toolbox')
+
+        def _add_group_page(group_widget: QGroupBox, title_key: str) -> None:
+            page = QWidget()
+            page_layout = QVBoxLayout(page)
+            page_layout.setContentsMargins(6, 6, 6, 6)
+            page_layout.setSpacing(8)
+            page_layout.addWidget(group_widget)
+            page_layout.addStretch()
+            section_toolbox.addItem(page, translate(title_key))
 
         position_group = QGroupBox(translate("Legend Position"))
         position_group.setProperty('translate_key', 'Legend Position')
@@ -108,7 +121,7 @@ class LegendPanel(BasePanel):
         self._set_legend_outside_position_button(outside_location)
 
         position_group.setLayout(position_layout)
-        layout.addWidget(position_group)
+        _add_group_page(position_group, 'Legend Position')
 
         style_group = QGroupBox(translate("Inline Legend Style"))
         style_group.setProperty('translate_key', 'Inline Legend Style')
@@ -228,10 +241,11 @@ class LegendPanel(BasePanel):
         style_layout.addWidget(auto_btn)
 
         style_group.setLayout(style_layout)
-        layout.addWidget(style_group)
+        _add_group_page(style_group, 'Inline Legend Style')
 
         self.legend_nudge_step = float(getattr(app_state, 'legend_nudge_step', self.legend_nudge_step))
 
+        layout.addWidget(section_toolbox)
         layout.addStretch()
         return widget
 

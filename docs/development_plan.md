@@ -6,37 +6,13 @@
 
 本次按代码现状逐项核查后，更新如下：
 
-- 已完成并可关闭：暂无新增可关闭项。
-- 部分完成：
-    - 类型注解补齐：`core/cache.py`、`core/localization.py` 与多处 `visualization/` 公共函数已补齐。
-    - 数值稳定性统一：`pd.to_numeric(errors='coerce')` 与 `np.errstate` 已在部分核心路径使用（ML/等时线/部分渲染）。
-- 本轮新增完成：后台线程嵌入计算（含取消与任务代号保护）、`plot_embedding()` 主流程拆分。
-- 本轮新增进展：`core/session.py`、`data/mixing.py`、`data/endmember.py` 类型注解补齐；
-    geochemistry 中 `EPSILON` 常量已统一接入 age/source/isochron；`AppState` 已引入分层兼容视图（`*_state`）。
-- 本轮新增进展：`AppState` 分层兼容视图已增加可写属性与 `app_state.data/visual/interaction/...` 别名，
-    并已在 `plotting/data.py` 开始使用分层入口读取数据状态。
-- 本轮新增进展：`data/geochemistry/isochron.py` 公共函数类型注解已补齐；
-    `plotting/core.py` 的子集数据读取已切换到分层入口（兼容回退保留）。
-- 本轮新增进展：`data/geochemistry/age.py` 与 `source.py` 公共函数类型注解已补齐；
-    `events.py` 关键数据读取路径开始切换到分层入口（含兼容回退）。
-- 本轮新增进展：`events.py` 主要数据访问已迁移至分层入口 helper；
-    `core/state.py` 分层视图类属性已补充类型注解与 `AppState.__init__` 返回类型标注。
-- 本轮新增进展：`visualization/plotting/render.py`、`core.py`、`analysis_qt.py`、`ternary.py`、`geo.py`
-    已补充分层数据访问 helper（`_data_state/_df_global/_data_cols`）并完成关键读取路径替换；
-    `analysis_qt.py` 公共函数补充返回类型注解。
-- 本轮新增进展：`visualization/plotting/render.py` 与 `core.py` 已进一步统一子集入口，
-    新增并应用 `_active_subset_indices()`，用于标题子集标记、数据切片与缓存 key 计算路径。
-- 本轮新增进展：`visualization/events.py` 的异步嵌入任务特征列读取改为分层入口 `_data_cols()`；
-    `events.py` 与 `ternary.py`/`analysis_qt.py` helper 签名继续补齐类型注解。
-- 本轮新增进展：`visualization/plotting/data.py` 已引入分层 helper 与返回类型注解，
-    并补充 `df_global/data_cols` 缺失与列完整性校验，降低分析入口异常风险。
-- 本轮新增进展：`data/geochemistry/{delta,__init__,engine}.py`、`data/loader.py`、`data/provenance_ml.py`
-    继续补齐返回类型注解与签名；`loader.py` 同步切换到 `from core import CONFIG, app_state` 统一导入入口。
-- 本轮新增进展：`data/geochemistry/delta.py` 主入口 `calculate_deltas()` 完成返回类型补齐，
-    `resolve_age_model()` 参数类型进一步明确，降低静态检查歧义。
-- 本轮新增进展：数据导入向导已新增“初始渲染模式”选择（2D/3D/Ternary/UMAP/tSNE/PCA/RobustPCA），
-    并在 `load_data()` 接入导入结果，避免默认触发高耗时 UMAP；数据预览改为“所有列 + 前10行”。
-- 仍未完成（保持原计划）：AppState 分层的全量字段迁移与调用切换、P2 类型注解全覆盖，以及测试框架/配置外部化/插件系统。
+- 仍未完成（保持原计划）：
+    - AppState 分层的全量字段迁移与调用切换。
+    - 类型注解全覆盖（P2）。
+    - 数值稳定性统一收口。
+    - 测试框架落地。
+    - 配置外部化。
+    - 插件系统（含 ML 管线插件化）。
 
 ## 执行策略调整（2026-03-07）
 
@@ -51,21 +27,6 @@
 ## 全局改进计划
 
 ### 第一优先级：功能与性能
-
-#### 1.1 后台计算 + 进度指示（已完成）
-
-**问题:** UMAP/t-SNE 在大数据集上会阻塞 UI。
-
-**目标:** 计算与渲染解耦，主线程仅负责 UI 更新。
-
-**实施要点:**
-
-- 新增 `EmbeddingWorker(QThread)`，负责嵌入计算。
-- 统一进度信号：`started/progress/finished/failed/cancelled`。
-- 长耗时任务支持取消（切换参数/切换数据时自动取消旧任务）。
-- 引入任务代号（task token），仅最后一次任务允许回写 `app_state`。
-
-**实现状态:** 已完成（2026-03-07）
 
 #### 1.2 ML 管线增强（延期）
 
@@ -82,22 +43,6 @@
 - XGBoost 默认 `tree_method='hist'`，并在报告中标注训练耗时。
 - 支持 per-label 阈值与阈值搜索结果导出。
 
-#### 1.3 渲染主流程拆分（已完成）
-
-**问题:** `plot_embedding()` 仍然过长，维护风险高。
-
-**目标:** 降低函数复杂度，提升可测试性。
-
-**计划拆分:**
-
-- `_render_scatter_groups()`
-- `_render_kde_overlay()`
-- `_render_geo_overlays()`
-- `_render_legend()`
-- `_render_title_labels()`
-
-**实现状态:** 已完成（2026-03-07）
-
 ### 第二优先级：代码质量
 
 #### 2.1 类型注解补齐（部分完成）
@@ -108,7 +53,6 @@
 
 - 新增/重构公共函数必须含类型注解。
 - 公共 API 使用 Google 风格 docstring（Args/Returns/Raises）。
-- 已完成部分：`core/cache.py`、`core/localization.py` 与 `visualization` 中多处公共渲染/事件函数。
 - 剩余重点：`core/state.py`、`core/session.py`、`data/` 核心计算函数。
 
 #### 2.2 AppState 分层拆分
@@ -138,8 +82,6 @@ class AppState:
 - 统一 `EPSILON` 常量来源，避免散落魔法数字。
 - 在关键计算路径中使用 `np.errstate`。
 - 所有外部输入统一 `pd.to_numeric(errors='coerce')`。
-- 已完成部分：ML 管线、等时线计算、部分渲染流程已引入 `pd.to_numeric` 与 `np.errstate`。
-- 已完成部分：`geochemistry.engine.EPSILON` 已统一接入 `age/source/isochron`；`endmember/mixing/render` 已移除残留 `astype(float)`。
 - 剩余重点：扩展到其余模块并补充相应回归验证。
 
 ### 当前阶段交付顺序（仅 P2）
@@ -204,8 +146,8 @@ tests/
 
 #### 高优先级
 
-1. `plot_embedding()` 拆分并补充子函数级测试。（已完成拆分，测试待补）
-2. 嵌入计算进度接入 UI（与后台任务联动）。（已完成后台任务接入，UI 进度展示可继续增强）
+1. 补充渲染子函数级测试（覆盖散点/KDE/地球化学覆盖层/图例/标题路径）。
+2. 继续增强 UI 进度展示与异常可视反馈（与后台任务联动）。
 
 #### 中优先级
 
@@ -365,26 +307,3 @@ class MLClassifierPlugin(BasePlugin, Protocol):
 
 ---
 
-## 显示面板布局与新功能规划（2026-03-07）
-
-### 已完成（本轮）
-
-- 显示面板布局重构为三段式：`Presets & Themes`、`Text & Markers`、`Axes, Grid & Canvas`。
-- 轴线与网格高级参数使用单列分组布局（Figure/Grid/Ticks/Spines/Text），提升可读性。
-
-### 下一步功能规划
-
-#### F1 轻量刷新优先（高优先级）
-
-- 显示参数调整默认走 `refresh_plot_style`，减少不必要的全重绘。
-- 标题显隐与标题间距调整也走轻量刷新，保持交互实时性。
-
-#### F2 颜色选择统一（高优先级）
-
-- 显示面板颜色项采用与曲线样式一致的小方块取色交互。
-- 移除手动输入颜色路径，仅保留色块按钮取色；按钮实时显示当前颜色。
-
-#### F3 主题管理收敛（说明）
-
-- 不新增“样式导入/导出”与“参数搜索/折叠记忆”功能。
-- 继续复用现有主题保存/加载能力，避免功能重复与维护成本上升。

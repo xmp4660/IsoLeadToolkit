@@ -6,7 +6,7 @@ import uuid
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
     QGroupBox, QComboBox, QCheckBox, QSpinBox, QDoubleSpinBox,
-    QLineEdit, QMessageBox, QDialog, QRadioButton,
+    QLineEdit, QMessageBox, QDialog, QRadioButton, QToolBox,
 )
 from PyQt5.QtCore import Qt
 from visualization.line_styles import ensure_line_style
@@ -65,6 +65,19 @@ class AnalysisPanel(BasePanel):
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
+
+        section_toolbox = QToolBox()
+        section_toolbox.setObjectName('analysis_section_toolbox')
+
+        def _add_group_page(group_widget: QGroupBox, title_key: str) -> None:
+            page = QWidget()
+            page_layout = QVBoxLayout(page)
+            page_layout.setContentsMargins(6, 6, 6, 6)
+            page_layout.setSpacing(8)
+            page_layout.addWidget(group_widget)
+            page_layout.addStretch()
+            section_toolbox.addItem(page, translate(title_key))
 
         kde_group = QGroupBox(translate("Kernel Density"))
         kde_group.setProperty('translate_key', 'Kernel Density')
@@ -103,7 +116,7 @@ class AnalysisPanel(BasePanel):
         kde_layout.addLayout(mkde_row)
 
         kde_group.setLayout(kde_layout)
-        layout.addWidget(kde_group)
+        _add_group_page(kde_group, 'Kernel Density')
 
         equation_group = QGroupBox(translate("Equation Overlays"))
         equation_group.setProperty('translate_key', 'Equation Overlays')
@@ -120,7 +133,7 @@ class AnalysisPanel(BasePanel):
         equation_layout.addWidget(add_eq_btn)
 
         equation_group.setLayout(equation_layout)
-        layout.addWidget(equation_group)
+        _add_group_page(equation_group, 'Equation Overlays')
 
         selection_group = QGroupBox(translate("Selection Tools"))
         selection_group.setProperty('translate_key', 'Selection Tools')
@@ -144,7 +157,7 @@ class AnalysisPanel(BasePanel):
         selection_layout.addWidget(self.selection_status_label)
 
         selection_group.setLayout(selection_layout)
-        layout.addWidget(selection_group)
+        _add_group_page(selection_group, 'Selection Tools')
 
         analysis_group = QGroupBox(translate("Data Analysis"))
         analysis_group.setProperty('translate_key', 'Data Analysis')
@@ -169,7 +182,7 @@ class AnalysisPanel(BasePanel):
         analysis_layout.addWidget(shepard_btn, 0, Qt.AlignHCenter)
 
         analysis_group.setLayout(analysis_layout)
-        layout.addWidget(analysis_group)
+        _add_group_page(analysis_group, 'Data Analysis')
 
         subset_group = QGroupBox(translate("Subset Analysis"))
         subset_group.setProperty('translate_key', 'Subset Analysis')
@@ -188,7 +201,7 @@ class AnalysisPanel(BasePanel):
         subset_layout.addWidget(reset_btn, 0, Qt.AlignHCenter)
 
         subset_group.setLayout(subset_layout)
-        layout.addWidget(subset_group)
+        _add_group_page(subset_group, 'Subset Analysis')
 
         mixing_group = QGroupBox(translate("Mixing Groups"))
         mixing_group.setProperty('translate_key', 'Mixing Groups')
@@ -240,7 +253,7 @@ class AnalysisPanel(BasePanel):
         mixing_layout.addLayout(mixing_action_layout)
 
         mixing_group.setLayout(mixing_layout)
-        layout.addWidget(mixing_group)
+        _add_group_page(mixing_group, 'Mixing Groups')
 
         # ---- 端元识别 ----
         endmember_group = QGroupBox(translate("Endmember Identification"))
@@ -259,7 +272,7 @@ class AnalysisPanel(BasePanel):
         endmember_layout.addWidget(endmember_btn, 0, Qt.AlignHCenter)
 
         endmember_group.setLayout(endmember_layout)
-        layout.addWidget(endmember_group)
+        _add_group_page(endmember_group, 'Endmember Identification')
 
         # ---- ML Provenance ----
         provenance_group = QGroupBox(translate("Provenance ML"))
@@ -278,7 +291,7 @@ class AnalysisPanel(BasePanel):
         provenance_layout.addWidget(provenance_btn, 0, Qt.AlignHCenter)
 
         provenance_group.setLayout(provenance_layout)
-        layout.addWidget(provenance_group)
+        _add_group_page(provenance_group, 'Provenance ML')
 
         confidence_group = QGroupBox(translate("Confidence Ellipse"))
         confidence_group.setProperty('translate_key', 'Confidence Ellipse')
@@ -315,8 +328,9 @@ class AnalysisPanel(BasePanel):
         confidence_layout.addWidget(self.confidence_99_radio)
 
         confidence_group.setLayout(confidence_layout)
-        layout.addWidget(confidence_group)
+        _add_group_page(confidence_group, 'Confidence Ellipse')
 
+        layout.addWidget(section_toolbox)
         layout.addStretch()
         return widget
 

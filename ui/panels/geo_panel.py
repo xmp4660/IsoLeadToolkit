@@ -3,7 +3,7 @@ import logging
 
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
-    QGroupBox, QGridLayout, QComboBox, QDoubleSpinBox, QMessageBox,
+    QGroupBox, QGridLayout, QComboBox, QDoubleSpinBox, QMessageBox, QToolBox,
 )
 
 from core import translate, app_state
@@ -24,8 +24,21 @@ class GeoPanel(BasePanel):
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
 
         self.geo_params = {}
+
+        section_toolbox = QToolBox()
+        section_toolbox.setObjectName('geo_section_toolbox')
+
+        def _add_group_page(group_widget: QGroupBox, title_key: str) -> None:
+            page = QWidget()
+            page_layout = QVBoxLayout(page)
+            page_layout.setContentsMargins(6, 6, 6, 6)
+            page_layout.setSpacing(8)
+            page_layout.addWidget(group_widget)
+            page_layout.addStretch()
+            section_toolbox.addItem(page, translate(title_key))
 
         # 模型选择
         model_select_group = QGroupBox(translate("Geochemistry Model"))
@@ -52,7 +65,7 @@ class GeoPanel(BasePanel):
         model_select_layout.addWidget(self.geo_model_combo)
 
         model_select_group.setLayout(model_select_layout)
-        layout.addWidget(model_select_group)
+        _add_group_page(model_select_group, 'Geochemistry Model')
 
         # 时间参数
         time_group = QGroupBox(translate("Time Parameters (Ma)"))
@@ -64,7 +77,7 @@ class GeoPanel(BasePanel):
         self._add_geo_param(time_layout, "Tsec", translate("Tsec (2nd Stage):"), 1, 0, 0.0, 10000.0, 3700.0)
 
         time_group.setLayout(time_layout)
-        layout.addWidget(time_group)
+        _add_group_page(time_group, 'Time Parameters (Ma)')
 
         # 衰变常数
         decay_group = QGroupBox(translate("Decay Constants (a^-1)"))
@@ -76,7 +89,7 @@ class GeoPanel(BasePanel):
         self._add_geo_param(decay_layout, "lambda_232", translate("λ (232Th):"), 1, 0, 0.0, 1.0, 4.94752e-11, scientific=True)
 
         decay_group.setLayout(decay_layout)
-        layout.addWidget(decay_group)
+        _add_group_page(decay_group, 'Decay Constants (a^-1)')
 
         # 初始铅组成
         init_group = QGroupBox(translate("Initial Lead Compositions"))
@@ -106,7 +119,7 @@ class GeoPanel(BasePanel):
         init_layout.addLayout(sk_grid)
 
         init_group.setLayout(init_layout)
-        layout.addWidget(init_group)
+        _add_group_page(init_group, 'Initial Lead Compositions')
 
         # 地幔参数
         mantle_group = QGroupBox(translate("Mantle & Production"))
@@ -118,7 +131,7 @@ class GeoPanel(BasePanel):
         self._add_geo_param(mantle_layout, "U_ratio", translate("U Ratio (235/238):"), 1, 0, 0.0, 1.0, 1.0 / 137.88, scientific=True)
 
         mantle_group.setLayout(mantle_layout)
-        layout.addWidget(mantle_group)
+        _add_group_page(mantle_group, 'Mantle & Production')
 
         # 按钮组
         button_layout = QHBoxLayout()
@@ -137,7 +150,15 @@ class GeoPanel(BasePanel):
         button_layout.addWidget(reset_btn)
 
         button_layout.addStretch()
-        layout.addLayout(button_layout)
+        action_page = QWidget()
+        action_layout = QVBoxLayout(action_page)
+        action_layout.setContentsMargins(6, 6, 6, 6)
+        action_layout.setSpacing(8)
+        action_layout.addLayout(button_layout)
+        action_layout.addStretch()
+        section_toolbox.addItem(action_page, translate('Apply Changes'))
+
+        layout.addWidget(section_toolbox)
 
         layout.addStretch()
         return widget

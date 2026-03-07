@@ -3,7 +3,7 @@ import logging
 import os
 
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QPushButton, QGroupBox, QMessageBox,
+    QWidget, QVBoxLayout, QPushButton, QGroupBox, QMessageBox, QToolBox,
 )
 from PyQt5.QtCore import Qt
 
@@ -27,6 +27,10 @@ class ExportPanel(BasePanel):
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
+
+        section_toolbox = QToolBox()
+        section_toolbox.setObjectName('export_section_toolbox')
 
         export_group = QGroupBox(translate("Export"))
         export_group.setProperty('translate_key', 'Export')
@@ -57,7 +61,16 @@ class ExportPanel(BasePanel):
         export_layout.addWidget(self.export_selected_button, 0, Qt.AlignHCenter)
 
         export_group.setLayout(export_layout)
-        layout.addWidget(export_group)
+
+        export_page = QWidget()
+        export_page_layout = QVBoxLayout(export_page)
+        export_page_layout.setContentsMargins(6, 6, 6, 6)
+        export_page_layout.setSpacing(8)
+        export_page_layout.addWidget(export_group)
+        export_page_layout.addStretch()
+        section_toolbox.addItem(export_page, translate("Export"))
+
+        layout.addWidget(section_toolbox)
 
         layout.addStretch()
         return widget

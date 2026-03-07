@@ -327,28 +327,39 @@ def _delete_theme(self)   # 删除已保存主题
 ### DataPanel
 - 数据/分组/算法/投影/地球化学曲线控制
 - 维护与 LegendPanel/GeoPanel 的联动
+- 使用 `QToolBox` 折叠分区：`Coloring / Grouping`、`Render Mode`
 
 ### DisplayPanel
 - UI 主题/绘图样式/主题保存
 - 样式变更统一走 BasePanel._on_style_change()
 - 标题显隐/标题间距走轻量刷新 (`refresh_plot_style`)；调色板/字体等关键变更仍触发完整重绘
+- 使用 `QToolBox` 折叠分区：`Presets & Themes`、`Text & Markers`、`Axes, Grid & Canvas`
 
 ### AnalysisPanel
 - KDE、选择工具、分析/混合/端元/ML
 - 选择状态同步与配置对话框
+- 使用 `QToolBox` 折叠分区：KDE、方程叠加、选择工具、数据分析、子集分析、混合、端元识别、ML、置信椭圆
 
 ### ExportPanel
 - 导出选中数据 (CSV/Excel/追加)
 - 选择状态同步
+- 使用 `QToolBox` 折叠分区：`Export`
 
 ### LegendPanel
 - 图例位置 (外部/图内)
 - 图内图例样式 (列数、偏移微调)
 - 自动样式 (色阶/形状集合/基准形状)
 - 自定义色阶/形状阶梯
+- 使用 `QToolBox` 折叠分区：`Legend Position`、`Inline Legend Style`
 
 ### GeoPanel
 - 模型选择与参数管理
+- 使用 `QToolBox` 折叠分区：模型、时间参数、衰变常数、初始铅组成、地幔参数、应用操作
+
+### 面板布局约定（新增）
+- 6 个面板统一采用 `QToolBox` 作为顶层分区容器，减少长页面滚动。
+- 分区标题使用 `translate()` 文本，保持中英文切换一致。
+- 分区内控件行为不变，布局重构不改变原有业务回调。
 
 ---
 

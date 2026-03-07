@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
     QGroupBox, QComboBox, QCheckBox, QSlider, QSpinBox,
     QDoubleSpinBox, QGridLayout, QListWidget, QListWidgetItem,
-    QButtonGroup, QRadioButton, QDialog, QMessageBox,
+    QButtonGroup, QRadioButton, QDialog, QMessageBox, QToolBox,
 )
 from PyQt5.QtCore import Qt, QTimer
 
@@ -122,6 +122,15 @@ class DataPanel(BasePanel):
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
+
+        section_toolbox = QToolBox()
+        section_toolbox.setObjectName('data_section_toolbox')
+
+        basics_page = QWidget()
+        basics_layout = QVBoxLayout(basics_page)
+        basics_layout.setContentsMargins(6, 6, 6, 6)
+        basics_layout.setSpacing(8)
 
         group_group = QGroupBox(translate("Coloring / Grouping"))
         group_group.setProperty('translate_key', 'Coloring / Grouping')
@@ -142,7 +151,7 @@ class DataPanel(BasePanel):
         group_layout.addWidget(group_config_btn)
 
         group_group.setLayout(group_layout)
-        layout.addWidget(group_group)
+        basics_layout.addWidget(group_group)
 
         self._refresh_group_column_radios()
 
@@ -166,11 +175,14 @@ class DataPanel(BasePanel):
         tooltip_layout.addLayout(tooltip_check_layout)
 
         tooltip_group.setLayout(tooltip_layout)
-        layout.addWidget(tooltip_group)
+        basics_layout.addWidget(tooltip_group)
+        basics_layout.addStretch()
 
         projection_widget = self._build_projection_section()
-        layout.addWidget(projection_widget)
+        section_toolbox.addItem(basics_page, translate("Coloring / Grouping"))
+        section_toolbox.addItem(projection_widget, translate("Render Mode"))
 
+        layout.addWidget(section_toolbox)
         layout.addStretch()
         return widget
 
