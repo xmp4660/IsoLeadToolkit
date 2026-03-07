@@ -214,6 +214,7 @@ class Qt5Application:
         app_state.tsne_params.update(session_data.get('tsne_params', {}))
         app_state.point_size = session_data.get('point_size', app_state.point_size)
 
+        preserve_import_mode = bool(getattr(app_state, 'preserve_import_render_mode', False))
         render_mode = session_data.get('render_mode')
         if not render_mode:
             legacy_mode = session_data.get('plot_mode')
@@ -224,7 +225,10 @@ class Qt5Application:
             else:
                 render_mode = app_state.algorithm
 
-        app_state.render_mode = render_mode or 'UMAP'
+        if not preserve_import_mode:
+            app_state.render_mode = render_mode or 'UMAP'
+        else:
+            logger.info("Preserving render mode selected during import: %s", app_state.render_mode)
         app_state.selected_2d_cols = session_data.get('selected_2d_cols', [])
         app_state.selected_3d_cols = session_data.get('selected_3d_cols', [])
 

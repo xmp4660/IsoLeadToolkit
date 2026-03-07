@@ -2,6 +2,8 @@
 Data Loading and Processing
 Handles Excel file loading and data validation
 """
+from __future__ import annotations
+
 import logging
 import os
 import traceback
@@ -9,13 +11,12 @@ import traceback
 import numpy as np
 import pandas as pd
 
-from core.config import CONFIG
-from core.state import app_state
+from core import CONFIG, app_state
 
 logger = logging.getLogger(__name__)
 
 
-def read_data_frame(excel_file, sheet_name=None):
+def read_data_frame(excel_file: str, sheet_name: str | None = None) -> pd.DataFrame:
     """Read data file into a cleaned DataFrame."""
     if sheet_name:
         try:
@@ -41,7 +42,7 @@ def read_data_frame(excel_file, sheet_name=None):
     return df
 
 
-def load_data(show_file_dialog=True, show_config_dialog=True):
+def load_data(show_file_dialog: bool = True, show_config_dialog: bool = True) -> bool:
     """
     Load and validate Excel/CSV data
     
@@ -65,7 +66,8 @@ def load_data(show_file_dialog=True, show_config_dialog=True):
                 default_file=app_state.file_path,
                 default_sheet=app_state.sheet_name,
                 default_group_cols=app_state.group_cols,
-                default_data_cols=app_state.data_cols
+                default_data_cols=app_state.data_cols,
+                default_render_mode=getattr(app_state, 'render_mode', '2D')
             )
 
             if dialog_result is None:
@@ -77,6 +79,14 @@ def load_data(show_file_dialog=True, show_config_dialog=True):
             df_loaded = dialog_result.get('df')
             app_state.group_cols = dialog_result.get('group_cols', [])
             app_state.data_cols = dialog_result.get('data_cols', [])
+            selected_render_mode = dialog_result.get('render_mode')
+            if selected_render_mode:
+                app_state.render_mode = selected_render_mode
+                if selected_render_mode in ('UMAP', 'tSNE', 'PCA', 'RobustPCA'):
+                    app_state.algorithm = selected_render_mode
+                app_state.preserve_import_render_mode = True
+            else:
+                app_state.preserve_import_render_mode = False
             config_from_dialog = True
 
         # Show file selection dialog if requested
@@ -167,6 +177,7 @@ def load_data(show_file_dialog=True, show_config_dialog=True):
             logger.warning("No configuration dialog shown, using empty defaults")
             app_state.group_cols = []
             app_state.data_cols = []
+            app_state.preserve_import_render_mode = False
 
         if app_state.last_group_col and app_state.last_group_col not in app_state.group_cols:
             app_state.last_group_col = app_state.group_cols[0] if app_state.group_cols else None

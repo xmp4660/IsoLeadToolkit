@@ -33,15 +33,16 @@ from data.loader import read_data_frame
 class Qt5DataImportDialog(QDialog):
     """Unified dialog for data import and configuration."""
 
-    PREVIEW_ROWS = 8
-    PREVIEW_COLS = 6
+    PREVIEW_ROWS = 10
 
     def __init__(self, default_file=None, default_sheet=None,
-                 default_group_cols=None, default_data_cols=None, parent=None):
+                 default_group_cols=None, default_data_cols=None,
+                 default_render_mode=None, parent=None):
         super().__init__(parent)
         self.result = None
         self.selected_file = default_file
         self.selected_sheet = default_sheet
+        self.default_render_mode = default_render_mode or '2D'
         self._language_labels = dict(available_languages())
         self.default_group_cols = set(default_group_cols or [])
         self.default_data_cols = set(default_data_cols or [])
@@ -108,6 +109,7 @@ class Qt5DataImportDialog(QDialog):
         top_layout.addWidget(self.columns_group, 1)
 
         layout.addWidget(top_container, 1)
+        layout.addWidget(self._build_render_section())
         layout.addWidget(self._build_preview_section())
 
         footer_layout = QHBoxLayout()
@@ -216,10 +218,7 @@ class Qt5DataImportDialog(QDialog):
         group_layout.setSpacing(6)
 
         self.preview_label = QLabel(
-            translate("Showing first {rows} rows and {cols} columns.").format(
-                rows=self.PREVIEW_ROWS,
-                cols=self.PREVIEW_COLS
-            )
+            translate("Showing first {rows} rows across all columns.").format(rows=self.PREVIEW_ROWS)
         )
         self.preview_label.setWordWrap(True)
         group_layout.addWidget(self.preview_label)
@@ -228,11 +227,56 @@ class Qt5DataImportDialog(QDialog):
         self.preview_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.preview_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.preview_table.setSelectionMode(QAbstractItemView.NoSelection)
-        self.preview_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.preview_table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        self.preview_table.horizontalHeader().setStretchLastSection(False)
         self.preview_table.verticalHeader().setVisible(False)
         group_layout.addWidget(self.preview_table)
 
         return group
+
+    def _build_render_section(self):
+        group = QGroupBox(translate("Initial Render Mode"))
+        self.render_group = group
+        group_layout = QHBoxLayout(group)
+        group_layout.setContentsMargins(12, 10, 12, 12)
+        group_layout.setSpacing(8)
+
+        self.render_label = QLabel(
+            translate("Choose the first view after import to avoid unnecessary heavy embedding computation.")
+        )
+        self.render_label.setWordWrap(True)
+        group_layout.addWidget(self.render_label, 1)
+
+        self.render_mode_combo = QComboBox()
+        self.render_mode_combo.setMinimumWidth(220)
+        self._populate_render_modes()
+        group_layout.addWidget(self.render_mode_combo)
+
+        return group
+
+    def _populate_render_modes(self):
+        if not hasattr(self, 'render_mode_combo') or self.render_mode_combo is None:
+            return
+
+        options = [
+            (translate("2D Scatter (Fast)"), '2D'),
+            (translate("3D Scatter"), '3D'),
+            (translate("Ternary"), 'Ternary'),
+            (translate("UMAP"), 'UMAP'),
+            (translate("t-SNE"), 'tSNE'),
+            (translate("PCA"), 'PCA'),
+            (translate("Robust PCA"), 'RobustPCA'),
+        ]
+        self.render_mode_combo.blockSignals(True)
+        self.render_mode_combo.clear()
+        for label, value in options:
+            self.render_mode_combo.addItem(label, value)
+        idx = self.render_mode_combo.findData(self.default_render_mode)
+        if idx < 0:
+            idx = self.render_mode_combo.findData('2D')
+        if idx >= 0:
+            self.render_mode_combo.setCurrentIndex(idx)
+        self.render_mode_combo.blockSignals(False)
 
     def _refresh_language(self):
         current_lang = getattr(app_state, 'language', None) or 'en'
@@ -258,6 +302,13 @@ class Qt5DataImportDialog(QDialog):
             self.sheet_group.setTitle(translate("Sheet"))
         if self.preview_group is not None:
             self.preview_group.setTitle(translate("Data Preview"))
+        if getattr(self, 'render_group', None) is not None:
+            self.render_group.setTitle(translate("Initial Render Mode"))
+        if getattr(self, 'render_label', None) is not None:
+            self.render_label.setText(
+                translate("Choose the first view after import to avoid unnecessary heavy embedding computation.")
+            )
+        self._populate_render_modes()
         if self.recent_label is not None:
             self.recent_label.setText(translate("Recent Files"))
         if self.browse_btn is not None:
@@ -290,10 +341,7 @@ class Qt5DataImportDialog(QDialog):
             self.data_clear_btn.setText(translate("Clear"))
         if self.preview_label is not None:
             self.preview_label.setText(
-                translate("Showing first {rows} rows and {cols} columns.").format(
-                    rows=self.PREVIEW_ROWS,
-                    cols=self.PREVIEW_COLS
-                )
+                translate("Showing first {rows} rows across all columns.").format(rows=self.PREVIEW_ROWS)
             )
         if self.file_label is not None and not self.selected_file:
             self.file_label.setText(translate("No file selected"))
@@ -563,7 +611,7 @@ class Qt5DataImportDialog(QDialog):
             self._clear_preview()
             return
 
-        cols = list(self.df.columns)[:self.PREVIEW_COLS]
+        cols = list(self.df.columns)
         df_preview = self.df[cols].head(self.PREVIEW_ROWS)
 
         self.preview_table.setRowCount(len(df_preview))
@@ -673,19 +721,22 @@ class Qt5DataImportDialog(QDialog):
             'sheet': self.selected_sheet,
             'group_cols': list(self.default_group_cols),
             'data_cols': list(self.default_data_cols),
+            'render_mode': self.render_mode_combo.currentData(),
             'df': self.df,
         }
         self.accept()
 
 
 def get_data_import_configuration(default_file=None, default_sheet=None,
-                                  default_group_cols=None, default_data_cols=None, parent=None):
+                                  default_group_cols=None, default_data_cols=None,
+                                  default_render_mode=None, parent=None):
     """Open unified data import dialog and return configuration."""
     dialog = Qt5DataImportDialog(
         default_file=default_file,
         default_sheet=default_sheet,
         default_group_cols=default_group_cols,
         default_data_cols=default_data_cols,
+        default_render_mode=default_render_mode,
         parent=parent
     )
     if dialog.exec_() == Qt5DataImportDialog.Accepted:

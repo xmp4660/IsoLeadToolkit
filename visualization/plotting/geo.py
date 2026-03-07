@@ -714,7 +714,8 @@ def _draw_isochron_overlays(ax, actual_algorithm):
         if indices is None or len(indices) == 0:
             return
 
-        df = app_state.df_global
+        data_state = getattr(app_state, 'data', app_state)
+        df = getattr(data_state, 'df_global', app_state.df_global)
         if df is None:
             return
 

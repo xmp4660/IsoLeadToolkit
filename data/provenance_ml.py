@@ -29,7 +29,7 @@ def _coerce_numeric(df: pd.DataFrame, cols: List[str]) -> pd.DataFrame:
     return df
 
 
-def _standardize_features(x: np.ndarray, standardize: bool):
+def _standardize_features(x: np.ndarray, standardize: bool) -> Tuple[np.ndarray, Any]:
     if not standardize:
         return x, None
     from sklearn.preprocessing import StandardScaler

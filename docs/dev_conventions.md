@@ -375,6 +375,30 @@ item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsDragEnabled)
 - `rowsMoved` 后使用 `QTimer.singleShot(0, ...)` 延迟到事件循环稳定后再刷新视图
 - 若出现 native `access violation`，优先检查 accessibility cache 与 itemWidget 生命周期
 
+### 6.8 异步嵌入任务一致性（QThread）
+
+嵌入计算已支持后台线程执行。为避免旧任务结果覆盖新状态，必须遵守以下规则：
+
+```python
+token = app_state.embedding_task_token + 1
+app_state.embedding_task_token = token
+
+worker = EmbeddingWorker(...)
+app_state.embedding_worker = worker
+
+def _on_finished(result, finished_token):
+    if finished_token != app_state.embedding_task_token:
+        return  # 旧任务结果，直接丢弃
+    # 仅最新任务允许回写状态并触发绘制
+```
+
+**规范**：
+- 新任务启动前必须取消旧任务（若存在）。
+- `finished/failed/cancelled` 回调必须校验 token。
+- 线程中只做计算，不更新 Qt 控件；UI 更新全部在主线程信号回调执行。
+- 回调结束后必须清理任务状态（`embedding_worker`、运行标记、进度提示）。
+- 用户主动切换算法/参数时，默认策略是“取消旧任务并仅保留最后一次请求”。
+
 ---
 
 ## 7. 可视化层规范
@@ -917,6 +941,22 @@ class AppState:
 - 新代码优先使用 `app_state.overlay.xxx` / `app_state.legend.xxx` 访问
 - 旧代码的 `app_state.xxx` 访问通过 property 透明工作
 - 重构时逐步迁移到新访问方式
+
+#### 12.1.3 Data/Visual/Interaction 分层访问
+
+除 `overlay/legend` 外，`AppState` 已提供分层兼容入口（如 `app_state.data`、`app_state.visual`、`app_state.interaction`）。
+
+```python
+data_state = getattr(app_state, 'data', app_state)
+df_global = getattr(data_state, 'df_global', app_state.df_global)
+data_cols = getattr(data_state, 'data_cols', app_state.data_cols)
+```
+
+**规范**：
+- 新增代码优先通过分层入口读取状态，避免继续扩散 `app_state.xxx` 直连访问。
+- 迁移阶段允许 `getattr(..., fallback)` 兼容回退，禁止一次性破坏旧调用。
+- 公共模块内建议封装 `_data_state()`、`_df_global()`、`_data_cols()`、`_active_subset_indices()` helper，保持访问一致。
+- 写入路径优先落在分层对象（例如 `app_state.data.df_global`），兼容 property 仅用于过渡。
 
 ### 12.2 CONFIG 访问
 

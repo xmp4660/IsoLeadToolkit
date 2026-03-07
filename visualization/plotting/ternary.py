@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any, Iterable
 
 import numpy as np
 import pandas as pd
@@ -12,7 +13,23 @@ from core import app_state
 logger = logging.getLogger(__name__)
 
 
-def _apply_ternary_stretch(t_vals, l_vals, r_vals):
+def _data_state() -> Any:
+    return getattr(app_state, 'data', app_state)
+
+
+def _df_global() -> Any:
+    return getattr(_data_state(), 'df_global', app_state.df_global)
+
+
+def _active_subset_indices() -> Any:
+    return getattr(_data_state(), 'active_subset_indices', app_state.active_subset_indices)
+
+
+def _apply_ternary_stretch(
+    t_vals: Iterable[float],
+    l_vals: Iterable[float],
+    r_vals: Iterable[float],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Apply ternary stretch transform based on current mode."""
     if not getattr(app_state, 'ternary_stretch', False):
         return t_vals, l_vals, r_vals
@@ -28,7 +45,7 @@ def _apply_ternary_stretch(t_vals, l_vals, r_vals):
     mode = getattr(app_state, 'ternary_stretch_mode', 'power')
     power = float(getattr(app_state, 'ternary_stretch_power', 0.5))
 
-    def _minmax(vals):
+    def _minmax(vals: np.ndarray) -> np.ndarray:
         vmin = np.nanmin(vals)
         vmax = np.nanmax(vals)
         if not np.isfinite(vmin) or not np.isfinite(vmax) or vmax == vmin:
@@ -58,11 +75,16 @@ def calculate_auto_ternary_factors() -> bool:
             return False
 
         cols = app_state.selected_ternary_cols
+        df_global = _df_global()
+        if df_global is None:
+            logger.warning("Factors calc: no source dataframe available")
+            return False
 
-        if app_state.active_subset_indices is not None:
-            df = app_state.df_global.iloc[app_state.active_subset_indices].copy()
+        subset_indices = _active_subset_indices()
+        if subset_indices is not None:
+            df = df_global.iloc[subset_indices].copy()
         else:
-            df = app_state.df_global.copy()
+            df = df_global.copy()
 
         data = df[cols].apply(pd.to_numeric, errors='coerce').fillna(0.001).values
         data = np.maximum(data, 1e-6)

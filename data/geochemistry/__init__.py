@@ -74,7 +74,7 @@ from .isochron import (
     calculate_source_kappa_from_slope,
 )
 
-def resolve_age_model(params=None, model_name=None):
+def resolve_age_model(params: dict | None = None, model_name: str | None = None) -> str:
     """Resolve age model mode from params and model name."""
     if params is None:
         params = engine.params
@@ -120,7 +120,18 @@ def resolve_age_model(params=None, model_name=None):
     return 'two_stage'
 
 
-def calculate_all_parameters(Pb206_204_S, Pb207_204_S, Pb208_204_S, calculate_ages=True, a=None, b=None, c=None, scale=1.0, t_Ma=None, **kwargs):
+def calculate_all_parameters(
+    Pb206_204_S,
+    Pb207_204_S,
+    Pb208_204_S,
+    calculate_ages=True,
+    a=None,
+    b=None,
+    c=None,
+    scale: float = 1.0,
+    t_Ma=None,
+    **kwargs,
+) -> dict[str, np.ndarray | float | int | str | None]:
     """
     计算所有地球化学参数 (主调用接口)
     

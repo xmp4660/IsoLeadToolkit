@@ -251,7 +251,7 @@ class GeochemistryEngine:
 # 全局单例实例
 engine = GeochemistryEngine()
 
-def _exp_evolution_term(lmbda, t_years, E=0.0):
+def _exp_evolution_term(lmbda: float, t_years, E: float = 0.0) -> np.ndarray | float:
     """
     PbIso 模型曲线的指数演化项（对应 R: exp(lambda*t)*(1 - E*(t - 1/lambda))）
     """
@@ -259,9 +259,22 @@ def _exp_evolution_term(lmbda, t_years, E=0.0):
         return np.exp(lmbda * t_years)
     return np.exp(lmbda * t_years) * (1.0 - E * (t_years - (1.0 / lmbda)))
 
-def calculate_modelcurve(t_Ma, params=None, T1=None, X1=None, Y1=None, Z1=None,
-                         Mu1=None, W1=None, U8U5=None, L5=None, L8=None, L2=None,
-                         E1=None, E2=None):
+def calculate_modelcurve(
+    t_Ma,
+    params=None,
+    T1=None,
+    X1=None,
+    Y1=None,
+    Z1=None,
+    Mu1=None,
+    W1=None,
+    U8U5=None,
+    L5=None,
+    L8=None,
+    L2=None,
+    E1=None,
+    E2=None,
+) -> dict[str, np.ndarray]:
     """
     生成 PbIso 风格的模型曲线（等价 R 的 modelcurve）
 

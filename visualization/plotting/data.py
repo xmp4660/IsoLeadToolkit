@@ -1,5 +1,8 @@
 """Shared data helpers and lazy imports for plotting."""
+from __future__ import annotations
+
 import logging
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -19,7 +22,23 @@ _calculate_all_parameters = None
 _geochem_checked = False
 
 
-def _lazy_import_ml():
+def _data_state() -> Any:
+    return getattr(app_state, 'data', app_state)
+
+
+def _df_global() -> pd.DataFrame | None:
+    return getattr(_data_state(), 'df_global', app_state.df_global)
+
+
+def _data_cols() -> list[str]:
+    return getattr(_data_state(), 'data_cols', app_state.data_cols)
+
+
+def _active_subset_indices() -> Any:
+    return getattr(_data_state(), 'active_subset_indices', None)
+
+
+def _lazy_import_ml() -> None:
     global TSNE, PCA, MinCovDet, StandardScaler, SimpleImputer
     if PCA is None:
         from sklearn.decomposition import PCA as _PCA
@@ -60,12 +79,24 @@ def _lazy_import_geochemistry():
     return _geochemistry, _calculate_all_parameters
 
 
-def _get_analysis_data():
+def _get_analysis_data() -> tuple[np.ndarray | None, list[int] | None]:
     """Helper to get the data subset for analysis (all or selected)."""
-    data_state = getattr(app_state, 'data', app_state)
-    subset_indices = getattr(data_state, 'active_subset_indices', None)
-    data_cols = getattr(data_state, 'data_cols', app_state.data_cols)
-    df_global = getattr(data_state, 'df_global', app_state.df_global)
+    subset_indices = _active_subset_indices()
+    data_cols = _data_cols()
+    df_global = _df_global()
+
+    if df_global is None or df_global.empty:
+        logger.warning("No source dataframe available for analysis data")
+        return None, None
+
+    if not data_cols:
+        logger.warning("No numeric columns selected for analysis")
+        return None, None
+
+    missing = [col for col in data_cols if col not in df_global.columns]
+    if missing:
+        logger.warning("Missing analysis columns: %s", missing)
+        return None, None
 
     if subset_indices is not None:
         indices = sorted(list(subset_indices))

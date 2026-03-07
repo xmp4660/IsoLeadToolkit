@@ -21,6 +21,19 @@
     `events.py` 关键数据读取路径开始切换到分层入口（含兼容回退）。
 - 本轮新增进展：`events.py` 主要数据访问已迁移至分层入口 helper；
     `core/state.py` 分层视图类属性已补充类型注解与 `AppState.__init__` 返回类型标注。
+- 本轮新增进展：`visualization/plotting/render.py`、`core.py`、`analysis_qt.py`、`ternary.py`、`geo.py`
+    已补充分层数据访问 helper（`_data_state/_df_global/_data_cols`）并完成关键读取路径替换；
+    `analysis_qt.py` 公共函数补充返回类型注解。
+- 本轮新增进展：`visualization/plotting/render.py` 与 `core.py` 已进一步统一子集入口，
+    新增并应用 `_active_subset_indices()`，用于标题子集标记、数据切片与缓存 key 计算路径。
+- 本轮新增进展：`visualization/events.py` 的异步嵌入任务特征列读取改为分层入口 `_data_cols()`；
+    `events.py` 与 `ternary.py`/`analysis_qt.py` helper 签名继续补齐类型注解。
+- 本轮新增进展：`visualization/plotting/data.py` 已引入分层 helper 与返回类型注解，
+    并补充 `df_global/data_cols` 缺失与列完整性校验，降低分析入口异常风险。
+- 本轮新增进展：`data/geochemistry/{delta,__init__,engine}.py`、`data/loader.py`、`data/provenance_ml.py`
+    继续补齐返回类型注解与签名；`loader.py` 同步切换到 `from core import CONFIG, app_state` 统一导入入口。
+- 本轮新增进展：`data/geochemistry/delta.py` 主入口 `calculate_deltas()` 完成返回类型补齐，
+    `resolve_age_model()` 参数类型进一步明确，降低静态检查歧义。
 - 仍未完成（保持原计划）：AppState 分层的全量字段迁移与调用切换、P2 类型注解全覆盖，以及测试框架/配置外部化/插件系统。
 
 ## 执行策略调整（2026-03-07）

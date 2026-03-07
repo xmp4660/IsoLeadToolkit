@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import itertools
+from typing import Any
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,6 +18,29 @@ logger = logging.getLogger(__name__)
 umap = None
 Axes3D = None
 Ellipse = None
+
+
+def _data_state() -> Any:
+    return getattr(app_state, 'data', app_state)
+
+
+def _data_cols() -> list[str]:
+    return getattr(_data_state(), 'data_cols', app_state.data_cols)
+
+
+def _df_global() -> Any:
+    return getattr(_data_state(), 'df_global', app_state.df_global)
+
+
+def _active_subset_indices() -> Any:
+    return getattr(_data_state(), 'active_subset_indices', app_state.active_subset_indices)
+
+
+def _build_subset_key() -> str | int:
+    subset_indices = _active_subset_indices()
+    if subset_indices is None:
+        return 'full'
+    return hash(tuple(sorted(list(subset_indices))))
 
 
 def _lazy_import_umap():
@@ -66,9 +90,7 @@ def get_umap_embedding(params: dict) -> np.ndarray | None:
     try:
         _lazy_import_umap()
 
-        subset_key = 'full'
-        if app_state.active_subset_indices is not None:
-            subset_key = hash(tuple(sorted(list(app_state.active_subset_indices))))
+        subset_key = _build_subset_key()
 
         key = build_embedding_cache_key(app_state, 'umap', params, subset_key)
         cached = app_state.embedding_cache.get(key)
@@ -96,9 +118,7 @@ def get_tsne_embedding(params: dict) -> np.ndarray | None:
     try:
         _lazy_import_ml()
 
-        subset_key = 'full'
-        if app_state.active_subset_indices is not None:
-            subset_key = hash(tuple(sorted(list(app_state.active_subset_indices))))
+        subset_key = _build_subset_key()
 
         key = build_embedding_cache_key(app_state, 'tsne', params, subset_key)
         cached = app_state.embedding_cache.get(key)
@@ -143,9 +163,7 @@ def get_pca_embedding(params: dict) -> np.ndarray | None:
     """Get or compute PCA embedding with caching."""
     try:
         _lazy_import_ml()
-        subset_key = 'full'
-        if app_state.active_subset_indices is not None:
-            subset_key = hash(tuple(sorted(list(app_state.active_subset_indices))))
+        subset_key = _build_subset_key()
 
         key = build_embedding_cache_key(app_state, 'pca', params, subset_key)
         cached = app_state.embedding_cache.get(key)
@@ -173,7 +191,7 @@ def get_pca_embedding(params: dict) -> np.ndarray | None:
         embedding = reducer.fit_transform(X_scaled)
         app_state.last_pca_variance = reducer.explained_variance_ratio_
         app_state.last_pca_components = reducer.components_
-        app_state.current_feature_names = app_state.data_cols
+        app_state.current_feature_names = _data_cols()
 
         app_state.embedding_cache.set(key, embedding)
         app_state.last_embedding = embedding
@@ -189,9 +207,7 @@ def get_robust_pca_embedding(params: dict) -> np.ndarray | None:
     try:
         _lazy_import_ml()
 
-        subset_key = 'full'
-        if app_state.active_subset_indices is not None:
-            subset_key = hash(tuple(sorted(list(app_state.active_subset_indices))))
+        subset_key = _build_subset_key()
 
         key = build_embedding_cache_key(app_state, 'robust_pca', params, subset_key)
         cached = app_state.embedding_cache.get(key)
@@ -236,7 +252,7 @@ def get_robust_pca_embedding(params: dict) -> np.ndarray | None:
                 app_state.last_pca_variance = eigvals[:n_components] / eigvals.sum()
             app_state.last_pca_components = components.T
 
-        app_state.current_feature_names = app_state.data_cols
+        app_state.current_feature_names = _data_cols()
         app_state.embedding_cache.set(key, embedding)
         app_state.last_embedding = embedding
         app_state.last_embedding_type = 'RobustPCA'
@@ -289,9 +305,8 @@ def _build_group_palette(unique_cats):
 
 def _get_subset_dataframe():
     """Return the active subset of the dataframe and its indices."""
-    data_state = getattr(app_state, 'data', app_state)
-    df_global = getattr(data_state, 'df_global', app_state.df_global)
-    subset_indices = getattr(data_state, 'active_subset_indices', app_state.active_subset_indices)
+    df_global = _df_global()
+    subset_indices = _active_subset_indices()
 
     if df_global is None:
         return None, None

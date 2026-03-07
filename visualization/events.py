@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import matplotlib
 import numpy as np
@@ -23,20 +24,20 @@ _HOVER_DISTANCE_THRESHOLD = 0.15
 _ASYNC_EMBEDDING_ALGORITHMS = {'UMAP', 'tSNE', 'PCA', 'RobustPCA'}
 
 
-def _data_state():
+def _data_state() -> Any:
     """Return layered data state when available, otherwise fallback to app_state."""
     return getattr(app_state, 'data', app_state)
 
 
-def _df_global():
+def _df_global() -> Any:
     return getattr(_data_state(), 'df_global', app_state.df_global)
 
 
-def _data_cols():
+def _data_cols() -> list[str]:
     return getattr(_data_state(), 'data_cols', app_state.data_cols)
 
 
-def _group_cols():
+def _group_cols() -> list[str]:
     return getattr(_data_state(), 'group_cols', app_state.group_cols)
 
 def draw_confidence_ellipse(x, y, ax, confidence: float = 0.95, facecolor: str = 'none', **kwargs) -> Ellipse | None:
@@ -1059,7 +1060,7 @@ def _start_async_embedding_render(group_col: str) -> bool:
         algorithm=algorithm,
         x_data=x_data,
         params=params,
-        feature_names=list(getattr(app_state, 'data_cols', [])),
+        feature_names=list(_data_cols()),
     )
 
     worker.progress.connect(_on_embedding_task_progress)

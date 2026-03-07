@@ -1,12 +1,23 @@
 # -*- coding: utf-8 -*-
 """Delta calculations and V1-V2 projection."""
+from __future__ import annotations
+
 import numpy as np
 
 from .engine import engine, _exp_evolution_term
 
 
-def calculate_deltas(Pb206_204_S, Pb207_204_S, Pb208_204_S, t_Ma, params=None,
-                     T_mantle=None, use_two_stage=False, E1=None, E2=None):
+def calculate_deltas(
+    Pb206_204_S,
+    Pb207_204_S,
+    Pb208_204_S,
+    t_Ma,
+    params=None,
+    T_mantle=None,
+    use_two_stage: bool = False,
+    E1=None,
+    E2=None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     计算 Delta 值 (Δα, Δβ, Δγ)
     
@@ -78,7 +89,12 @@ def calculate_deltas(Pb206_204_S, Pb207_204_S, Pb208_204_S, t_Ma, params=None,
         
     return d_alpha, d_beta, d_gamma
 
-def calculate_v1v2_coordinates(d_alpha, d_beta, d_gamma, params=None):
+def calculate_v1v2_coordinates(
+    d_alpha,
+    d_beta,
+    d_gamma,
+    params=None,
+) -> tuple[np.ndarray, np.ndarray]:
     """
     计算 V1, V2 判别图投影坐标
     来源: Zhu (1995)
@@ -103,11 +119,24 @@ def calculate_v1v2_coordinates(d_alpha, d_beta, d_gamma, params=None):
     
     return V1, V2
 
-def calculate_delta_values(Pb206_204_S, Pb207_204_S, Pb208_204_S, t_Ma, params=None):
+def calculate_delta_values(
+    Pb206_204_S,
+    Pb207_204_S,
+    Pb208_204_S,
+    t_Ma,
+    params=None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Alias for calculate_deltas for backward compatibility"""
     return calculate_deltas(Pb206_204_S, Pb207_204_S, Pb208_204_S, t_Ma, params)
 
-def calculate_v1v2(d_alpha, d_beta, d_gamma, a=0.0, b=2.0367, c=-6.143):
+def calculate_v1v2(
+    d_alpha,
+    d_beta,
+    d_gamma,
+    a: float = 0.0,
+    b: float = 2.0367,
+    c: float = -6.143,
+) -> tuple[np.ndarray, np.ndarray]:
     """Alias for calculate_v1v2_coordinates for backward compatibility"""
     temp_params = {'a': a, 'b': b, 'c': c}
     return calculate_v1v2_coordinates(d_alpha, d_beta, d_gamma, params=temp_params)

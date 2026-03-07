@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import traceback
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -54,6 +55,22 @@ try:
     from ..events import refresh_selection_overlay
 except ImportError:
     refresh_selection_overlay = None
+
+
+def _data_state() -> Any:
+    return getattr(app_state, 'data', app_state)
+
+
+def _df_global() -> Any:
+    return getattr(_data_state(), 'df_global', app_state.df_global)
+
+
+def _data_cols() -> list[str]:
+    return getattr(_data_state(), 'data_cols', app_state.data_cols)
+
+
+def _active_subset_indices() -> Any:
+    return getattr(_data_state(), 'active_subset_indices', app_state.active_subset_indices)
 
 
 def _notify_legend_panel(title, handles, labels):
@@ -398,7 +415,7 @@ def _render_legend(actual_algorithm, group_col, unique_cats, scatters):
 
 
 def _render_title_labels(actual_algorithm, group_col, umap_params, tsne_params, pca_params, robust_pca_params):
-    subset_info = " (Subset)" if app_state.active_subset_indices is not None else ""
+    subset_info = " (Subset)" if _active_subset_indices() is not None else ""
 
     if actual_algorithm == 'UMAP':
         title = (
@@ -662,7 +679,7 @@ def plot_embedding(
             if X is None:
                 return False
 
-            cols = app_state.data_cols
+            cols = _data_cols()
             col_206 = "206Pb/204Pb" if "206Pb/204Pb" in cols else None
             col_207 = "207Pb/204Pb" if "207Pb/204Pb" in cols else None
             col_208 = "208Pb/204Pb" if "208Pb/204Pb" in cols else None
@@ -788,10 +805,11 @@ def plot_embedding(
                 if indices is None:
                     return False
 
-                if app_state.df_global is None:
+                df_global = _df_global()
+                if df_global is None:
                     return False
 
-                df_subset = app_state.df_global.iloc[indices]
+                df_subset = df_global.iloc[indices]
 
                 c_top, c_left, c_right = cols
 
@@ -825,12 +843,18 @@ def plot_embedding(
             logger.error(f"Failed to compute {algorithm} embedding")
             return False
 
-        if app_state.active_subset_indices is not None:
-            indices_to_plot = sorted(list(app_state.active_subset_indices))
-            df_source = app_state.df_global.iloc[indices_to_plot].copy()
+        df_global = _df_global()
+        if df_global is None:
+            logger.error("No data available for plotting")
+            return False
+
+        subset_indices = _active_subset_indices()
+        if subset_indices is not None:
+            indices_to_plot = sorted(list(subset_indices))
+            df_source = df_global.iloc[indices_to_plot].copy()
         else:
-            indices_to_plot = list(range(len(app_state.df_global)))
-            df_source = app_state.df_global.copy()
+            indices_to_plot = list(range(len(df_global)))
+            df_source = df_global.copy()
 
         if embedding.shape[0] != len(df_source):
             logger.error(f"Embedding size {embedding.shape[0]} does not match data size {len(df_source)}")
@@ -999,11 +1023,12 @@ def plot_2d_data(group_col: str, data_columns: list[str], size: int = 60, show_k
             logger.error("Exactly two data columns are required for a 2D scatter plot")
             return False
 
-        if app_state.df_global is None or len(app_state.df_global) == 0:
+        df_global = _df_global()
+        if df_global is None or len(df_global) == 0:
             logger.warning("No data available for plotting")
             return False
 
-        missing = [col for col in data_columns if col not in app_state.df_global.columns]
+        missing = [col for col in data_columns if col not in df_global.columns]
         if missing:
             logger.error(f"Missing columns for 2D plot: {missing}")
             return False
@@ -1026,11 +1051,12 @@ def plot_2d_data(group_col: str, data_columns: list[str], size: int = 60, show_k
             logger.error("Failed to configure 2D axes")
             return False
 
-        if app_state.active_subset_indices is not None:
-            indices_to_plot = sorted(list(app_state.active_subset_indices))
-            df_plot = app_state.df_global.iloc[indices_to_plot].dropna(subset=data_columns).copy()
+        subset_indices = _active_subset_indices()
+        if subset_indices is not None:
+            indices_to_plot = sorted(list(subset_indices))
+            df_plot = df_global.iloc[indices_to_plot].dropna(subset=data_columns).copy()
         else:
-            df_plot = app_state.df_global.dropna(subset=data_columns).copy()
+            df_plot = df_global.dropna(subset=data_columns).copy()
 
         if df_plot.empty:
             logger.warning("No complete rows available for the selected 2D columns")
@@ -1071,7 +1097,7 @@ def plot_2d_data(group_col: str, data_columns: list[str], size: int = 60, show_k
                 df_plot = df_plot[mask].copy()
                 if df_plot.empty:
                     logger.info("Filtered 2D data is empty; reverting to all groups.")
-                    df_plot = app_state.df_global.dropna(subset=data_columns).copy()
+                    df_plot = df_global.dropna(subset=data_columns).copy()
                     df_plot[group_col] = df_plot[group_col].fillna('Unknown').astype(str)
                     app_state.visible_groups = None
                     all_groups = sorted(df_plot[group_col].unique())
@@ -1203,7 +1229,7 @@ def plot_2d_data(group_col: str, data_columns: list[str], size: int = 60, show_k
         except Exception as legend_err:
             logger.warning(f"2D legend creation error: {legend_err}")
 
-        subset_info = " (Subset)" if app_state.active_subset_indices is not None else ""
+        subset_info = " (Subset)" if _active_subset_indices() is not None else ""
         title = (
             f"2D Scatter Plot{subset_info} ({data_columns[0]} vs {data_columns[1]})\n"
             f"Colored by {group_col}"
@@ -1262,11 +1288,12 @@ def plot_3d_data(group_col: str, data_columns: list[str], size: int = 60) -> boo
             logger.error("Exactly three data columns are required for a 3D scatter plot")
             return False
 
-        if app_state.df_global is None or len(app_state.df_global) == 0:
+        df_global = _df_global()
+        if df_global is None or len(df_global) == 0:
             logger.warning("No data available for plotting")
             return False
 
-        missing = [col for col in data_columns if col not in app_state.df_global.columns]
+        missing = [col for col in data_columns if col not in df_global.columns]
         if missing:
             logger.error(f"Missing columns for 3D plot: {missing}")
             return False
@@ -1277,11 +1304,12 @@ def plot_3d_data(group_col: str, data_columns: list[str], size: int = 60) -> boo
             logger.error("Failed to configure 3D axes")
             return False
 
-        if app_state.active_subset_indices is not None:
-            indices_to_plot = sorted(list(app_state.active_subset_indices))
-            df_plot = app_state.df_global.iloc[indices_to_plot].dropna(subset=data_columns).copy()
+        subset_indices = _active_subset_indices()
+        if subset_indices is not None:
+            indices_to_plot = sorted(list(subset_indices))
+            df_plot = df_global.iloc[indices_to_plot].dropna(subset=data_columns).copy()
         else:
-            df_plot = app_state.df_global.dropna(subset=data_columns).copy()
+            df_plot = df_global.dropna(subset=data_columns).copy()
 
         if df_plot.empty:
             logger.warning("No complete rows available for the selected 3D columns")
@@ -1348,7 +1376,7 @@ def plot_3d_data(group_col: str, data_columns: list[str], size: int = 60) -> boo
         except Exception as legend_err:
             logger.warning(f"3D legend creation error: {legend_err}")
 
-        subset_info = " (Subset)" if app_state.active_subset_indices is not None else ""
+        subset_info = " (Subset)" if _active_subset_indices() is not None else ""
         title = (
             f"3D Scatter Plot{subset_info} ({data_columns[0]}, {data_columns[1]}, {data_columns[2]})\n"
             f"Colored by {group_col}"
