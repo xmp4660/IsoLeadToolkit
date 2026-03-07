@@ -12,7 +12,7 @@ from PyQt5.QtGui import QColor, QPainter, QPixmap, QIcon
 
 from core import translate, app_state
 from .base_panel import BasePanel
-from utils.icons import build_marker_icon
+from ui.icons import build_marker_icon
 
 logger = logging.getLogger(__name__)
 

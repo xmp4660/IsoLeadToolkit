@@ -5,10 +5,12 @@ import logging
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
     QGroupBox, QComboBox, QCheckBox, QSpinBox, QDoubleSpinBox,
-    QLineEdit, QMessageBox, QGridLayout, QToolBox,
+    QLineEdit, QMessageBox, QGridLayout, QToolBox, QColorDialog,
 )
+from PyQt5.QtGui import QColor
 
 from core import translate, app_state, CONFIG
+from ui.icons import apply_color_swatch, normalize_color_hex
 from .base_panel import BasePanel
 
 logger = logging.getLogger(__name__)
@@ -87,6 +89,86 @@ class DisplayPanel(BasePanel):
             panel._set_legend_inside_position_button(inside_location)
         if hasattr(panel, '_set_legend_outside_position_button'):
             panel._set_legend_outside_position_button(outside_location)
+
+    def _normalize_color_value(self, value: str, fallback: str) -> str:
+        """Normalize a color string to a valid hex representation."""
+        return normalize_color_hex(value, fallback)
+
+    def _set_color_button(self, button: QPushButton, color_value: str) -> None:
+        normalized = apply_color_swatch(button, color_value, fallback='#e2e8f0', marker='s', icon_size=16)
+        button.setToolTip(f"{translate('Choose Color')}: {normalized}")
+
+    def _set_color_control_value(
+        self,
+        control: QWidget | None,
+        value: str,
+        fallback: str,
+        trigger_refresh: bool = False,
+    ) -> None:
+        """Sync a color control value and trigger refresh when requested."""
+        if control is None:
+            return
+        normalized = self._normalize_color_value(value, fallback)
+        if isinstance(control, QPushButton):
+            self._set_color_button(control, normalized)
+        elif isinstance(control, QLineEdit):
+            control.setText(normalized)
+        if trigger_refresh:
+            self._on_style_change()
+
+    def _get_color_control_value(self, control: QWidget | None, fallback: str) -> str:
+        """Return the normalized color represented by a display control."""
+        if control is None:
+            return fallback
+        if isinstance(control, QPushButton):
+            return self._normalize_color_value(control.property('color_value') or '', fallback)
+        if isinstance(control, QLineEdit):
+            return self._normalize_color_value(control.text(), fallback)
+        return fallback
+
+    def _sync_color_controls_from_state(self) -> None:
+        """Initialize all display color controls from current app_state values."""
+        color_bindings = [
+            ('figure_bg_edit', 'plot_facecolor', '#ffffff'),
+            ('axes_bg_edit', 'axes_facecolor', '#ffffff'),
+            ('grid_color_edit', 'grid_color', '#e2e8f0'),
+            ('minor_grid_color_edit', 'minor_grid_color', '#e2e8f0'),
+            ('tick_color_edit', 'tick_color', '#1f2937'),
+            ('axis_line_color_edit', 'axis_line_color', '#1f2937'),
+            ('label_color_edit', 'label_color', '#1f2937'),
+            ('title_color_edit', 'title_color', '#111827'),
+        ]
+        for control_attr, state_attr, fallback in color_bindings:
+            control = getattr(self, control_attr, None)
+            if control is None:
+                continue
+            value = getattr(app_state, state_attr, fallback)
+            self._set_color_control_value(control, value, fallback, trigger_refresh=False)
+
+    def _create_color_picker(self, initial_color: str) -> tuple[QWidget, QPushButton]:
+        """Create a curve-style color picker: button opens dialog and shows current color."""
+        normalized = self._normalize_color_value(initial_color, '#e2e8f0')
+
+        container = QWidget()
+        row = QHBoxLayout(container)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(6)
+
+        color_button = QPushButton()
+        color_button.setFixedSize(20, 16)
+        self._set_color_button(color_button, normalized)
+        row.addWidget(color_button)
+        row.addStretch()
+
+        def _pick_color() -> None:
+            current_color = self._get_color_control_value(color_button, normalized)
+            chosen = QColorDialog.getColor(QColor(current_color), self, translate("Choose Color"))
+            if chosen.isValid():
+                self._set_color_control_value(color_button, chosen.name(), normalized, trigger_refresh=True)
+
+        color_button.clicked.connect(_pick_color)
+
+        return container, color_button
 
 
 
@@ -270,13 +352,6 @@ class DisplayPanel(BasePanel):
         auto_layout_btn.clicked.connect(self._apply_auto_layout)
         axes_layout.addWidget(auto_layout_btn)
 
-        advanced_grid = QGridLayout()
-        advanced_grid.setHorizontalSpacing(10)
-        advanced_grid.setVerticalSpacing(8)
-        advanced_grid.setColumnStretch(0, 1)
-        advanced_grid.setColumnStretch(1, 1)
-        section_index = {'value': 0}
-
         def add_row(grid, label_key, widget, row_idx):
             grid.addWidget(QLabel(translate(label_key)), row_idx, 0)
             grid.addWidget(widget, row_idx, 1)
@@ -289,11 +364,7 @@ class DisplayPanel(BasePanel):
             grid.setColumnStretch(0, 1)
             grid.setColumnStretch(1, 2)
             group.setLayout(grid)
-            index = section_index['value']
-            row = index // 2
-            col = index % 2
-            advanced_grid.addWidget(group, row, col)
-            section_index['value'] += 1
+            axes_layout.addWidget(group)
             return grid
 
         figure_grid = make_group("Figure")
@@ -304,13 +375,15 @@ class DisplayPanel(BasePanel):
         self.figure_dpi_spin.valueChanged.connect(self._on_style_change)
         row = add_row(figure_grid, "Figure DPI", self.figure_dpi_spin, row)
 
-        self.figure_bg_edit = QLineEdit(getattr(app_state, 'plot_facecolor', '#ffffff'))
-        self.figure_bg_edit.editingFinished.connect(self._on_style_change)
-        row = add_row(figure_grid, "Figure Background", self.figure_bg_edit, row)
+        figure_bg_editor, self.figure_bg_edit = self._create_color_picker(
+            getattr(app_state, 'plot_facecolor', '#ffffff')
+        )
+        row = add_row(figure_grid, "Figure Background", figure_bg_editor, row)
 
-        self.axes_bg_edit = QLineEdit(getattr(app_state, 'axes_facecolor', '#ffffff'))
-        self.axes_bg_edit.editingFinished.connect(self._on_style_change)
-        row = add_row(figure_grid, "Axes Background", self.axes_bg_edit, row)
+        axes_bg_editor, self.axes_bg_edit = self._create_color_picker(
+            getattr(app_state, 'axes_facecolor', '#ffffff')
+        )
+        row = add_row(figure_grid, "Axes Background", axes_bg_editor, row)
 
         grid_grid = make_group("Grid")
         row = 0
@@ -320,9 +393,10 @@ class DisplayPanel(BasePanel):
         self.grid_check.stateChanged.connect(self._on_style_change)
         row = add_row(grid_grid, "Show Grid", self.grid_check, row)
 
-        self.grid_color_edit = QLineEdit(getattr(app_state, 'grid_color', '#e2e8f0'))
-        self.grid_color_edit.editingFinished.connect(self._on_style_change)
-        row = add_row(grid_grid, "Grid Color", self.grid_color_edit, row)
+        grid_color_editor, self.grid_color_edit = self._create_color_picker(
+            getattr(app_state, 'grid_color', '#e2e8f0')
+        )
+        row = add_row(grid_grid, "Grid Color", grid_color_editor, row)
 
         self.grid_width_spin = QDoubleSpinBox()
         self.grid_width_spin.setRange(0.1, 3.0)
@@ -349,9 +423,10 @@ class DisplayPanel(BasePanel):
         self.minor_grid_check.stateChanged.connect(self._on_style_change)
         row = add_row(grid_grid, "Minor Grid", self.minor_grid_check, row)
 
-        self.minor_grid_color_edit = QLineEdit(getattr(app_state, 'minor_grid_color', '#e2e8f0'))
-        self.minor_grid_color_edit.editingFinished.connect(self._on_style_change)
-        row = add_row(grid_grid, "Minor Grid Color", self.minor_grid_color_edit, row)
+        minor_grid_editor, self.minor_grid_color_edit = self._create_color_picker(
+            getattr(app_state, 'minor_grid_color', '#e2e8f0')
+        )
+        row = add_row(grid_grid, "Minor Grid Color", minor_grid_editor, row)
 
         self.minor_grid_width_spin = QDoubleSpinBox()
         self.minor_grid_width_spin.setRange(0.1, 2.0)
@@ -381,9 +456,10 @@ class DisplayPanel(BasePanel):
         self.tick_dir_combo.currentTextChanged.connect(self._on_style_change)
         row = add_row(tick_grid, "Tick Direction", self.tick_dir_combo, row)
 
-        self.tick_color_edit = QLineEdit(getattr(app_state, 'tick_color', '#1f2937'))
-        self.tick_color_edit.editingFinished.connect(self._on_style_change)
-        row = add_row(tick_grid, "Tick Color", self.tick_color_edit, row)
+        tick_color_editor, self.tick_color_edit = self._create_color_picker(
+            getattr(app_state, 'tick_color', '#1f2937')
+        )
+        row = add_row(tick_grid, "Tick Color", tick_color_editor, row)
 
         self.tick_length_spin = QDoubleSpinBox()
         self.tick_length_spin.setRange(0.0, 12.0)
@@ -427,9 +503,10 @@ class DisplayPanel(BasePanel):
         self.axis_linewidth_spin.valueChanged.connect(self._on_style_change)
         row = add_row(spine_grid, "Axis Line Width", self.axis_linewidth_spin, row)
 
-        self.axis_line_color_edit = QLineEdit(getattr(app_state, 'axis_line_color', '#1f2937'))
-        self.axis_line_color_edit.editingFinished.connect(self._on_style_change)
-        row = add_row(spine_grid, "Axis Line Color", self.axis_line_color_edit, row)
+        axis_color_editor, self.axis_line_color_edit = self._create_color_picker(
+            getattr(app_state, 'axis_line_color', '#1f2937')
+        )
+        row = add_row(spine_grid, "Axis Line Color", axis_color_editor, row)
 
         self.show_top_spine_check = QCheckBox()
         self.show_top_spine_check.setChecked(getattr(app_state, 'show_top_spine', True))
@@ -443,9 +520,10 @@ class DisplayPanel(BasePanel):
 
         text_grid = make_group("Text")
         row = 0
-        self.label_color_edit = QLineEdit(getattr(app_state, 'label_color', '#1f2937'))
-        self.label_color_edit.editingFinished.connect(self._on_style_change)
-        row = add_row(text_grid, "Label Color", self.label_color_edit, row)
+        label_color_editor, self.label_color_edit = self._create_color_picker(
+            getattr(app_state, 'label_color', '#1f2937')
+        )
+        row = add_row(text_grid, "Label Color", label_color_editor, row)
 
         self.label_weight_combo = QComboBox()
         self.label_weight_combo.addItems(['normal', 'bold'])
@@ -460,9 +538,10 @@ class DisplayPanel(BasePanel):
         self.label_pad_spin.valueChanged.connect(self._on_style_change)
         row = add_row(text_grid, "Label Pad", self.label_pad_spin, row)
 
-        self.title_color_edit = QLineEdit(getattr(app_state, 'title_color', '#111827'))
-        self.title_color_edit.editingFinished.connect(self._on_style_change)
-        row = add_row(text_grid, "Title Color", self.title_color_edit, row)
+        title_color_editor, self.title_color_edit = self._create_color_picker(
+            getattr(app_state, 'title_color', '#111827')
+        )
+        row = add_row(text_grid, "Title Color", title_color_editor, row)
 
         self.title_weight_combo = QComboBox()
         self.title_weight_combo.addItems(['normal', 'bold'])
@@ -477,8 +556,6 @@ class DisplayPanel(BasePanel):
         self.title_pad_spin.valueChanged.connect(self._on_style_change)
         row = add_row(text_grid, "Title Pad", self.title_pad_spin, row)
 
-        axes_layout.addLayout(advanced_grid)
-
         axes_group.setLayout(axes_layout)
         axes_page_layout.addWidget(axes_group)
 
@@ -486,6 +563,8 @@ class DisplayPanel(BasePanel):
         section_toolbox.addItem(style_page, translate("Text & Markers"))
         section_toolbox.addItem(axes_page, translate("Axes, Grid & Canvas"))
         layout.addWidget(section_toolbox)
+
+        self._sync_color_controls_from_state()
 
         layout.addStretch()
         return widget
@@ -531,25 +610,25 @@ class DisplayPanel(BasePanel):
             'marker_size': self.marker_size_spin.value() if self.marker_size_spin else 60,
             'marker_alpha': self.marker_alpha_spin.value() if self.marker_alpha_spin else 0.8,
             'figure_dpi': self.figure_dpi_spin.value() if self.figure_dpi_spin else 130,
-            'figure_bg': self.figure_bg_edit.text() if self.figure_bg_edit else '#ffffff',
-            'axes_bg': self.axes_bg_edit.text() if self.axes_bg_edit else '#ffffff',
-            'grid_color': self.grid_color_edit.text() if self.grid_color_edit else '#e2e8f0',
+            'figure_bg': self._get_color_control_value(self.figure_bg_edit, '#ffffff'),
+            'axes_bg': self._get_color_control_value(self.axes_bg_edit, '#ffffff'),
+            'grid_color': self._get_color_control_value(self.grid_color_edit, '#e2e8f0'),
             'grid_linewidth': self.grid_width_spin.value() if self.grid_width_spin else 0.6,
             'grid_alpha': self.grid_alpha_spin.value() if self.grid_alpha_spin else 0.7,
             'grid_linestyle': self.grid_style_combo.currentText() if self.grid_style_combo else '--',
             'tick_direction': self.tick_dir_combo.currentText() if self.tick_dir_combo else 'out',
-            'tick_color': self.tick_color_edit.text() if self.tick_color_edit else '#1f2937',
+            'tick_color': self._get_color_control_value(self.tick_color_edit, '#1f2937'),
             'tick_length': self.tick_length_spin.value() if self.tick_length_spin else 4.0,
             'tick_width': self.tick_width_spin.value() if self.tick_width_spin else 0.8,
             'minor_ticks': bool(self.minor_ticks_check.isChecked()) if self.minor_ticks_check else False,
             'minor_tick_length': self.minor_tick_length_spin.value() if self.minor_tick_length_spin else 2.5,
             'minor_tick_width': self.minor_tick_width_spin.value() if self.minor_tick_width_spin else 0.6,
             'axis_linewidth': self.axis_linewidth_spin.value() if self.axis_linewidth_spin else 1.0,
-            'axis_line_color': self.axis_line_color_edit.text() if self.axis_line_color_edit else '#1f2937',
+            'axis_line_color': self._get_color_control_value(self.axis_line_color_edit, '#1f2937'),
             'show_top_spine': bool(self.show_top_spine_check.isChecked()) if self.show_top_spine_check else True,
             'show_right_spine': bool(self.show_right_spine_check.isChecked()) if self.show_right_spine_check else True,
             'minor_grid': bool(self.minor_grid_check.isChecked()) if self.minor_grid_check else False,
-            'minor_grid_color': self.minor_grid_color_edit.text() if self.minor_grid_color_edit else '#e2e8f0',
+            'minor_grid_color': self._get_color_control_value(self.minor_grid_color_edit, '#e2e8f0'),
             'minor_grid_linewidth': self.minor_grid_width_spin.value() if self.minor_grid_width_spin else 0.4,
             'minor_grid_alpha': self.minor_grid_alpha_spin.value() if self.minor_grid_alpha_spin else 0.4,
             'minor_grid_linestyle': self.minor_grid_style_combo.currentText() if self.minor_grid_style_combo else ':',
@@ -560,10 +639,10 @@ class DisplayPanel(BasePanel):
             'model_age_line_width': self.model_age_width_spin.value() if self.model_age_width_spin else 0.7,
             'isochron_line_width': self.isochron_width_spin.value() if self.isochron_width_spin else 1.5,
             'line_styles': getattr(app_state, 'line_styles', {}),
-            'label_color': self.label_color_edit.text() if self.label_color_edit else '#1f2937',
+            'label_color': self._get_color_control_value(self.label_color_edit, '#1f2937'),
             'label_weight': self.label_weight_combo.currentText() if self.label_weight_combo else 'normal',
             'label_pad': self.label_pad_spin.value() if self.label_pad_spin else 6.0,
-            'title_color': self.title_color_edit.text() if self.title_color_edit else '#111827',
+            'title_color': self._get_color_control_value(self.title_color_edit, '#111827'),
             'title_weight': self.title_weight_combo.currentText() if self.title_weight_combo else 'bold',
             'title_pad': self.title_pad_spin.value() if self.title_pad_spin else 20.0,
             'legend_location': getattr(app_state, 'legend_location', 'outside_right'),
@@ -631,11 +710,11 @@ class DisplayPanel(BasePanel):
         if self.figure_dpi_spin:
             self.figure_dpi_spin.setValue(int(data.get('figure_dpi', 130)))
         if self.figure_bg_edit:
-            self.figure_bg_edit.setText(data.get('figure_bg', '#ffffff'))
+            self._set_color_control_value(self.figure_bg_edit, data.get('figure_bg', '#ffffff'), '#ffffff')
         if self.axes_bg_edit:
-            self.axes_bg_edit.setText(data.get('axes_bg', '#ffffff'))
+            self._set_color_control_value(self.axes_bg_edit, data.get('axes_bg', '#ffffff'), '#ffffff')
         if self.grid_color_edit:
-            self.grid_color_edit.setText(data.get('grid_color', '#e2e8f0'))
+            self._set_color_control_value(self.grid_color_edit, data.get('grid_color', '#e2e8f0'), '#e2e8f0')
         if self.grid_width_spin:
             self.grid_width_spin.setValue(float(data.get('grid_linewidth', 0.6)))
         if self.grid_alpha_spin:
@@ -645,7 +724,7 @@ class DisplayPanel(BasePanel):
         if self.tick_dir_combo:
             self.tick_dir_combo.setCurrentText(data.get('tick_direction', 'out'))
         if self.tick_color_edit:
-            self.tick_color_edit.setText(data.get('tick_color', '#1f2937'))
+            self._set_color_control_value(self.tick_color_edit, data.get('tick_color', '#1f2937'), '#1f2937')
         if self.tick_length_spin:
             self.tick_length_spin.setValue(float(data.get('tick_length', 4.0)))
         if self.tick_width_spin:
@@ -659,7 +738,7 @@ class DisplayPanel(BasePanel):
         if self.axis_linewidth_spin:
             self.axis_linewidth_spin.setValue(float(data.get('axis_linewidth', 1.0)))
         if self.axis_line_color_edit:
-            self.axis_line_color_edit.setText(data.get('axis_line_color', '#1f2937'))
+            self._set_color_control_value(self.axis_line_color_edit, data.get('axis_line_color', '#1f2937'), '#1f2937')
         if self.show_top_spine_check:
             self.show_top_spine_check.setChecked(bool(data.get('show_top_spine', True)))
         if self.show_right_spine_check:
@@ -667,7 +746,7 @@ class DisplayPanel(BasePanel):
         if self.minor_grid_check:
             self.minor_grid_check.setChecked(bool(data.get('minor_grid', False)))
         if self.minor_grid_color_edit:
-            self.minor_grid_color_edit.setText(data.get('minor_grid_color', '#e2e8f0'))
+            self._set_color_control_value(self.minor_grid_color_edit, data.get('minor_grid_color', '#e2e8f0'), '#e2e8f0')
         if self.minor_grid_width_spin:
             self.minor_grid_width_spin.setValue(float(data.get('minor_grid_linewidth', 0.4)))
         if self.minor_grid_alpha_spin:
@@ -689,13 +768,13 @@ class DisplayPanel(BasePanel):
         if 'line_styles' in data:
             app_state.line_styles = data.get('line_styles', {})
         if self.label_color_edit:
-            self.label_color_edit.setText(data.get('label_color', '#1f2937'))
+            self._set_color_control_value(self.label_color_edit, data.get('label_color', '#1f2937'), '#1f2937')
         if self.label_weight_combo:
             self.label_weight_combo.setCurrentText(data.get('label_weight', 'normal'))
         if self.label_pad_spin:
             self.label_pad_spin.setValue(float(data.get('label_pad', 6.0)))
         if self.title_color_edit:
-            self.title_color_edit.setText(data.get('title_color', '#111827'))
+            self._set_color_control_value(self.title_color_edit, data.get('title_color', '#111827'), '#111827')
         if self.title_weight_combo:
             self.title_weight_combo.setCurrentText(data.get('title_weight', 'bold'))
         if self.title_pad_spin:

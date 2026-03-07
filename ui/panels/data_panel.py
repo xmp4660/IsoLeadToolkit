@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QTimer
 
 from core import translate, app_state
+from ui.icons import apply_color_swatch
 from .base_panel import BasePanel
 
 logger = logging.getLogger(__name__)
@@ -585,7 +586,7 @@ class DataPanel(BasePanel):
                 swatch_color = style.get('color') or '#e2e8f0'
                 swatch = QLabel()
                 swatch.setFixedSize(16, 16)
-                swatch.setStyleSheet(f"background-color: {swatch_color}; border: 1px solid #111827;")
+                apply_color_swatch(swatch, swatch_color)
                 swatch.mousePressEvent = lambda event, k=style_key, s=swatch: self._open_line_style_dialog(k, s)
                 row.addWidget(swatch)
                 chk._style_swatch = swatch
@@ -696,7 +697,7 @@ class DataPanel(BasePanel):
         iso_color = iso_style.get('color') or '#e2e8f0'
         self.isochron_swatch = QLabel()
         self.isochron_swatch.setFixedSize(16, 16)
-        self.isochron_swatch.setStyleSheet(f"background-color: {iso_color}; border: 1px solid #111827;")
+        apply_color_swatch(self.isochron_swatch, iso_color)
         self.isochron_swatch.mousePressEvent = lambda event, s=self.isochron_swatch: self._open_line_style_dialog('isochron', s)
         isochron_row.addWidget(self.isochron_swatch)
         isochron_row.addStretch()

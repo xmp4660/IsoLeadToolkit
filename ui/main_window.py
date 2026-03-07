@@ -21,7 +21,7 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 from core import app_state, translate
 from visualization.plotting.legend_model import overlay_legend_items, normalize_render_mode, OVERLAY_TOGGLE_MAP
 from visualization.line_styles import resolve_line_style
-from utils.icons import build_marker_icon
+from ui.icons import apply_color_swatch, build_marker_icon
 
 logger = logging.getLogger(__name__)
 QT_DEBUG_MODE = os.environ.get('ISOTOPES_QT_DEBUG', '').strip().lower() in {'1', 'true', 'yes', 'on'}
@@ -497,7 +497,7 @@ class Qt5MainWindow(QMainWindow):
 
         swatch = QPushButton()
         swatch.setFixedSize(22, 22)
-        swatch.setStyleSheet(f"background-color: {swatch_color}; border: 1px solid #111827;")
+        apply_color_swatch(swatch, swatch_color, marker='s', icon_size=16)
         swatch.setCursor(QCursor(Qt.PointingHandCursor))
         swatch.clicked.connect(lambda checked=False, k=style_key, btn=swatch: self._open_line_style_dialog(k, btn))
         item_layout.addWidget(swatch)

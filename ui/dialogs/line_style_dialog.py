@@ -9,6 +9,14 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QColor
 
 from core import app_state, translate
+from ui.icons import apply_color_swatch, normalize_color_hex
+
+
+def _update_external_swatch(swatch, color_value: str) -> None:
+    """Update external swatch widget color for both label and button widgets."""
+    if swatch is None:
+        return
+    apply_color_swatch(swatch, color_value, marker='s', icon_size=16)
 
 
 def open_line_style_dialog(parent, style_key, swatch=None, on_applied=None) -> bool:
@@ -26,7 +34,7 @@ def open_line_style_dialog(parent, style_key, swatch=None, on_applied=None) -> b
     color_swatch = QLabel()
     color_swatch.setFixedSize(20, 16)
     swatch_color = color_val if color_val else '#e2e8f0'
-    color_swatch.setStyleSheet(f"background-color: {swatch_color}; border: 1px solid #111827;")
+    apply_color_swatch(color_swatch, swatch_color)
     color_row.addWidget(color_swatch)
 
     auto_color_check = QCheckBox(translate("Auto Color"))
@@ -38,7 +46,7 @@ def open_line_style_dialog(parent, style_key, swatch=None, on_applied=None) -> b
         chosen = QColorDialog.getColor(QColor(swatch_color), parent, translate("Line Color"))
         if chosen.isValid():
             new_color = chosen.name()
-            color_swatch.setStyleSheet(f"background-color: {new_color}; border: 1px solid #111827;")
+            apply_color_swatch(color_swatch, new_color)
             auto_color_check.setChecked(False)
 
     color_btn = QPushButton(translate("Choose Color"))
@@ -143,7 +151,7 @@ def open_line_style_dialog(parent, style_key, swatch=None, on_applied=None) -> b
         label_bg_color_swatch = QLabel()
         label_bg_color_swatch.setFixedSize(20, 16)
         bg_color = style.get('label_bg_color', '#ffffff') or '#ffffff'
-        label_bg_color_swatch.setStyleSheet(f"background-color: {bg_color}; border: 1px solid #111827;")
+        apply_color_swatch(label_bg_color_swatch, bg_color, fallback='#ffffff')
         label_bg_color_row.addWidget(label_bg_color_swatch)
 
         def _pick_label_bg_color():
@@ -151,7 +159,7 @@ def open_line_style_dialog(parent, style_key, swatch=None, on_applied=None) -> b
             chosen = QColorDialog.getColor(QColor(bg_color), parent, translate("Curve Label Background Color"))
             if chosen.isValid():
                 new_color = chosen.name()
-                label_bg_color_swatch.setStyleSheet(f"background-color: {new_color}; border: 1px solid #111827;")
+                apply_color_swatch(label_bg_color_swatch, new_color, fallback='#ffffff')
 
         label_bg_color_btn = QPushButton(translate("Choose Color"))
         label_bg_color_btn.clicked.connect(_pick_label_bg_color)
@@ -201,8 +209,7 @@ def open_line_style_dialog(parent, style_key, swatch=None, on_applied=None) -> b
             style_ref['color'] = None
             new_swatch = '#e2e8f0'
         else:
-            swatch_style = color_swatch.styleSheet()
-            new_color = swatch_style.split('background-color:')[-1].split(';')[0].strip()
+            new_color = color_swatch.property('color_value') or ''
             style_ref['color'] = new_color or '#ef4444'
             new_swatch = style_ref['color']
         style_ref['linewidth'] = float(width_spin.value())
@@ -236,14 +243,12 @@ def open_line_style_dialog(parent, style_key, swatch=None, on_applied=None) -> b
         if label_pos_combo is not None:
             style_ref['label_position'] = label_pos_combo.currentData() or 'auto'
         if label_bg_check is not None and label_bg_color_swatch is not None:
-            swatch_style = label_bg_color_swatch.styleSheet()
-            label_color = swatch_style.split('background-color:')[-1].split(';')[0].strip()
+            label_color = normalize_color_hex(label_bg_color_swatch.property('color_value') or '', '#ffffff')
             style_ref['label_bg_color'] = label_color or '#ffffff'
         if label_bg_alpha_spin is not None:
             style_ref['label_bg_alpha'] = float(label_bg_alpha_spin.value())
 
-        if swatch is not None:
-            swatch.setStyleSheet(f"background-color: {new_swatch}; border: 1px solid #111827;")
+        _update_external_swatch(swatch, new_swatch)
         dialog.accept()
         if on_applied:
             on_applied()

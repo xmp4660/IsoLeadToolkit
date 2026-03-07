@@ -469,6 +469,7 @@ def _render_title_labels(actual_algorithm, group_col, umap_params, tsne_params, 
             except Exception:
                 pass
 
+    app_state.current_plot_title = title
     if getattr(app_state, 'show_plot_title', True):
         app_state.ax.set_title(title, pad=getattr(app_state, 'title_pad', 20.0), **title_font_dict)
     else:
@@ -1242,6 +1243,7 @@ def plot_2d_data(group_col: str, data_columns: list[str], size: int = 60, show_k
             except Exception:
                 pass
 
+        app_state.current_plot_title = title
         if getattr(app_state, 'show_plot_title', True):
             app_state.ax.set_title(title, pad=getattr(app_state, 'title_pad', 20.0))
         else:
@@ -1384,6 +1386,7 @@ def plot_3d_data(group_col: str, data_columns: list[str], size: int = 60) -> boo
             f"3D Scatter Plot{subset_info} ({data_columns[0]}, {data_columns[1]}, {data_columns[2]})\n"
             f"Colored by {group_col}"
         )
+        app_state.current_plot_title = title
         if getattr(app_state, 'show_plot_title', True):
             app_state.ax.set_title(title, pad=getattr(app_state, 'title_pad', 20.0))
         else:

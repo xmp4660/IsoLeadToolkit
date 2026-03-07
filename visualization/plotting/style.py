@@ -294,6 +294,18 @@ def refresh_plot_style() -> None:
             _style_legend(target_ax.get_legend(), show_marginal_kde=getattr(app_state, 'show_marginal_kde', False))
         except Exception:
             pass
+        # Keep title show/hide responsive via style-only refresh.
+        if target_ax is ax:
+            try:
+                show_title = bool(getattr(app_state, 'show_plot_title', True))
+                title_pad = float(getattr(app_state, 'title_pad', 20.0))
+                current_title = getattr(app_state, 'current_plot_title', '') or target_ax.get_title()
+                if show_title:
+                    target_ax.set_title(current_title, pad=title_pad)
+                else:
+                    target_ax.set_title("")
+            except Exception:
+                pass
 
     try:
         base_size = getattr(app_state, 'plot_marker_size', 60)

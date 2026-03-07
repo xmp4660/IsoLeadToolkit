@@ -12,6 +12,7 @@ from PyQt5.QtCore import Qt
 from visualization.line_styles import ensure_line_style
 
 from core import translate, app_state
+from ui.icons import apply_color_swatch
 from .base_panel import BasePanel
 
 logger = logging.getLogger(__name__)
@@ -78,7 +79,7 @@ class AnalysisPanel(BasePanel):
 
         kde_swatch = QLabel()
         kde_swatch.setFixedSize(16, 16)
-        kde_swatch.setStyleSheet("background-color: #e2e8f0; border: 1px solid #111827;")
+        apply_color_swatch(kde_swatch, '#e2e8f0')
         kde_swatch.setProperty("keepStyle", True)
         kde_swatch.mousePressEvent = lambda event, s=kde_swatch: self._open_kde_style_dialog('kde', s)
         kde_row.addWidget(kde_swatch)
@@ -94,7 +95,7 @@ class AnalysisPanel(BasePanel):
 
         mkde_swatch = QLabel()
         mkde_swatch.setFixedSize(16, 16)
-        mkde_swatch.setStyleSheet("background-color: #e2e8f0; border: 1px solid #111827;")
+        apply_color_swatch(mkde_swatch, '#e2e8f0')
         mkde_swatch.setProperty("keepStyle", True)
         mkde_swatch.mousePressEvent = lambda event, s=mkde_swatch: self._open_kde_style_dialog('marginal_kde', s)
         mkde_row.addWidget(mkde_swatch)
@@ -529,7 +530,7 @@ class AnalysisPanel(BasePanel):
         swatch.setFixedSize(16, 16)
         _, style = self._ensure_equation_style(overlay)
         color_val = style.get('color') or '#e2e8f0'
-        swatch.setStyleSheet(f"background-color: {color_val}; border: 1px solid #111827;")
+        apply_color_swatch(swatch, color_val)
         swatch.mousePressEvent = lambda event, ov=overlay, sw=swatch: self._open_equation_style_dialog(ov, sw)
         row_layout.addWidget(swatch)
         row_layout.addStretch()
@@ -564,7 +565,7 @@ class AnalysisPanel(BasePanel):
             return
         if swatch is not None:
             swatch_color = style.get('color') or '#e2e8f0'
-            swatch.setStyleSheet(f"background-color: {swatch_color}; border: 1px solid #111827;")
+            apply_color_swatch(swatch, swatch_color)
         open_line_style_dialog(self, style_key, swatch=swatch, on_applied=self._on_change)
 
     def _open_kde_style_dialog(self, target, swatch):
@@ -681,7 +682,7 @@ class AnalysisPanel(BasePanel):
             setattr(app_state, legacy_key, legacy_payload)
 
             if swatch is not None:
-                swatch.setStyleSheet("background-color: #e2e8f0; border: 1px solid #111827;")
+                apply_color_swatch(swatch, '#e2e8f0')
             dialog.accept()
             self._on_change()
 
@@ -756,7 +757,7 @@ class AnalysisPanel(BasePanel):
             swatch.setFixedSize(16, 16)
             style_key, style = self._ensure_equation_style(overlay)
             swatch_color = style.get('color') or '#e2e8f0'
-            swatch.setStyleSheet(f"background-color: {swatch_color}; border: 1px solid #111827;")
+            apply_color_swatch(swatch, swatch_color)
             swatch.setProperty("keepStyle", True)
             swatch.mousePressEvent = lambda event, ov=overlay, sw=swatch: self._open_equation_style_dialog(ov, sw)
             row_layout.addWidget(swatch)

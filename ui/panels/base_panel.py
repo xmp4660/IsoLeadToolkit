@@ -148,6 +148,24 @@ class BasePanel(QWidget):
             except (TypeError, ValueError):
                 return default
 
+        def _safe_color(widget, default):
+            if widget is None:
+                return default
+            try:
+                color_value = widget.property('color_value')
+                if isinstance(color_value, str) and color_value.strip():
+                    return color_value.strip()
+            except Exception:
+                pass
+            if hasattr(widget, 'text') and callable(widget.text):
+                try:
+                    text_value = widget.text()
+                    if isinstance(text_value, str) and text_value.strip():
+                        return text_value.strip()
+                except Exception:
+                    pass
+            return default
+
         previous_scheme = getattr(app_state, 'color_scheme', None)
         previous_fonts = (
             getattr(app_state, 'custom_primary_font', ''),
@@ -200,13 +218,13 @@ class BasePanel(QWidget):
             app_state.plot_dpi = int(figure_dpi_spin.value())
         figure_bg_edit = getattr(self, 'figure_bg_edit', None)
         if figure_bg_edit is not None:
-            app_state.plot_facecolor = figure_bg_edit.text() or '#ffffff'
+            app_state.plot_facecolor = _safe_color(figure_bg_edit, '#ffffff')
         axes_bg_edit = getattr(self, 'axes_bg_edit', None)
         if axes_bg_edit is not None:
-            app_state.axes_facecolor = axes_bg_edit.text() or '#ffffff'
+            app_state.axes_facecolor = _safe_color(axes_bg_edit, '#ffffff')
         grid_color_edit = getattr(self, 'grid_color_edit', None)
         if grid_color_edit is not None:
-            app_state.grid_color = grid_color_edit.text() or '#e2e8f0'
+            app_state.grid_color = _safe_color(grid_color_edit, '#e2e8f0')
         grid_width_spin = getattr(self, 'grid_width_spin', None)
         if grid_width_spin is not None:
             app_state.grid_linewidth = float(grid_width_spin.value())
@@ -221,7 +239,7 @@ class BasePanel(QWidget):
             app_state.tick_direction = tick_dir_combo.currentText() or 'out'
         tick_color_edit = getattr(self, 'tick_color_edit', None)
         if tick_color_edit is not None:
-            app_state.tick_color = tick_color_edit.text() or '#1f2937'
+            app_state.tick_color = _safe_color(tick_color_edit, '#1f2937')
         tick_length_spin = getattr(self, 'tick_length_spin', None)
         if tick_length_spin is not None:
             app_state.tick_length = float(tick_length_spin.value())
@@ -242,7 +260,7 @@ class BasePanel(QWidget):
             app_state.axis_linewidth = float(axis_linewidth_spin.value())
         axis_line_color_edit = getattr(self, 'axis_line_color_edit', None)
         if axis_line_color_edit is not None:
-            app_state.axis_line_color = axis_line_color_edit.text() or '#1f2937'
+            app_state.axis_line_color = _safe_color(axis_line_color_edit, '#1f2937')
         show_top_spine_check = getattr(self, 'show_top_spine_check', None)
         if show_top_spine_check is not None:
             app_state.show_top_spine = bool(show_top_spine_check.isChecked())
@@ -254,7 +272,7 @@ class BasePanel(QWidget):
             app_state.minor_grid = bool(minor_grid_check.isChecked())
         minor_grid_color_edit = getattr(self, 'minor_grid_color_edit', None)
         if minor_grid_color_edit is not None:
-            app_state.minor_grid_color = minor_grid_color_edit.text() or '#e2e8f0'
+            app_state.minor_grid_color = _safe_color(minor_grid_color_edit, '#e2e8f0')
         minor_grid_width_spin = getattr(self, 'minor_grid_width_spin', None)
         if minor_grid_width_spin is not None:
             app_state.minor_grid_linewidth = float(minor_grid_width_spin.value())
@@ -291,7 +309,7 @@ class BasePanel(QWidget):
 
         label_color_edit = getattr(self, 'label_color_edit', None)
         if label_color_edit is not None:
-            app_state.label_color = label_color_edit.text() or '#1f2937'
+            app_state.label_color = _safe_color(label_color_edit, '#1f2937')
         label_weight_combo = getattr(self, 'label_weight_combo', None)
         if label_weight_combo is not None:
             app_state.label_weight = label_weight_combo.currentText() or 'normal'
@@ -300,7 +318,7 @@ class BasePanel(QWidget):
             app_state.label_pad = float(label_pad_spin.value())
         title_color_edit = getattr(self, 'title_color_edit', None)
         if title_color_edit is not None:
-            app_state.title_color = title_color_edit.text() or '#111827'
+            app_state.title_color = _safe_color(title_color_edit, '#111827')
         title_weight_combo = getattr(self, 'title_weight_combo', None)
         if title_weight_combo is not None:
             app_state.title_weight = title_weight_combo.currentText() or 'bold'
@@ -340,10 +358,10 @@ class BasePanel(QWidget):
             requires_replot = True
         if app_state.plot_font_sizes != previous_font_sizes:
             requires_replot = True
-        if app_state.show_plot_title != previous_show_title:
-            requires_replot = True
-        if app_state.title_pad != previous_title_pad:
-            requires_replot = True
+        _title_visual_changed = (
+            app_state.show_plot_title != previous_show_title
+            or app_state.title_pad != previous_title_pad
+        )
 
         # Overlay line width changes → lightweight refresh
         overlay_widths_changed = (
@@ -356,6 +374,13 @@ class BasePanel(QWidget):
         if requires_replot:
             if self.callback:
                 self.callback()
+        elif _title_visual_changed:
+            try:
+                from visualization import refresh_plot_style
+                refresh_plot_style()
+            except Exception:
+                if self.callback:
+                    self.callback()
         elif overlay_widths_changed:
             try:
                 from visualization.plotting.style import refresh_overlay_styles

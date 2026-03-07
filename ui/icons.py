@@ -1,34 +1,23 @@
-"""标记图标渲染工具。
-
-提供统一的 matplotlib 标记形状到 QIcon 的渲染。
-"""
+"""Icon and swatch helpers for UI widgets."""
 from __future__ import annotations
 
 import logging
 import math
 
-from PyQt5.QtCore import QPointF, QRectF, Qt
+from PyQt5.QtCore import QPointF, QRectF, QSize, Qt
 from PyQt5.QtGui import QBrush, QColor, QIcon, QPainter, QPen, QPixmap, QPolygonF
+from PyQt5.QtWidgets import QLabel, QPushButton, QWidget
 
 logger = logging.getLogger(__name__)
 
-# 填充型标记集合
+# Filled marker set.
 _FILLED_MARKERS = {
     '.', ',', 'o', 's', '^', 'v', '<', '>', 'D', 'd', 'p', 'P', '*', 'h', 'H', '8'
 }
 
 
 def build_marker_icon(color: str, marker: str, size: int = 16) -> QIcon:
-    """渲染标记图标。
-
-    Args:
-        color: 填充颜色 (hex 字符串)。
-        marker: matplotlib 标记符号。
-        size: 图标像素尺寸。
-
-    Returns:
-        渲染后的 QIcon。
-    """
+    """Render a matplotlib marker shape into a Qt icon."""
     try:
         pixmap = QPixmap(size, size)
         pixmap.fill(Qt.transparent)
@@ -57,10 +46,49 @@ def build_marker_icon(color: str, marker: str, size: int = 16) -> QIcon:
         return QIcon(fallback)
 
 
+def normalize_color_hex(value: str | None, fallback: str = '#e2e8f0') -> str:
+    """Normalize a color value to hex form with fallback protection."""
+    text = (value or '').strip()
+    color = QColor(text)
+    if color.isValid():
+        return color.name()
+    fb = QColor(fallback)
+    if fb.isValid():
+        return fb.name()
+    return '#e2e8f0'
+
+
+def apply_color_swatch(
+    widget: QWidget | None,
+    color: str | None,
+    *,
+    fallback: str = '#e2e8f0',
+    marker: str = 's',
+    icon_size: int = 16,
+) -> str:
+    """Apply a consistent color swatch style to QLabel or QPushButton."""
+    normalized = normalize_color_hex(color, fallback=fallback)
+    if widget is None:
+        return normalized
+
+    if isinstance(widget, QPushButton):
+        widget.setProperty('color_value', normalized)
+        widget.setIcon(build_marker_icon(normalized, marker, size=icon_size))
+        widget.setIconSize(QSize(max(12, icon_size - 2), max(12, icon_size - 2)))
+        widget.setStyleSheet("border: 1px solid #111827; border-radius: 3px; background: transparent; padding: 0px;")
+        return normalized
+
+    if isinstance(widget, QLabel):
+        widget.setProperty('color_value', normalized)
+        widget.setStyleSheet(f"background-color: {normalized}; border: 1px solid #111827;")
+
+    return normalized
+
+
 def _draw_marker_shape(
     painter: QPainter, marker: str, cx: float, cy: float, r: float
 ) -> None:
-    """绘制标记形状到 painter。"""
+    """Draw marker shape to painter."""
     if marker == '.':
         rr = r * 0.35
         painter.drawEllipse(QPointF(cx, cy), rr, rr)
