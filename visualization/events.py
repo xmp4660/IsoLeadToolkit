@@ -104,6 +104,36 @@ def _notify_selection_ui():
         logger.warning("Unable to update selection controls: %s", err)
 
 
+def _refresh_isochron_after_selection() -> None:
+    """Recalculate isochron if selection changes in Pb evolution mode."""
+    if app_state.render_mode != 'PB_EVOL_76':
+        return
+
+    is_active = bool(
+        getattr(app_state, 'show_isochrons', False)
+        or getattr(app_state, 'selected_isochron_data', None)
+        or app_state.selection_tool == 'isochron'
+    )
+    if not is_active:
+        return
+
+    had_selected = app_state.selected_isochron_data is not None
+    selected = app_state.selected_indices
+    if selected and len(selected) >= 2:
+        calculate_selected_isochron()
+    else:
+        app_state.selected_isochron_data = None
+        if had_selected:
+            app_state.show_isochrons = True
+
+    if getattr(app_state, 'show_isochrons', False) or app_state.selected_isochron_data is not None or had_selected:
+        try:
+            from visualization.events import on_slider_change
+            on_slider_change()
+        except Exception as err:
+            logger.warning("Failed to refresh plot after isochron update: %s", err)
+
+
 def _disable_rectangle_selector():
     selector = getattr(app_state, 'rectangle_selector', None)
     if selector is None:
@@ -244,16 +274,7 @@ def _handle_rectangle_select(eclick, erelease):
 
         refresh_selection_overlay()
         _notify_selection_ui()
-
-        # If isochron tool is active, calculate isochron age
-        if app_state.selection_tool == 'isochron':
-            calculate_selected_isochron()
-            # Trigger plot refresh to show the isochron
-            try:
-                from visualization.events import on_slider_change
-                on_slider_change()
-            except Exception as e:
-                logger.warning("Failed to refresh plot after isochron calculation: %s", e)
+        _refresh_isochron_after_selection()
     except Exception as err:
         logger.warning("Rectangle selection failed: %s", err)
 
@@ -288,6 +309,7 @@ def _handle_lasso_select(vertices):
 
         refresh_selection_overlay()
         _notify_selection_ui()
+        _refresh_isochron_after_selection()
     except Exception as err:
         logger.warning("Custom shape selection failed: %s", err)
 

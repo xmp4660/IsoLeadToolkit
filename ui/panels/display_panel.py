@@ -36,6 +36,7 @@ class DisplayPanel(BasePanel):
         self.show_title_check = None
         self.marker_size_spin = None
         self.marker_alpha_spin = None
+        self.scatter_edge_check = None
         self.figure_dpi_spin = None
         self.figure_bg_edit = None
         self.axes_bg_edit = None
@@ -75,6 +76,14 @@ class DisplayPanel(BasePanel):
         self.legend_frame_alpha_spin = None
         self.legend_frame_face_edit = None
         self.legend_frame_edge_edit = None
+        self.adjust_force_text_x_spin = None
+        self.adjust_force_text_y_spin = None
+        self.adjust_force_static_x_spin = None
+        self.adjust_force_static_y_spin = None
+        self.adjust_expand_x_spin = None
+        self.adjust_expand_y_spin = None
+        self.adjust_iter_lim_spin = None
+        self.adjust_time_lim_spin = None
 
     def build(self) -> QWidget:
         widget = self._build_display_section()
@@ -323,7 +332,7 @@ class DisplayPanel(BasePanel):
         marker_size_label.setProperty('translate_key', 'Size')
         marker_size_row.addWidget(marker_size_label)
         self.marker_size_spin = QSpinBox()
-        self.marker_size_spin.setRange(10, 500)
+        self.marker_size_spin.setRange(1, 500)
         self.marker_size_spin.setValue(int(getattr(app_state, 'plot_marker_size', 60)))
         self.marker_size_spin.valueChanged.connect(self._on_style_change)
         marker_size_row.addWidget(self.marker_size_spin)
@@ -334,12 +343,40 @@ class DisplayPanel(BasePanel):
         marker_alpha_label.setProperty('translate_key', 'Opacity')
         marker_alpha_row.addWidget(marker_alpha_label)
         self.marker_alpha_spin = QDoubleSpinBox()
-        self.marker_alpha_spin.setRange(0.1, 1.0)
-        self.marker_alpha_spin.setSingleStep(0.05)
+        self.marker_alpha_spin.setRange(0.02, 1.0)
+        self.marker_alpha_spin.setSingleStep(0.02)
+        self.marker_alpha_spin.setDecimals(2)
         self.marker_alpha_spin.setValue(float(getattr(app_state, 'plot_marker_alpha', 0.8)))
         self.marker_alpha_spin.valueChanged.connect(self._on_style_change)
         marker_alpha_row.addWidget(self.marker_alpha_spin)
         marker_layout.addLayout(marker_alpha_row)
+
+        marker_edge_row = QHBoxLayout()
+        self.scatter_edge_check = QCheckBox(translate("Show Marker Edge"))
+        self.scatter_edge_check.setProperty('translate_key', 'Show Marker Edge')
+        self.scatter_edge_check.setChecked(bool(getattr(app_state, 'scatter_show_edge', True)))
+        self.scatter_edge_check.stateChanged.connect(self._on_style_change)
+        marker_edge_row.addWidget(self.scatter_edge_check)
+        marker_edge_row.addStretch()
+        marker_layout.addLayout(marker_edge_row)
+
+        marker_edge_color_row = QHBoxLayout()
+        marker_edge_color_row.addWidget(QLabel(translate("Scatter Edge Color")))
+        marker_edge_editor, self.scatter_edgecolor_edit = self._create_color_picker(
+            getattr(app_state, 'scatter_edgecolor', '#1e293b')
+        )
+        marker_edge_color_row.addWidget(marker_edge_editor, 1)
+        marker_layout.addLayout(marker_edge_color_row)
+
+        marker_edge_width_row = QHBoxLayout()
+        marker_edge_width_row.addWidget(QLabel(translate("Scatter Edge Width")))
+        self.scatter_edgewidth_spin = QDoubleSpinBox()
+        self.scatter_edgewidth_spin.setRange(0.0, 3.0)
+        self.scatter_edgewidth_spin.setSingleStep(0.1)
+        self.scatter_edgewidth_spin.setValue(float(getattr(app_state, 'scatter_edgewidth', 0.4)))
+        self.scatter_edgewidth_spin.valueChanged.connect(self._on_style_change)
+        marker_edge_width_row.addWidget(self.scatter_edgewidth_spin)
+        marker_layout.addLayout(marker_edge_width_row)
         marker_group.setLayout(marker_layout)
         style_layout.addWidget(marker_group)
 
@@ -556,6 +593,74 @@ class DisplayPanel(BasePanel):
         self.title_pad_spin.valueChanged.connect(self._on_style_change)
         row = add_row(text_grid, "Title Pad", self.title_pad_spin, row)
 
+        label_layout_grid = make_group("Label Layout (adjustText)")
+        row = 0
+        force_text = getattr(app_state, 'adjust_text_force_text', (0.8, 1.0))
+        force_static = getattr(app_state, 'adjust_text_force_static', (0.4, 0.6))
+        expand = getattr(app_state, 'adjust_text_expand', (1.08, 1.20))
+
+        self.adjust_force_text_x_spin = QDoubleSpinBox()
+        self.adjust_force_text_x_spin.setRange(0.0, 3.0)
+        self.adjust_force_text_x_spin.setSingleStep(0.05)
+        self.adjust_force_text_x_spin.setDecimals(2)
+        self.adjust_force_text_x_spin.setValue(float(force_text[0]))
+        self.adjust_force_text_x_spin.valueChanged.connect(self._on_style_change)
+        row = add_row(label_layout_grid, "Adjust Force Text X", self.adjust_force_text_x_spin, row)
+
+        self.adjust_force_text_y_spin = QDoubleSpinBox()
+        self.adjust_force_text_y_spin.setRange(0.0, 3.0)
+        self.adjust_force_text_y_spin.setSingleStep(0.05)
+        self.adjust_force_text_y_spin.setDecimals(2)
+        self.adjust_force_text_y_spin.setValue(float(force_text[1]))
+        self.adjust_force_text_y_spin.valueChanged.connect(self._on_style_change)
+        row = add_row(label_layout_grid, "Adjust Force Text Y", self.adjust_force_text_y_spin, row)
+
+        self.adjust_force_static_x_spin = QDoubleSpinBox()
+        self.adjust_force_static_x_spin.setRange(0.0, 3.0)
+        self.adjust_force_static_x_spin.setSingleStep(0.05)
+        self.adjust_force_static_x_spin.setDecimals(2)
+        self.adjust_force_static_x_spin.setValue(float(force_static[0]))
+        self.adjust_force_static_x_spin.valueChanged.connect(self._on_style_change)
+        row = add_row(label_layout_grid, "Adjust Force Static X", self.adjust_force_static_x_spin, row)
+
+        self.adjust_force_static_y_spin = QDoubleSpinBox()
+        self.adjust_force_static_y_spin.setRange(0.0, 3.0)
+        self.adjust_force_static_y_spin.setSingleStep(0.05)
+        self.adjust_force_static_y_spin.setDecimals(2)
+        self.adjust_force_static_y_spin.setValue(float(force_static[1]))
+        self.adjust_force_static_y_spin.valueChanged.connect(self._on_style_change)
+        row = add_row(label_layout_grid, "Adjust Force Static Y", self.adjust_force_static_y_spin, row)
+
+        self.adjust_expand_x_spin = QDoubleSpinBox()
+        self.adjust_expand_x_spin.setRange(1.0, 2.5)
+        self.adjust_expand_x_spin.setSingleStep(0.02)
+        self.adjust_expand_x_spin.setDecimals(2)
+        self.adjust_expand_x_spin.setValue(float(expand[0]))
+        self.adjust_expand_x_spin.valueChanged.connect(self._on_style_change)
+        row = add_row(label_layout_grid, "Adjust Expand X", self.adjust_expand_x_spin, row)
+
+        self.adjust_expand_y_spin = QDoubleSpinBox()
+        self.adjust_expand_y_spin.setRange(1.0, 2.5)
+        self.adjust_expand_y_spin.setSingleStep(0.02)
+        self.adjust_expand_y_spin.setDecimals(2)
+        self.adjust_expand_y_spin.setValue(float(expand[1]))
+        self.adjust_expand_y_spin.valueChanged.connect(self._on_style_change)
+        row = add_row(label_layout_grid, "Adjust Expand Y", self.adjust_expand_y_spin, row)
+
+        self.adjust_iter_lim_spin = QSpinBox()
+        self.adjust_iter_lim_spin.setRange(10, 1000)
+        self.adjust_iter_lim_spin.setValue(int(getattr(app_state, 'adjust_text_iter_lim', 120)))
+        self.adjust_iter_lim_spin.valueChanged.connect(self._on_style_change)
+        row = add_row(label_layout_grid, "Adjust Iteration Limit", self.adjust_iter_lim_spin, row)
+
+        self.adjust_time_lim_spin = QDoubleSpinBox()
+        self.adjust_time_lim_spin.setRange(0.05, 2.0)
+        self.adjust_time_lim_spin.setSingleStep(0.05)
+        self.adjust_time_lim_spin.setDecimals(2)
+        self.adjust_time_lim_spin.setValue(float(getattr(app_state, 'adjust_text_time_lim', 0.25)))
+        self.adjust_time_lim_spin.valueChanged.connect(self._on_style_change)
+        row = add_row(label_layout_grid, "Adjust Time Limit (s)", self.adjust_time_lim_spin, row)
+
         axes_group.setLayout(axes_layout)
         axes_page_layout.addWidget(axes_group)
 
@@ -632,7 +737,8 @@ class DisplayPanel(BasePanel):
             'minor_grid_linewidth': self.minor_grid_width_spin.value() if self.minor_grid_width_spin else 0.4,
             'minor_grid_alpha': self.minor_grid_alpha_spin.value() if self.minor_grid_alpha_spin else 0.4,
             'minor_grid_linestyle': self.minor_grid_style_combo.currentText() if self.minor_grid_style_combo else ':',
-            'scatter_edgecolor': self.scatter_edgecolor_edit.text() if self.scatter_edgecolor_edit else '#1e293b',
+            'scatter_show_edge': bool(self.scatter_edge_check.isChecked()) if self.scatter_edge_check else True,
+            'scatter_edgecolor': self._get_color_control_value(self.scatter_edgecolor_edit, '#1e293b'),
             'scatter_edgewidth': self.scatter_edgewidth_spin.value() if self.scatter_edgewidth_spin else 0.4,
             'model_curve_width': self.model_curve_width_spin.value() if self.model_curve_width_spin else 1.2,
             'paleoisochron_width': self.paleoisochron_width_spin.value() if self.paleoisochron_width_spin else 0.9,
@@ -651,6 +757,20 @@ class DisplayPanel(BasePanel):
             'legend_frame_alpha': self.legend_frame_alpha_spin.value() if self.legend_frame_alpha_spin else 0.95,
             'legend_frame_facecolor': self.legend_frame_face_edit.text() if self.legend_frame_face_edit else '#ffffff',
             'legend_frame_edgecolor': self.legend_frame_edge_edit.text() if self.legend_frame_edge_edit else '#cbd5f5',
+            'adjust_text_force_text': [
+                self.adjust_force_text_x_spin.value() if self.adjust_force_text_x_spin else 0.8,
+                self.adjust_force_text_y_spin.value() if self.adjust_force_text_y_spin else 1.0,
+            ],
+            'adjust_text_force_static': [
+                self.adjust_force_static_x_spin.value() if self.adjust_force_static_x_spin else 0.4,
+                self.adjust_force_static_y_spin.value() if self.adjust_force_static_y_spin else 0.6,
+            ],
+            'adjust_text_expand': [
+                self.adjust_expand_x_spin.value() if self.adjust_expand_x_spin else 1.08,
+                self.adjust_expand_y_spin.value() if self.adjust_expand_y_spin else 1.20,
+            ],
+            'adjust_text_iter_lim': self.adjust_iter_lim_spin.value() if self.adjust_iter_lim_spin else 120,
+            'adjust_text_time_lim': self.adjust_time_lim_spin.value() if self.adjust_time_lim_spin else 0.25,
         }
 
         app_state.saved_themes[name] = theme_data
@@ -753,8 +873,10 @@ class DisplayPanel(BasePanel):
             self.minor_grid_alpha_spin.setValue(float(data.get('minor_grid_alpha', 0.4)))
         if self.minor_grid_style_combo:
             self.minor_grid_style_combo.setCurrentText(data.get('minor_grid_linestyle', ':'))
+        if self.scatter_edge_check:
+            self.scatter_edge_check.setChecked(bool(data.get('scatter_show_edge', True)))
         if self.scatter_edgecolor_edit:
-            self.scatter_edgecolor_edit.setText(data.get('scatter_edgecolor', '#1e293b'))
+            self._set_color_control_value(self.scatter_edgecolor_edit, data.get('scatter_edgecolor', '#1e293b'), '#1e293b')
         if self.scatter_edgewidth_spin:
             self.scatter_edgewidth_spin.setValue(float(data.get('scatter_edgewidth', 0.4)))
         if self.model_curve_width_spin:
@@ -787,6 +909,45 @@ class DisplayPanel(BasePanel):
             self.legend_frame_face_edit.setText(data.get('legend_frame_facecolor', '#ffffff'))
         if self.legend_frame_edge_edit:
             self.legend_frame_edge_edit.setText(data.get('legend_frame_edgecolor', '#cbd5f5'))
+        def _pair(value, fallback):
+            if isinstance(value, (list, tuple)) and len(value) >= 2:
+                try:
+                    return float(value[0]), float(value[1])
+                except Exception:
+                    return fallback
+            if isinstance(value, (int, float)):
+                scalar = float(value)
+                return scalar, scalar
+            return fallback
+
+        adjust_force_text = _pair(
+            data.get('adjust_text_force_text', getattr(app_state, 'adjust_text_force_text', (0.8, 1.0))),
+            (0.8, 1.0),
+        )
+        adjust_force_static = _pair(
+            data.get('adjust_text_force_static', getattr(app_state, 'adjust_text_force_static', (0.4, 0.6))),
+            (0.4, 0.6),
+        )
+        adjust_expand = _pair(
+            data.get('adjust_text_expand', getattr(app_state, 'adjust_text_expand', (1.08, 1.20))),
+            (1.08, 1.20),
+        )
+        if self.adjust_force_text_x_spin:
+            self.adjust_force_text_x_spin.setValue(float(adjust_force_text[0]))
+        if self.adjust_force_text_y_spin:
+            self.adjust_force_text_y_spin.setValue(float(adjust_force_text[1]))
+        if self.adjust_force_static_x_spin:
+            self.adjust_force_static_x_spin.setValue(float(adjust_force_static[0]))
+        if self.adjust_force_static_y_spin:
+            self.adjust_force_static_y_spin.setValue(float(adjust_force_static[1]))
+        if self.adjust_expand_x_spin:
+            self.adjust_expand_x_spin.setValue(float(adjust_expand[0]))
+        if self.adjust_expand_y_spin:
+            self.adjust_expand_y_spin.setValue(float(adjust_expand[1]))
+        if self.adjust_iter_lim_spin:
+            self.adjust_iter_lim_spin.setValue(int(data.get('adjust_text_iter_lim', getattr(app_state, 'adjust_text_iter_lim', 120))))
+        if self.adjust_time_lim_spin:
+            self.adjust_time_lim_spin.setValue(float(data.get('adjust_text_time_lim', getattr(app_state, 'adjust_text_time_lim', 0.25))))
 
         legend_outside = data.get('legend_location', None)
         legend_inside = data.get('legend_position', None)

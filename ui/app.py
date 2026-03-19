@@ -68,9 +68,10 @@ def _configure_matplotlib_fonts():
 
     matplotlib.rcParams['axes.unicode_minus'] = False
     dpi_value = CONFIG.get('figure_dpi')
+    savefig_dpi_value = CONFIG.get('savefig_dpi', 300)
     if dpi_value:
         matplotlib.rcParams['figure.dpi'] = dpi_value
-        matplotlib.rcParams['savefig.dpi'] = dpi_value
+    matplotlib.rcParams['savefig.dpi'] = savefig_dpi_value
 
 
 def _configure_matplotlib():

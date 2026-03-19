@@ -48,7 +48,7 @@ if __name__ == "__main__":
         setup_logging(max_bytes=50 * 1024 * 1024)
 
         from ui.app import Qt5Application
-
+ 
         try:
             faulthandler.enable(file=sys.stderr, all_threads=True)
             logger.info("Crash handler enabled")

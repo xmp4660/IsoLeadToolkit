@@ -283,8 +283,11 @@ class BasePanel(QWidget):
         if minor_grid_style_combo is not None:
             app_state.minor_grid_linestyle = minor_grid_style_combo.currentText() or ':'
         scatter_edgecolor_edit = getattr(self, 'scatter_edgecolor_edit', None)
+        scatter_edge_check = getattr(self, 'scatter_edge_check', None)
+        if scatter_edge_check is not None:
+            app_state.scatter_show_edge = bool(scatter_edge_check.isChecked())
         if scatter_edgecolor_edit is not None:
-            app_state.scatter_edgecolor = scatter_edgecolor_edit.text() or '#1e293b'
+            app_state.scatter_edgecolor = _safe_color(scatter_edgecolor_edit, '#1e293b')
         scatter_edgewidth_spin = getattr(self, 'scatter_edgewidth_spin', None)
         if scatter_edgewidth_spin is not None:
             app_state.scatter_edgewidth = float(scatter_edgewidth_spin.value())
@@ -325,6 +328,34 @@ class BasePanel(QWidget):
         title_pad_spin = getattr(self, 'title_pad_spin', None)
         if title_pad_spin is not None:
             app_state.title_pad = float(title_pad_spin.value())
+
+        adjust_force_text_x_spin = getattr(self, 'adjust_force_text_x_spin', None)
+        adjust_force_text_y_spin = getattr(self, 'adjust_force_text_y_spin', None)
+        if adjust_force_text_x_spin is not None and adjust_force_text_y_spin is not None:
+            app_state.adjust_text_force_text = (
+                float(adjust_force_text_x_spin.value()),
+                float(adjust_force_text_y_spin.value()),
+            )
+        adjust_force_static_x_spin = getattr(self, 'adjust_force_static_x_spin', None)
+        adjust_force_static_y_spin = getattr(self, 'adjust_force_static_y_spin', None)
+        if adjust_force_static_x_spin is not None and adjust_force_static_y_spin is not None:
+            app_state.adjust_text_force_static = (
+                float(adjust_force_static_x_spin.value()),
+                float(adjust_force_static_y_spin.value()),
+            )
+        adjust_expand_x_spin = getattr(self, 'adjust_expand_x_spin', None)
+        adjust_expand_y_spin = getattr(self, 'adjust_expand_y_spin', None)
+        if adjust_expand_x_spin is not None and adjust_expand_y_spin is not None:
+            app_state.adjust_text_expand = (
+                float(adjust_expand_x_spin.value()),
+                float(adjust_expand_y_spin.value()),
+            )
+        adjust_iter_lim_spin = getattr(self, 'adjust_iter_lim_spin', None)
+        if adjust_iter_lim_spin is not None:
+            app_state.adjust_text_iter_lim = int(adjust_iter_lim_spin.value())
+        adjust_time_lim_spin = getattr(self, 'adjust_time_lim_spin', None)
+        if adjust_time_lim_spin is not None:
+            app_state.adjust_text_time_lim = float(adjust_time_lim_spin.value())
 
         legend_frame_on_check = getattr(self, 'legend_frame_on_check', None)
         if legend_frame_on_check is not None:

@@ -10,14 +10,35 @@ import pandas as pd
 from core import app_state
 from data.plumbotectonics_data import PLUMBOTECTONICS_SECTIONS
 from visualization.line_styles import resolve_line_style, ensure_line_style
+from .label_layout import position_curve_label, apply_adjust_text_to_labels
 from .data import _get_analysis_data, _lazy_import_geochemistry
 from .core import _get_subset_dataframe, _get_pb_columns
 from .isochron import resolve_isochron_errors as _resolve_isochron_errors
 
 logger = logging.getLogger(__name__)
 
-# Minimum absolute slope to avoid division by zero in label positioning
-_SLOPE_EPSILON = 1e-10
+def _is_overlay_label_style_visible(style_key: str | None) -> bool:
+    """Return whether labels for the style key should be visible."""
+    style = str(style_key or '').strip()
+    if style.startswith('plumbotectonics_curve:'):
+        group_visibility = getattr(app_state, 'plumbotectonics_group_visibility', {}) or {}
+        return bool(
+            getattr(app_state, 'show_plumbotectonics_curves', True)
+            and group_visibility.get(style, True)
+        )
+
+    toggle_map = {
+        'model_curve': 'show_model_curves',
+        'paleoisochron': 'show_paleoisochrons',
+        'model_age_line': 'show_model_age_lines',
+        'isochron': 'show_isochrons',
+        'growth_curve': 'show_growth_curves',
+        'plumbotectonics_curve': 'show_plumbotectonics_curves',
+    }
+    attr = toggle_map.get(style)
+    if attr:
+        return bool(getattr(app_state, attr, True))
+    return True
 
 
 def _register_overlay_artist(style_key, artist):
@@ -178,7 +199,7 @@ def _draw_model_curves(ax, actual_algorithm, params_list):
                     label_opts.get('label_position', 'auto'),
                     style_key='model_curve'
                 )
-                _position_curve_label(
+                position_curve_label(
                     ax,
                     text_artist,
                     mode='isoage',
@@ -472,7 +493,7 @@ def _draw_plumbotectonics_curves(ax, actual_algorithm):
                     text_artist.set_visible(False)
                 except Exception:
                     pass
-            _position_curve_label(
+            position_curve_label(
                 ax,
                 text_artist,
                 mode='isoage',
@@ -585,7 +606,7 @@ def _draw_plumbotectonics_isoage_lines(ax, actual_algorithm):
                 'position': label_opts.get('label_position', 'auto'),
                 'style_key': 'paleoisochron',
             })
-            _position_curve_label(
+            position_curve_label(
                 ax,
                 text_artist,
                 mode='isoage',
@@ -874,38 +895,33 @@ def _draw_isochron_overlays(ax, actual_algorithm):
                     label_text = label_override
 
                 if show_fits and label_text:
-                    xlim = ax.get_xlim()
-                    ylim = ax.get_ylim()
-
-                    position_mode = label_opts.get('label_position', 'auto')
-                    if position_mode == 'start':
-                        txt_x = x_min_g
-                    elif position_mode == 'end':
-                        txt_x = x_max_g
-                    elif position_mode == 'center':
-                        txt_x = (x_min_g + x_max_g) / 2
-                    else:
-                        txt_x = min(x_max_g, xlim[1] * 0.95)
-                    txt_y = slope * txt_x + intercept
-
-                    if txt_y < ylim[0] or txt_y > ylim[1]:
-                        if txt_y > ylim[1]:
-                            txt_y = ylim[1] * 0.95
-                            txt_x = (txt_y - intercept) / slope if abs(slope) > _SLOPE_EPSILON else txt_x
-                        else:
-                            txt_y = ylim[0] + (ylim[1] - ylim[0]) * 0.05
-                            txt_x = (txt_y - intercept) / slope if abs(slope) > _SLOPE_EPSILON else txt_x
-
-                    ax.text(
-                        txt_x,
-                        txt_y,
+                    text_artist = ax.text(
+                        x_line[0],
+                        y_line[0],
                         f" {label_text}",
                         color=color,
                         fontsize=label_opts['label_fontsize'],
                         va='center',
-                        ha='left',
+                        ha='center',
                         fontweight='bold',
                         bbox=_label_bbox(label_opts, edgecolor=color)
+                    )
+                    _register_overlay_curve_label(
+                        text_artist,
+                        x_line,
+                        y_line,
+                        f" {label_text}",
+                        label_opts.get('label_position', 'auto'),
+                        style_key='isochron'
+                    )
+                    position_curve_label(
+                        ax,
+                        text_artist,
+                        mode='isoage',
+                        x_line=x_line,
+                        y_line=y_line,
+                        label_text=f" {label_text}",
+                        position_mode=label_opts.get('label_position', 'auto'),
                     )
 
                 if show_growth and age_ma is not None and age_ma > 0:
@@ -977,7 +993,7 @@ def _draw_isochron_overlays(ax, actual_algorithm):
                                 label_opts.get('label_position', 'auto'),
                                 style_key='growth_curve'
                             )
-                            _position_curve_label(
+                            position_curve_label(
                                 ax,
                                 text_artist,
                                 mode='isoage',
@@ -1032,38 +1048,33 @@ def _draw_isochron_overlays(ax, actual_algorithm):
                     label_text = label_override
 
                 if show_fits and label_text:
-                    xlim = ax.get_xlim()
-                    ylim = ax.get_ylim()
-
-                    position_mode = label_opts.get('label_position', 'auto')
-                    if position_mode == 'start':
-                        txt_x = x_min_g
-                    elif position_mode == 'end':
-                        txt_x = x_max_g
-                    elif position_mode == 'center':
-                        txt_x = (x_min_g + x_max_g) / 2
-                    else:
-                        txt_x = min(x_max_g, xlim[1] * 0.95)
-                    txt_y = slope * txt_x + intercept
-
-                    if txt_y < ylim[0] or txt_y > ylim[1]:
-                        if txt_y > ylim[1]:
-                            txt_y = ylim[1] * 0.95
-                            txt_x = (txt_y - intercept) / slope if abs(slope) > _SLOPE_EPSILON else txt_x
-                        else:
-                            txt_y = ylim[0] + (ylim[1] - ylim[0]) * 0.05
-                            txt_x = (txt_y - intercept) / slope if abs(slope) > _SLOPE_EPSILON else txt_x
-
-                    ax.text(
-                        txt_x,
-                        txt_y,
+                    text_artist = ax.text(
+                        x_line[0],
+                        y_line[0],
                         f" {label_text}",
                         color=color,
                         fontsize=label_opts['label_fontsize'],
                         va='center',
-                        ha='left',
+                        ha='center',
                         fontweight='bold',
                         bbox=_label_bbox(label_opts, edgecolor=color)
+                    )
+                    _register_overlay_curve_label(
+                        text_artist,
+                        x_line,
+                        y_line,
+                        f" {label_text}",
+                        label_opts.get('label_position', 'auto'),
+                        style_key='isochron'
+                    )
+                    position_curve_label(
+                        ax,
+                        text_artist,
+                        mode='isoage',
+                        x_line=x_line,
+                        y_line=y_line,
+                        label_text=f" {label_text}",
+                        position_mode=label_opts.get('label_position', 'auto'),
                     )
 
                 # 生长曲线 (需要 207/206 斜率 + 208/206 斜率)
@@ -1137,7 +1148,7 @@ def _draw_isochron_overlays(ax, actual_algorithm):
                                 label_opts.get('label_position', 'auto'),
                                 style_key='growth_curve'
                             )
-                            _position_curve_label(
+                            position_curve_label(
                                 ax,
                                 text_artist,
                                 mode='isoage',
@@ -1234,548 +1245,6 @@ def _draw_selected_isochron(ax):
     except Exception as err:
         logger.warning("Failed to draw selected isochron: %s", err)
 
-def _label_angle_for_slope(ax, x0, y0, slope, dx):
-    """Compute label angle (deg) for a line in display coords."""
-    try:
-        x1 = x0 + dx
-        y1 = y0 + slope * dx
-        p0 = ax.transData.transform((x0, y0))
-        p1 = ax.transData.transform((x1, y1))
-        angle = np.degrees(np.arctan2(p1[1] - p0[1], p1[0] - p0[0]))
-        return angle
-    except Exception:
-        return np.degrees(np.arctan(slope))
-
-
-def _collect_avoid_points_display(ax, exclude_artist=None, max_points=1200):
-    """Collect points (in display coordinates) that labels should avoid."""
-    points_data = []
-
-    sample_coords = getattr(app_state, 'sample_coordinates', {}) or {}
-    if isinstance(sample_coords, dict):
-        points_data.extend(sample_coords.values())
-
-    if not points_data:
-        for sc in getattr(app_state, 'scatter_collections', []) or []:
-            try:
-                offsets = sc.get_offsets()
-            except Exception:
-                continue
-            if offsets is None:
-                continue
-            try:
-                for x_val, y_val in np.asarray(offsets, dtype=float):
-                    points_data.append((float(x_val), float(y_val)))
-            except Exception:
-                continue
-
-    label_entries = []
-    label_entries.extend(getattr(app_state, 'overlay_curve_label_data', []) or [])
-    label_entries.extend(getattr(app_state, 'paleoisochron_label_data', []) or [])
-    label_entries.extend(getattr(app_state, 'plumbotectonics_label_data', []) or [])
-    label_entries.extend(getattr(app_state, 'plumbotectonics_isoage_label_data', []) or [])
-    for entry in label_entries:
-        if not isinstance(entry, dict):
-            continue
-        text_artist = entry.get('text')
-        if text_artist is None or text_artist is exclude_artist:
-            continue
-        try:
-            x_val, y_val = text_artist.get_position()
-            points_data.append((float(x_val), float(y_val)))
-        except Exception:
-            continue
-
-    if not points_data:
-        return np.empty((0, 2), dtype=float)
-
-    points_arr = np.asarray(points_data, dtype=float)
-    if points_arr.ndim != 2 or points_arr.shape[1] != 2:
-        return np.empty((0, 2), dtype=float)
-
-    finite = np.isfinite(points_arr[:, 0]) & np.isfinite(points_arr[:, 1])
-    points_arr = points_arr[finite]
-    if points_arr.size == 0:
-        return np.empty((0, 2), dtype=float)
-
-    if points_arr.shape[0] > max_points:
-        idx = np.linspace(0, points_arr.shape[0] - 1, max_points, dtype=int)
-        points_arr = points_arr[idx]
-
-    try:
-        return np.asarray(ax.transData.transform(points_arr), dtype=float)
-    except Exception:
-        return np.empty((0, 2), dtype=float)
-
-
-def _estimate_label_radius_px(text_artist, default_fontsize=9.0):
-    """Estimate a label clearance radius in display pixels."""
-    try:
-        fontsize = float(text_artist.get_fontsize())
-    except Exception:
-        fontsize = float(default_fontsize)
-    if not np.isfinite(fontsize) or fontsize <= 0:
-        fontsize = float(default_fontsize)
-
-    try:
-        text = str(text_artist.get_text() or '')
-    except Exception:
-        text = ''
-    text_len = max(len(text.strip()), 3)
-
-    approx_w = max(18.0, 0.58 * fontsize * text_len)
-    approx_h = max(12.0, 1.35 * fontsize)
-    return max(14.0, 0.5 * np.hypot(approx_w, approx_h))
-
-
-def _estimate_label_dimensions_px(text_artist, default_fontsize=9.0):
-    """Estimate label width/height in display pixels."""
-    try:
-        fontsize = float(text_artist.get_fontsize())
-    except Exception:
-        fontsize = float(default_fontsize)
-    if not np.isfinite(fontsize) or fontsize <= 0:
-        fontsize = float(default_fontsize)
-
-    try:
-        text = str(text_artist.get_text() or '')
-    except Exception:
-        text = ''
-    text_len = max(len(text.strip()), 3)
-
-    width = max(18.0, 0.58 * fontsize * text_len)
-    height = max(12.0, 1.35 * fontsize)
-    return width, height
-
-
-def _label_bbox_from_anchor(center_disp, width, height, ha='center', va='center', pad=2.0):
-    """Return (x0, y0, x1, y1) bbox in display coords for an anchored label."""
-    x, y = float(center_disp[0]), float(center_disp[1])
-    if ha == 'left':
-        x0 = x
-    elif ha == 'right':
-        x0 = x - width
-    else:
-        x0 = x - width * 0.5
-
-    if va == 'bottom':
-        y0 = y
-    elif va == 'top':
-        y0 = y - height
-    else:
-        y0 = y - height * 0.5
-
-    x1 = x0 + width
-    y1 = y0 + height
-    if pad:
-        x0 -= pad
-        y0 -= pad
-        x1 += pad
-        y1 += pad
-    return x0, y0, x1, y1
-
-
-def _label_clearance_stats(avoid_disp, bbox):
-    """Return (min_dist2, overlap_count) between points and a bbox."""
-    if avoid_disp is None or avoid_disp.size == 0:
-        return 1e9, 0.0
-    x0, y0, x1, y1 = bbox
-    xs = avoid_disp[:, 0]
-    ys = avoid_disp[:, 1]
-    dx = np.where(xs < x0, x0 - xs, np.where(xs > x1, xs - x1, 0.0))
-    dy = np.where(ys < y0, y0 - ys, np.where(ys > y1, ys - y1, 0.0))
-    dist2 = dx * dx + dy * dy
-    return float(dist2.min()), float((dist2 == 0.0).sum())
-
-
-def _position_paleo_label(ax, text_artist, slope, intercept, age=None, label_text=None, position_mode='auto'):
-    """Position a paleoisochron label inside axes, aligned to line."""
-    xlim = ax.get_xlim()
-    ylim = ax.get_ylim()
-    x_span = xlim[1] - xlim[0]
-    y_span = ylim[1] - ylim[0]
-    if x_span == 0 or y_span == 0:
-        return
-
-    pad_x = x_span * 0.02
-    pad_y = y_span * 0.02
-
-    def _in_bounds(x_val, y_val):
-        return (xlim[0] + pad_x) <= x_val <= (xlim[1] - pad_x) and (ylim[0] + pad_y) <= y_val <= (ylim[1] - pad_y)
-
-    if position_mode in ('start', 'center', 'end'):
-        if position_mode == 'start':
-            x_anchor = xlim[0] + pad_x
-        elif position_mode == 'end':
-            x_anchor = xlim[1] - pad_x
-        else:
-            x_anchor = (xlim[0] + xlim[1]) / 2
-        y_anchor = slope * x_anchor + intercept
-        if _in_bounds(x_anchor, y_anchor):
-            angle = _label_angle_for_slope(ax, x_anchor, y_anchor, slope, dx=x_span * 0.02)
-            text_artist.set_position((x_anchor, y_anchor))
-            text_artist.set_rotation(angle)
-            text_artist.set_rotation_mode('anchor')
-            text_artist.set_ha('center')
-            text_artist.set_va('center')
-            text_artist.set_clip_on(True)
-            if label_text is not None:
-                text_artist.set_text(label_text)
-            elif age is not None:
-                text_artist.set_text(f" {age:.0f} Ma")
-            return
-
-    candidates = []
-
-    x_right = xlim[1] - pad_x
-    y_right = slope * x_right + intercept
-    if _in_bounds(x_right, y_right):
-        candidates.append((x_right, y_right, 'right'))
-
-    if abs(slope) > _SLOPE_EPSILON:
-        y_top = ylim[1] - pad_y
-        x_top = (y_top - intercept) / slope
-        if _in_bounds(x_top, y_top):
-            candidates.append((x_top, y_top, 'top'))
-
-    x_left = xlim[0] + pad_x
-    y_left = slope * x_left + intercept
-    if _in_bounds(x_left, y_left):
-        candidates.append((x_left, y_left, 'left'))
-
-    if abs(slope) > _SLOPE_EPSILON:
-        y_bottom = ylim[0] + pad_y
-        x_bottom = (y_bottom - intercept) / slope
-        if _in_bounds(x_bottom, y_bottom):
-            candidates.append((x_bottom, y_bottom, 'bottom'))
-
-    if candidates:
-        avoid_disp = _collect_avoid_points_display(ax, exclude_artist=text_artist)
-        candidate_xy = np.asarray([(item[0], item[1]) for item in candidates], dtype=float)
-        candidate_disp = np.asarray(ax.transData.transform(candidate_xy), dtype=float)
-        width, height = _estimate_label_dimensions_px(text_artist)
-        edge_bonus = np.asarray([
-            150.0 if item[2] == 'top' else (80.0 if item[2] == 'right' else 0.0)
-            for item in candidates
-        ], dtype=float)
-        scores = []
-        for idx, disp in enumerate(candidate_disp):
-            bbox = _label_bbox_from_anchor(disp, width, height, ha='center', va='center', pad=2.0)
-            min_dist2, overlap_count = _label_clearance_stats(avoid_disp, bbox)
-            scores.append(min_dist2 + edge_bonus[idx] - overlap_count * 12000.0)
-        best_idx = int(np.argmax(scores))
-        x_anchor, y_anchor, edge = candidates[best_idx]
-    else:
-        x_anchor = xlim[1] - pad_x
-        y_anchor = slope * x_anchor + intercept
-        y_anchor = min(max(y_anchor, ylim[0] + pad_y), ylim[1] - pad_y)
-        edge = 'right'
-
-    angle = _label_angle_for_slope(ax, x_anchor, y_anchor, slope, dx=x_span * 0.02)
-    text_artist.set_position((x_anchor, y_anchor))
-    text_artist.set_rotation(angle)
-    text_artist.set_rotation_mode('anchor')
-    if edge == 'top':
-        text_artist.set_ha('center')
-        text_artist.set_va('bottom')
-    elif edge == 'right':
-        text_artist.set_ha('right')
-        text_artist.set_va('center')
-    elif edge == 'left':
-        text_artist.set_ha('left')
-        text_artist.set_va('center')
-    else:
-        text_artist.set_ha('center')
-        text_artist.set_va('top')
-    text_artist.set_clip_on(True)
-    if label_text is not None:
-        text_artist.set_text(label_text)
-    elif age is not None:
-        text_artist.set_text(f" {age:.0f} Ma")
-
-
-def _position_curve_label_left(ax, text_artist, x_vals, y_vals):
-    """Position a curve label near the left edge, aligned with local slope."""
-    xlim = ax.get_xlim()
-    ylim = ax.get_ylim()
-    x_span = xlim[1] - xlim[0]
-    y_span = ylim[1] - ylim[0]
-    if x_span == 0 or y_span == 0:
-        return
-
-    pad_x = x_span * 0.02
-    pad_y = y_span * 0.02
-    x_anchor = xlim[0] + pad_x
-
-    x_arr = np.asarray(x_vals, dtype=float)
-    y_arr = np.asarray(y_vals, dtype=float)
-    valid = np.isfinite(x_arr) & np.isfinite(y_arr)
-    x_arr = x_arr[valid]
-    y_arr = y_arr[valid]
-    if x_arr.size < 2:
-        return
-
-    order = np.argsort(x_arr)
-    x_sorted = x_arr[order]
-    y_sorted = y_arr[order]
-
-    x_min = float(x_sorted.min())
-    x_max = float(x_sorted.max())
-    if x_anchor < x_min:
-        x_anchor = x_min
-    elif x_anchor > x_max:
-        x_anchor = x_max
-
-    y_anchor = np.interp(x_anchor, x_sorted, y_sorted)
-    if not np.isfinite(y_anchor):
-        return
-
-    idx = np.searchsorted(x_sorted, x_anchor)
-    if idx <= 0:
-        i0, i1 = 0, 1
-    elif idx >= len(x_sorted):
-        i0, i1 = len(x_sorted) - 2, len(x_sorted) - 1
-    else:
-        i0, i1 = max(idx - 1, 0), min(idx, len(x_sorted) - 1)
-
-    dx = x_sorted[i1] - x_sorted[i0]
-    if abs(dx) < _SLOPE_EPSILON:
-        slope = 0.0
-    else:
-        slope = (y_sorted[i1] - y_sorted[i0]) / dx
-
-    base_disp = np.asarray(ax.transData.transform((x_anchor, y_anchor)), dtype=float)
-    avoid_disp = _collect_avoid_points_display(ax, exclude_artist=text_artist)
-    candidate_offsets = [0.0, 12.0, -12.0, 22.0, -22.0, 32.0, -32.0]
-    best_y = y_anchor
-    if avoid_disp.size:
-        candidates_data = []
-        candidates_disp = []
-        candidates_offset = []
-        inv = ax.transData.inverted()
-        for offset in candidate_offsets:
-            trial_disp = np.asarray((base_disp[0], base_disp[1] + offset), dtype=float)
-            try:
-                x_trial, y_trial = inv.transform(trial_disp)
-            except Exception:
-                continue
-            if not np.isfinite(x_trial) or not np.isfinite(y_trial):
-                continue
-            if y_trial < (ylim[0] + pad_y) or y_trial > (ylim[1] - pad_y):
-                continue
-            candidates_data.append((x_trial, y_trial))
-            candidates_disp.append(trial_disp)
-            candidates_offset.append(float(offset))
-
-        if candidates_data:
-            disp_arr = np.asarray(candidates_disp, dtype=float)
-            width, height = _estimate_label_dimensions_px(text_artist)
-            min_dist2 = []
-            overlap_count = []
-            for disp in disp_arr:
-                bbox = _label_bbox_from_anchor(disp, width, height, ha='left', va='center', pad=2.0)
-                stats = _label_clearance_stats(avoid_disp, bbox)
-                min_dist2.append(stats[0])
-                overlap_count.append(stats[1])
-            min_dist2 = np.asarray(min_dist2, dtype=float)
-            overlap_count = np.asarray(overlap_count, dtype=float)
-            penalty = (np.asarray(candidates_offset, dtype=float) ** 2) * 0.25
-            score = min_dist2 - penalty - overlap_count * 12000.0
-            best_idx = int(np.argmax(score))
-            best_y = float(candidates_data[best_idx][1])
-
-    angle = _label_angle_for_slope(ax, x_anchor, best_y, slope, dx=x_span * 0.02)
-    y_anchor = min(max(best_y, ylim[0] + pad_y), ylim[1] - pad_y)
-    text_artist.set_position((x_anchor, y_anchor))
-    text_artist.set_rotation(angle)
-    text_artist.set_rotation_mode('anchor')
-    text_artist.set_ha('left')
-    text_artist.set_va('center')
-    text_artist.set_clip_on(True)
-
-
-def _position_curve_label(
-    ax,
-    text_artist,
-    *,
-    mode=None,
-    slope=None,
-    intercept=None,
-    x_vals=None,
-    y_vals=None,
-    x_line=None,
-    y_line=None,
-    age=None,
-    age_ma=None,
-    label_text=None,
-    position_mode='auto',
-):
-    """Unified curve label positioning entry point."""
-    if text_artist is None or ax is None:
-        return
-
-    if mode == 'paleo' or (slope is not None and intercept is not None):
-        _position_paleo_label(
-            ax,
-            text_artist,
-            slope=slope or 0.0,
-            intercept=intercept or 0.0,
-            age=age,
-            label_text=label_text,
-            position_mode=position_mode,
-        )
-        return
-
-    if mode == 'curve_left':
-        _position_curve_label_left(
-            ax,
-            text_artist,
-            x_vals if x_vals is not None else [],
-            y_vals if y_vals is not None else [],
-        )
-        return
-
-    if mode == 'isoage' or (x_line is not None and y_line is not None):
-        _position_isoage_label_on_line(
-            ax,
-            text_artist,
-            x_line if x_line is not None else [],
-            y_line if y_line is not None else [],
-            age_ma=age_ma,
-            label_text=label_text,
-            position_mode=position_mode,
-        )
-        return
-
-    if x_vals is not None and y_vals is not None:
-        _position_curve_label_left(ax, text_artist, x_vals, y_vals)
-        return
-
-def _position_isoage_label_on_line(ax, text_artist, x_line, y_line, age_ma=None, label_text=None, position_mode='auto'):
-    """Position an isoage label along its line (not at the axes edge)."""
-    if x_line is None or y_line is None:
-        return
-    x_arr = np.asarray(x_line, dtype=float)
-    y_arr = np.asarray(y_line, dtype=float)
-    if x_arr.size == 0 or y_arr.size == 0:
-        return
-    if x_arr.size != y_arr.size:
-        return
-    valid = np.isfinite(x_arr) & np.isfinite(y_arr)
-    x_arr = x_arr[valid]
-    y_arr = y_arr[valid]
-    if x_arr.size < 2:
-        return
-
-    xlim = ax.get_xlim()
-    ylim = ax.get_ylim()
-    x_span = xlim[1] - xlim[0]
-    y_span = ylim[1] - ylim[0]
-    if x_span == 0 or y_span == 0:
-        return
-
-    line_xmin = float(np.min(x_arr))
-    line_xmax = float(np.max(x_arr))
-    line_ymin = float(np.min(y_arr))
-    line_ymax = float(np.max(y_arr))
-    if line_xmax < xlim[0] or line_xmin > xlim[1] or line_ymax < ylim[0] or line_ymin > ylim[1]:
-        text_artist.set_visible(False)
-        return
-    text_artist.set_visible(True)
-
-    pad_x = x_span * 0.04
-    pad_y = y_span * 0.04
-    x_min = xlim[0] + pad_x
-    x_max = xlim[1] - pad_x
-    y_min = ylim[0] + pad_y
-    y_max = ylim[1] - pad_y
-
-    cx = (xlim[0] + xlim[1]) / 2
-    cy = (ylim[0] + ylim[1]) / 2
-    cx_disp, cy_disp = ax.transData.transform((cx, cy))
-
-    candidates = []
-    inv = ax.transData.inverted()
-    for i in range(len(x_arr) - 1):
-        x0, y0 = float(x_arr[i]), float(y_arr[i])
-        x1, y1 = float(x_arr[i + 1]), float(y_arr[i + 1])
-        if not (np.isfinite(x0) and np.isfinite(y0) and np.isfinite(x1) and np.isfinite(y1)):
-            continue
-        p0_disp = np.asarray(ax.transData.transform((x0, y0)), dtype=float)
-        p1_disp = np.asarray(ax.transData.transform((x1, y1)), dtype=float)
-        v_disp = p1_disp - p0_disp
-        seg_norm = np.hypot(v_disp[0], v_disp[1])
-        if seg_norm < _SLOPE_EPSILON:
-            continue
-        normal_disp = np.asarray([-v_disp[1], v_disp[0]], dtype=float) / seg_norm
-        for t in (0.25, 0.5, 0.75):
-            base_disp = p0_disp + v_disp * t
-            progress = (i + t) / max(len(x_arr) - 1, 1)
-            for px_offset in (0.0, 12.0, -12.0, 20.0, -20.0):
-                cand_disp = base_disp + normal_disp * px_offset
-                try:
-                    x_t, y_t = inv.transform(cand_disp)
-                except Exception:
-                    continue
-                if not np.isfinite(x_t) or not np.isfinite(y_t):
-                    continue
-                if x_t < x_min or x_t > x_max or y_t < y_min or y_t > y_max:
-                    continue
-                center_dist2 = (cand_disp[0] - cx_disp) ** 2 + (cand_disp[1] - cy_disp) ** 2
-                candidates.append((x_t, y_t, x0, y0, x1, y1, progress, abs(px_offset), center_dist2, cand_disp))
-
-    if not candidates:
-        text_artist.set_visible(False)
-        return
-
-    if position_mode == 'start':
-        sorted_candidates = sorted(candidates, key=lambda item: item[6])
-        keep = max(1, len(sorted_candidates) // 4)
-        pool = sorted_candidates[:keep]
-    elif position_mode == 'end':
-        sorted_candidates = sorted(candidates, key=lambda item: item[6])
-        keep = max(1, len(sorted_candidates) // 4)
-        pool = sorted_candidates[-keep:]
-    elif position_mode == 'center':
-        pool = sorted(candidates, key=lambda item: abs(item[6] - 0.5))[:max(1, len(candidates) // 3)]
-    else:
-        pool = candidates
-
-    avoid_disp = _collect_avoid_points_display(ax, exclude_artist=text_artist)
-    pool_disp = np.asarray([item[9] for item in pool], dtype=float)
-    width, height = _estimate_label_dimensions_px(text_artist)
-    min_dist2 = []
-    overlap_count = []
-    for disp in pool_disp:
-        bbox = _label_bbox_from_anchor(disp, width, height, ha='center', va='center', pad=2.0)
-        stats = _label_clearance_stats(avoid_disp, bbox)
-        min_dist2.append(stats[0])
-        overlap_count.append(stats[1])
-    min_dist2 = np.asarray(min_dist2, dtype=float)
-    overlap_count = np.asarray(overlap_count, dtype=float)
-
-    center_penalty = np.asarray([item[8] for item in pool], dtype=float) * 0.08
-    offset_penalty = np.asarray([item[7] for item in pool], dtype=float) * 1.8
-    score = min_dist2 - center_penalty - offset_penalty - overlap_count * 12000.0
-    best_idx = int(np.argmax(score))
-    selected = pool[best_idx]
-
-    x_mid, y_mid, x0, y0, x1, y1, _progress, _offset, _center_dist2, _disp = selected
-    dx = x1 - x0
-    slope = 0.0 if abs(dx) < _SLOPE_EPSILON else (y1 - y0) / dx
-    angle = _label_angle_for_slope(ax, x_mid, y_mid, slope, dx=x_span * 0.02)
-    text_artist.set_position((x_mid, y_mid))
-    text_artist.set_rotation(angle)
-
-    text_artist.set_rotation_mode('anchor')
-    text_artist.set_ha('center')
-    text_artist.set_va('center')
-    text_artist.set_clip_on(True)
-    if label_text is not None:
-        text_artist.set_text(label_text)
-    elif age_ma is not None:
-        text_artist.set_text(f" {age_ma:.0f} Ma")
-
 def _draw_paleoisochrons(ax, actual_algorithm, ages, params):
     """Draw paleoisochron reference lines for given ages."""
     geochemistry, _ = _lazy_import_geochemistry()
@@ -1857,7 +1326,7 @@ def _draw_paleoisochrons(ax, actual_algorithm, ages, params):
                     'position': label_opts.get('label_position', 'auto'),
                     'style_key': 'paleoisochron',
                 })
-                _position_curve_label(
+                position_curve_label(
                     ax,
                     text_artist,
                     mode='paleo',
@@ -1875,69 +1344,128 @@ def refresh_paleoisochron_labels():
     ax = getattr(app_state, 'ax', None)
     if ax is None:
         return
+    if bool(getattr(app_state, 'overlay_label_refreshing', False)):
+        return
 
-    label_data = getattr(app_state, 'paleoisochron_label_data', [])
-    if not label_data:
-        label_data = []
+    app_state.overlay_label_refreshing = True
+    try:
+        adjusted_labels = []
 
-    for entry in label_data:
-        text_artist = entry.get('text')
-        if text_artist is None:
-            continue
-        _position_curve_label(
-            ax,
-            text_artist,
-            mode='paleo',
-            slope=entry.get('slope', 0),
-            intercept=entry.get('intercept', 0),
-            age=entry.get('age'),
-            label_text=entry.get('label_text'),
-            position_mode=entry.get('position', 'auto'),
-        )
+        label_data = getattr(app_state, 'paleoisochron_label_data', [])
+        if not label_data:
+            label_data = []
 
-    curve_labels = getattr(app_state, 'plumbotectonics_label_data', [])
-    for entry in curve_labels:
-        text_artist = entry.get('text')
-        if text_artist is None:
-            continue
-        _position_curve_label(
-            ax,
-            text_artist,
-            mode='curve_left',
-            x_vals=entry.get('x_vals', entry.get('x_line', [])),
-            y_vals=entry.get('y_vals', entry.get('y_line', [])),
-        )
+        for entry in label_data:
+            text_artist = entry.get('text')
+            if text_artist is None:
+                continue
+            style_key = entry.get('style_key') or 'paleoisochron'
+            if not _is_overlay_label_style_visible(style_key):
+                try:
+                    text_artist.set_visible(False)
+                except Exception:
+                    pass
+                continue
+            position_curve_label(
+                ax,
+                text_artist,
+                mode='paleo',
+                slope=entry.get('slope', 0),
+                intercept=entry.get('intercept', 0),
+                age=entry.get('age'),
+                label_text=entry.get('label_text'),
+                position_mode=entry.get('position', 'auto'),
+            )
+            try:
+                if text_artist.get_visible():
+                    adjusted_labels.append(text_artist)
+            except Exception:
+                pass
 
-    isoage_labels = getattr(app_state, 'plumbotectonics_isoage_label_data', [])
-    for entry in isoage_labels:
-        text_artist = entry.get('text')
-        if text_artist is None:
-            continue
-        _position_curve_label(
-            ax,
-            text_artist,
-            mode='isoage',
-            x_line=entry.get('x_line', []),
-            y_line=entry.get('y_line', []),
-            age_ma=entry.get('age'),
-            label_text=entry.get('label_text'),
-            position_mode=entry.get('position', 'auto'),
-        )
+        curve_labels = getattr(app_state, 'plumbotectonics_label_data', [])
+        for entry in curve_labels:
+            text_artist = entry.get('text')
+            if text_artist is None:
+                continue
+            style_key = entry.get('style_key') or 'plumbotectonics_curve'
+            if not _is_overlay_label_style_visible(style_key):
+                try:
+                    text_artist.set_visible(False)
+                except Exception:
+                    pass
+                continue
+            position_curve_label(
+                ax,
+                text_artist,
+                mode='curve_left',
+                x_vals=entry.get('x_vals', entry.get('x_line', [])),
+                y_vals=entry.get('y_vals', entry.get('y_line', [])),
+                position_mode=entry.get('position', 'auto'),
+            )
+            try:
+                if text_artist.get_visible():
+                    adjusted_labels.append(text_artist)
+            except Exception:
+                pass
 
-    curve_labels = getattr(app_state, 'overlay_curve_label_data', [])
-    for entry in curve_labels:
-        text_artist = entry.get('text')
-        if text_artist is None:
-            continue
-        _position_curve_label(
-            ax,
-            text_artist,
-            mode='isoage',
-            x_line=entry.get('x_line', []),
-            y_line=entry.get('y_line', []),
-            label_text=entry.get('label_text'),
-            position_mode=entry.get('position', 'auto'),
-        )
+        isoage_labels = getattr(app_state, 'plumbotectonics_isoage_label_data', [])
+        for entry in isoage_labels:
+            text_artist = entry.get('text')
+            if text_artist is None:
+                continue
+            style_key = entry.get('style_key') or 'paleoisochron'
+            if not _is_overlay_label_style_visible(style_key):
+                try:
+                    text_artist.set_visible(False)
+                except Exception:
+                    pass
+                continue
+            position_curve_label(
+                ax,
+                text_artist,
+                mode='isoage',
+                x_line=entry.get('x_line', []),
+                y_line=entry.get('y_line', []),
+                age_ma=entry.get('age'),
+                label_text=entry.get('label_text'),
+                position_mode=entry.get('position', 'auto'),
+            )
+            try:
+                if text_artist.get_visible():
+                    adjusted_labels.append(text_artist)
+            except Exception:
+                pass
+
+        curve_labels = getattr(app_state, 'overlay_curve_label_data', [])
+        for entry in curve_labels:
+            text_artist = entry.get('text')
+            if text_artist is None:
+                continue
+            style_key = entry.get('style_key') or 'model_curve'
+            if not _is_overlay_label_style_visible(style_key):
+                try:
+                    text_artist.set_visible(False)
+                except Exception:
+                    pass
+                continue
+            position_curve_label(
+                ax,
+                text_artist,
+                mode='isoage',
+                x_line=entry.get('x_line', []),
+                y_line=entry.get('y_line', []),
+                label_text=entry.get('label_text'),
+                position_mode=entry.get('position', 'auto'),
+            )
+            try:
+                if text_artist.get_visible():
+                    adjusted_labels.append(text_artist)
+            except Exception:
+                pass
+
+        apply_adjust_text_to_labels(ax, adjusted_labels)
+    finally:
+        app_state.overlay_label_refreshing = False
 
 def _resolve_model_age(pb206, pb207, params):
     """Resolve model age and T1 override from Pb data and model params.
@@ -2044,7 +1572,7 @@ def _draw_model_age_lines(ax, pb206, pb207, params):
                     label_opts.get('label_position', 'auto'),
                     style_key='model_age_line'
                 )
-                _position_curve_label(
+                position_curve_label(
                     ax,
                     text_artist,
                     mode='isoage',
@@ -2143,7 +1671,7 @@ def _draw_model_age_lines_86(ax, pb206, pb207, pb208, params):
                     label_opts.get('label_position', 'auto'),
                     style_key='model_age_line'
                 )
-                _position_curve_label(
+                position_curve_label(
                     ax,
                     text_artist,
                     mode='isoage',
@@ -2347,7 +1875,7 @@ def _draw_equation_overlays(ax):
                 label_opts.get('label_position', 'auto'),
                 style_key=style_key
             )
-            _position_curve_label(
+            position_curve_label(
                 ax,
                 text_artist,
                 mode='isoage',
@@ -2356,4 +1884,5 @@ def _draw_equation_overlays(ax):
                 label_text=label_text,
                 position_mode=label_opts.get('label_position', 'auto'),
             )
+
 

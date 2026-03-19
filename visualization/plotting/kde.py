@@ -113,10 +113,11 @@ def draw_marginal_kde(ax, df_plot, group_col, palette, unique_cats, x_col='_emb_
             except Exception as kde_err:
                 logger.warning("Marginal KDE Y failed for %s: %s", cat, kde_err)
 
-    ax_top.tick_params(axis='x', labelbottom=False)
-    ax_top.tick_params(axis='y', left=False, labelleft=False)
-    ax_right.tick_params(axis='y', labelleft=False)
-    ax_right.tick_params(axis='x', bottom=False, labelbottom=False)
+    # Keep marginal panels visually clean: no ticks or tick marks.
+    # NOTE: marginal axes share x/y with the main axes. Do not call
+    # set_xticks/set_yticks here, or shared main-axis ticks will be cleared.
+    ax_top.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labeltop=False, labelleft=False, labelright=False, length=0)
+    ax_right.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labeltop=False, labelleft=False, labelright=False, length=0)
     ax_top.grid(False)
     ax_right.grid(False)
     ax_top.set_xlabel("")

@@ -548,6 +548,24 @@ class Qt5MainWindow(QMainWindow):
             except Exception:
                 self._refresh_plot()
             return
+        if style_key == 'isochron':
+            if checked:
+                app_state.show_isochrons = True
+                try:
+                    selected = getattr(app_state, 'selected_indices', set()) or set()
+                    if app_state.render_mode == 'PB_EVOL_76' and len(selected) >= 2:
+                        from visualization.events import calculate_selected_isochron
+                        calculate_selected_isochron()
+                except Exception as err:
+                    logger.warning("Failed to calculate selected isochron: %s", err)
+            else:
+                app_state.show_isochrons = False
+                app_state.selected_isochron_data = None
+                app_state.isochron_results = {}
+
+            self._sync_geochem_toggle_panels(style_key)
+            self._refresh_plot()
+            return
         attr = OVERLAY_TOGGLE_MAP.get(style_key)
         if attr:
             setattr(app_state, attr, checked)

@@ -252,7 +252,8 @@ ui/
 - 数据重置
 
 #### Export (导出)
-- 导出选中数据
+- 数据导出：导出选中数据（CSV/Excel/追加）
+- 图像导出：按期刊预设进行 SciencePlots 离屏重绘后导出（已实现）
 - 格式选项
 
 #### Legend (图例)
@@ -341,9 +342,10 @@ def _delete_theme(self)   # 删除已保存主题
 - 使用 `QToolBox` 折叠分区：KDE、方程叠加、选择工具、数据分析、子集分析、混合、端元识别、ML、置信椭圆
 
 ### ExportPanel
-- 导出选中数据 (CSV/Excel/追加)
+- 数据导出：导出选中数据 (CSV/Excel/追加)
+- 图像导出：基于 SciencePlots 的期刊预设离屏重绘导出（PNG/TIFF/PDF/SVG/EPS）
 - 选择状态同步
-- 使用 `QToolBox` 折叠分区：`Export`
+- 使用 `QToolBox` 折叠分区：`Data Export`、`Image Export`
 
 ### LegendPanel
 - 图例位置 (外部/图内)

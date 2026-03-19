@@ -328,6 +328,8 @@ class AppState:
         self.selection_ellipse = None  # Store the confidence ellipse for selected points
         self.marginal_axes = None  # (top_ax, right_ax) for marginal KDE
         self.paleo_label_refreshing = False
+        self.overlay_label_refreshing = False
+        self.adjust_text_in_progress = False
         self.mixing_groups = {'endmembers': {}, 'mixtures': {}}
         self.mixing_results = []
         self.mixing_calc_cols = []
@@ -410,6 +412,7 @@ class AppState:
         self.axis_line_color = '#1f2937'
         self.show_top_spine = True
         self.show_right_spine = True
+        self.scatter_show_edge = True
         self.scatter_edgecolor = '#1e293b'
         self.scatter_edgewidth = 0.4
         self.label_color = '#1f2937'
@@ -418,6 +421,11 @@ class AppState:
         self.title_color = '#111827'
         self.title_weight = 'bold'
         self.title_pad = 20.0
+        self.adjust_text_force_text = (0.8, 1.0)
+        self.adjust_text_force_static = (0.4, 0.6)
+        self.adjust_text_expand = (1.08, 1.20)
+        self.adjust_text_iter_lim = 120
+        self.adjust_text_time_lim = 0.25
         self.saved_themes = {} # Dictionary to store user themes
         self.last_2d_cols = None
 

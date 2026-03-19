@@ -977,14 +977,15 @@ class AnalysisPanel(BasePanel):
         if not hasattr(app_state, 'mixing_mixtures'):
             app_state.mixing_mixtures = {}
 
-        app_state.mixing_endmembers[group_name] = list(app_state.selected_indices)
+        selected_list = list(app_state.selected_indices)
+        app_state.mixing_endmembers[group_name] = selected_list
         self._update_mixing_status()
         self._clear_selection_after_mixing()
         QMessageBox.information(
             self,
             translate("Success"),
             translate("Endmember '{name}' set with {count} samples.").format(
-                name=group_name, count=len(app_state.selected_indices)
+                name=group_name, count=len(selected_list)
             )
         )
 
@@ -1013,14 +1014,15 @@ class AnalysisPanel(BasePanel):
         if not hasattr(app_state, 'mixing_mixtures'):
             app_state.mixing_mixtures = {}
 
-        app_state.mixing_mixtures[group_name] = list(app_state.selected_indices)
+        selected_list = list(app_state.selected_indices)
+        app_state.mixing_mixtures[group_name] = selected_list
         self._update_mixing_status()
         self._clear_selection_after_mixing()
         QMessageBox.information(
             self,
             translate("Success"),
             translate("Mixture '{name}' set with {count} samples.").format(
-                name=group_name, count=len(app_state.selected_indices)
+                name=group_name, count=len(selected_list)
             )
         )
 

@@ -36,7 +36,10 @@ def _apply_current_style():
         apply_custom_style(False, 'vibrant')
 
     try:
-        plt.rcParams['figure.dpi'] = float(getattr(app_state, 'plot_dpi', 130))
+        figure_dpi = float(getattr(app_state, 'plot_dpi', 130))
+        savefig_dpi = float(CONFIG.get('savefig_dpi', 300))
+        plt.rcParams['figure.dpi'] = figure_dpi
+        plt.rcParams['savefig.dpi'] = max(figure_dpi, savefig_dpi)
         plt.rcParams['figure.facecolor'] = getattr(app_state, 'plot_facecolor', '#ffffff')
         plt.rcParams['axes.facecolor'] = getattr(app_state, 'axes_facecolor', '#ffffff')
         plt.rcParams['axes.grid'] = bool(show_grid)
@@ -312,6 +315,9 @@ def refresh_plot_style() -> None:
         base_alpha = getattr(app_state, 'plot_marker_alpha', 0.8)
         edgecolor = getattr(app_state, 'scatter_edgecolor', '#1e293b')
         edgewidth = getattr(app_state, 'scatter_edgewidth', 0.4)
+        show_edge = bool(getattr(app_state, 'scatter_show_edge', True))
+        resolved_edgecolor = edgecolor if show_edge else 'none'
+        resolved_edgewidth = edgewidth if show_edge else 0.0
 
         for sc in list(getattr(app_state, 'scatter_collections', [])):
             if sc is None:
@@ -323,8 +329,8 @@ def refresh_plot_style() -> None:
                 else:
                     sc.set_sizes([base_size] * len(sizes))
                 sc.set_alpha(base_alpha)
-                sc.set_edgecolor(edgecolor)
-                sc.set_linewidths(edgewidth)
+                sc.set_edgecolor(resolved_edgecolor)
+                sc.set_linewidths(resolved_edgewidth)
             except Exception:
                 pass
     except Exception:

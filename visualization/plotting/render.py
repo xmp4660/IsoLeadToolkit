@@ -269,6 +269,9 @@ def _render_kde_overlay(actual_algorithm, df_plot, group_col, unique_cats, new_p
 def _render_scatter_groups(actual_algorithm, df_plot, group_col, unique_cats, size):
     scatters = []
     is_kde_mode = getattr(app_state, 'show_kde', False)
+    show_edge = bool(getattr(app_state, 'scatter_show_edge', True))
+    edge_color = getattr(app_state, 'scatter_edgecolor', '#1e293b') if show_edge else 'none'
+    edge_width = getattr(app_state, 'scatter_edgewidth', 0.4) if show_edge else 0.0
 
     for cat in unique_cats:
         if is_kde_mode:
@@ -313,8 +316,8 @@ def _render_scatter_groups(actual_algorithm, df_plot, group_col, unique_cats, si
                     s=marker_size,
                     marker=marker_shape,
                     alpha=marker_alpha,
-                    edgecolors=getattr(app_state, 'scatter_edgecolor', '#1e293b'),
-                    linewidth=getattr(app_state, 'scatter_edgewidth', 0.4),
+                    edgecolors=edge_color,
+                    linewidth=edge_width,
                     zorder=2,
                     picker=5,
                 )
@@ -351,8 +354,8 @@ def _render_scatter_groups(actual_algorithm, df_plot, group_col, unique_cats, si
                     s=marker_size,
                     marker=marker_shape,
                     alpha=marker_alpha,
-                    edgecolors=getattr(app_state, 'scatter_edgecolor', '#1e293b'),
-                    linewidth=getattr(app_state, 'scatter_edgewidth', 0.4),
+                    edgecolors=edge_color,
+                    linewidth=edge_width,
                     zorder=2,
                     picker=5,
                 )
@@ -514,7 +517,7 @@ def _render_geo_overlays(actual_algorithm, prev_ax, prev_embedding_type, prev_xl
         if getattr(app_state, 'show_isochrons', True):
             _draw_isochron_overlays(app_state.ax, actual_algorithm)
 
-        if app_state.selection_tool == 'isochron':
+        if app_state.selected_isochron_data is not None:
             _draw_selected_isochron(app_state.ax)
 
         if getattr(app_state, 'show_paleoisochrons', True):
@@ -1146,6 +1149,9 @@ def plot_2d_data(group_col: str, data_columns: list[str], size: int = 60, show_k
         scatters = []
 
         if not show_kde:
+            show_edge = bool(getattr(app_state, 'scatter_show_edge', True))
+            edge_color = getattr(app_state, 'scatter_edgecolor', '#1e293b') if show_edge else 'none'
+            edge_width = getattr(app_state, 'scatter_edgewidth', 0.4) if show_edge else 0.0
             for i, cat in enumerate(unique_cats):
                 subset = df_plot[df_plot[group_col] == cat]
                 if subset.empty:
@@ -1171,8 +1177,8 @@ def plot_2d_data(group_col: str, data_columns: list[str], size: int = 60, show_k
                     s=marker_size,
                     marker=marker_shape,
                     alpha=marker_alpha,
-                    edgecolors=getattr(app_state, 'scatter_edgecolor', '#1e293b'),
-                    linewidth=getattr(app_state, 'scatter_edgewidth', 0.4),
+                    edgecolors=edge_color,
+                    linewidth=edge_width,
                     zorder=2,
                 )
                 app_state.scatter_collections.append(sc)
@@ -1351,6 +1357,9 @@ def plot_3d_data(group_col: str, data_columns: list[str], size: int = 60) -> boo
                 cat,
                 getattr(app_state, 'plot_marker_shape', 'o')
             )
+            show_edge = bool(getattr(app_state, 'scatter_show_edge', True))
+            edge_color = getattr(app_state, 'scatter_edgecolor', '#1e293b') if show_edge else 'none'
+            edge_width = getattr(app_state, 'scatter_edgewidth', 0.4) if show_edge else 0.0
             sc = app_state.ax.scatter(
                 xs,
                 ys,
@@ -1360,8 +1369,8 @@ def plot_3d_data(group_col: str, data_columns: list[str], size: int = 60) -> boo
                 s=marker_size,
                 marker=marker_shape,
                 alpha=marker_alpha,
-                edgecolors=getattr(app_state, 'scatter_edgecolor', '#1e293b'),
-                linewidth=getattr(app_state, 'scatter_edgewidth', 0.4),
+                edgecolors=edge_color,
+                linewidth=edge_width,
                 zorder=2,
             )
             app_state.scatter_collections.append(sc)
