@@ -322,10 +322,37 @@ src/
 ## 阶段进展（2026-04-01）
 
 - 已创建并推送架构改造总分支：`epic/architecture-modernization-2026q2`。
-- 已启动 A3（Application 层）首个可回滚迁移样例：
-    - 新增应用层用例：`application/use_cases/export_dataframe.py`。
-    - 导出 UI 层 `ui/panels/export/data_export.py` 改为通过用例构建导出数据，UI 仅负责参数采集与导出触发。
-- 本次迁移目标：不改外部行为，仅降低 UI 业务逻辑密度，作为后续 `LoadDatasetUseCase` / `RenderPlotUseCase` / `ExportImageUseCase` 迁移模板。
+- 已完成 A3（Application 层）导出链路的一步到位迁移：
+    - 新增 `application/use_cases/export_data.py`，统一承载导出 DataFrame 构建、CSV/Excel 写出、Excel 追加。
+    - 新增 `application/use_cases/export_image.py`，统一承载图像导出预设、后缀归一化、保存参数解析与 `savefig` 调用。
+    - `application/use_cases/export_dataframe.py` 转为兼容代理，避免旧引用断裂。
+    - 导出 UI 层 `ui/panels/export/data_export.py` 与 `ui/panels/export/common.py` 已切换为调用应用层用例，UI 仅保留交互与反馈职责。
+- 已完成 A3（Application 层）渲染编排迁移：
+    - 新增 `application/use_cases/render_plot.py`，引入 `RenderPlotUseCase` 统一承载渲染模式校验、列选择修正、渲染分发与失败回退。
+    - `visualization/events.py` 的 `on_slider_change` 已降级为薄入口，事件层保留异步任务管理和 UI 同步钩子。
+    - Application 包已导出 `RenderPlotUseCase`，形成导入/渲染/导出三条主链路均可由 UseCase 编排的基础形态。
+- 已完成 A2/A3 交界的数据导入编排迁移：
+    - 新增 `application/use_cases/load_dataset.py`，将数据导入流程编排（文件/工作表选择、列配置、清洗、状态注入）上移到 Application 层。
+    - `ui/app.py` 与 `ui/main_window.py` 已改为调用 `load_dataset`，UI 入口不再直接依赖 `data.loader.load_data`。
+    - `data/loader.py` 的 `load_data` 已降级为兼容代理，`read_data_frame` 保留为数据读取工具函数。
+- 已完成 A2（状态治理）第一步落地：
+    - 新增 `core/state_gateway.py`，提供 `AppStateGateway` 与 `state_gateway`，作为导入/渲染链路的统一状态写入口。
+    - `load_dataset` 与 `RenderPlotUseCase` 已切换关键状态写操作到 gateway，减少 UseCase 内部散落的字段级直接写入。
+    - `visualization/events.py` 的渲染模式同步和异步 embedding 任务状态（token/worker/running）已切换到 gateway。
+- 已完成 A2（状态治理）第二步收口：
+    - `visualization/events.py` 中选择工具与等时线主链路状态写入已切换到 gateway。
+    - 新增 gateway 写入口：rectangle/lasso selector、selection overlay/ellipse、selected isochron data、selection tool、visible groups。
+    - `selected_indices` 的清空/增删也已通过 gateway 命令化封装（clear/add/remove），事件层不再直接调用集合变更方法。
+    - 事件层中 `app_state.xxx = ...` 的残余已收敛为判断语句（无字段赋值）。
+    - 导出子域状态写入已继续收口：`ui/panels/export/common.py`、`ui/panels/export/image_export.py`、`ui/panels/export/selection.py` 已切换到 gateway，移除导出链路中的字段级直接赋值与选择集合直接变更。
+- 本次迁移目标：在不改变外部行为前提下，直接完成导出子域“规则下沉 + 责任分层”，作为后续 `LoadDatasetUseCase` / `RenderPlotUseCase` 迁移模板。
+- 已完成 A2 提速批处理（状态直写快速收口）：
+    - 新增 gateway 通用接口：`set_attr` / `set_attrs`，用于高频状态写入批量迁移。
+    - 高价值入口文件完成收口：`ui/app.py`、`ui/main_window.py`、`visualization/plotting/render.py`、`visualization/plotting/core.py`。
+    - 中小文件尾项收口完成：`ui/panels/analysis_panel.py`、`ui/panels/legend_panel.py`、`ui/panels/display_panel.py`、`ui/dialogs/line_style_dialog.py`、`visualization/plotting/geo.py`、`ui/dialogs/provenance_ml_dialog.py`、`ui/control_panel.py`、`ui/dialogs/data_import_dialog.py`、`ui/dialogs/endmember_dialog.py`、`visualization/plotting/kde.py`、`visualization/plotting/label_layout.py`、`core/localization.py`。
+    - 大文件瓶颈收口完成：`ui/panels/data_panel.py` 与 `ui/panels/base_panel.py` 字段级直写已全部迁移至 gateway。
+    - 可量化结果：`app_state.xxx = ...` 全仓计数已从 **294 降到 0**（净减少 294，完成率 **100%**）。
+    - 新增基线检查脚本：`scripts/check_state_mutations.py`，支持本地与 CI 持续检查（可选 `--fail-on-hits`）。
 
 ## 全局改进计划
 

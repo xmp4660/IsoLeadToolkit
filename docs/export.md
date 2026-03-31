@@ -7,7 +7,7 @@
 - 数据导出：将当前选中样本导出为 CSV/Excel，或追加写入已有 Excel。
 - 图像导出：对当前图进行离屏重绘并导出为位图/矢量格式。
 
-导出入口位于 `ui/panels/export_panel.py`，具体实现拆分在 `ui/panels/export/` 子包中。
+导出入口位于 `ui/panels/export_panel.py`，具体实现采用“UI 交互层 + Application 用例层”的分层结构。
 
 ## 模块结构
 
@@ -21,6 +21,11 @@ ui/panels/
     ├── data_export.py         # CSV/Excel/追加导出
     ├── image_export.py        # 预览导出、直接导出、离屏重绘
     └── common.py              # 导出公共工具方法
+
+application/use_cases/
+├── export_data.py             # 数据导出用例（构建 DataFrame、写出、追加）
+├── export_image.py            # 图像导出用例（预设、格式归一化、savefig 选项）
+└── export_dataframe.py        # 兼容代理（转发到 export_data）
 ```
 
 ## 数据导出实现
@@ -36,6 +41,7 @@ ui/panels/
 - 导出前根据当前选择构建 DataFrame。
 - 若当前渲染模式存在降维结果，会附加对应坐标列与参数元信息。
 - 追加导出使用工作表命名冲突处理，避免覆盖已有数据。
+- 文件写出、后缀补全与追加逻辑由 `application/use_cases/export_data.py` 统一处理。
 
 ## 图像导出实现
 
@@ -54,6 +60,11 @@ ui/panels/
 - `tight bbox` 开关。
 - `padding`（inch）。
 - 透明背景开关。
+
+### 用例下沉（2026-04-01）
+
+- 预设解析、导出后缀归一化、保存参数组装已迁移到 `application/use_cases/export_image.py`。
+- `savefig` 落盘逻辑由应用层统一封装，UI 层仅负责参数收集和用户反馈。
 
 ### 渲染策略
 
@@ -81,6 +92,7 @@ ui/panels/
 
 ## 设计约束
 
+- UI 层只负责交互、参数采集、提示与异常展示；业务规则放在 application use case。
 - 导出逻辑不直接改写 UI 控件状态。
 - 导出失败需返回可诊断错误信息（日志 + 用户提示）。
 - 预览保存与直接导出共享保存参数解析，保证行为一致。
