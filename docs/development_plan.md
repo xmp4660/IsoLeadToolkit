@@ -353,6 +353,12 @@ src/
     - 大文件瓶颈收口完成：`ui/panels/data_panel.py` 与 `ui/panels/base_panel.py` 字段级直写已全部迁移至 gateway。
     - 可量化结果：`app_state.xxx = ...` 全仓计数已从 **294 降到 0**（净减少 294，完成率 **100%**）。
     - 新增基线检查脚本：`scripts/check_state_mutations.py`，支持本地与 CI 持续检查（可选 `--fail-on-hits`）。
+- 已完成 A3（交互业务下沉）新一轮迁移：
+    - 新增 `application/use_cases/selection_interaction.py`，承载矩形/套索圈选、最近邻索引匹配、工具切换策略、图例可见组计算等纯业务逻辑。
+    - 新增 `application/use_cases/selected_isochron.py`，承载选中样本等时线结果计算与结果载荷构建。
+    - 新增 `application/use_cases/tooltip_content.py`，承载 hover 提示文本拼装逻辑（默认字段、空列回退、选中状态标记）。
+    - `visualization/events.py` 相关路径已改为调用 use case，事件层进一步收敛为交互编排与 UI 回调。
+    - 新增 `visualization/selection_overlay.py`，将选中高亮圈与置信椭圆绘制从 events 模块拆分为独立渲染服务。
 
 ## 全局改进计划
 
