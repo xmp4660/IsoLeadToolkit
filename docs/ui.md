@@ -361,7 +361,9 @@ def _delete_theme(self)   # 删除已保存主题
 
 模块拆分说明（2026-04）:
 - `panels/display_panel.py` 仅保留 `DisplayPanel` 组装类。
-- `panels/display/panel.py` 承载显示面板全部构建与交互逻辑。
+- `panels/display/panel.py` 作为 mixin 组合层。
+- `panels/display/build.py`：控件初始化、`QToolBox` 页面构建、颜色控件辅助方法。
+- `panels/display/themes.py`：主题保存/加载/删除、自动布局与 UI 主题切换。
 
 ### AnalysisPanel
 - KDE、选择工具、分析/混合/端元/ML
@@ -399,7 +401,9 @@ def _delete_theme(self)   # 删除已保存主题
 
 模块拆分说明（2026-04）:
 - `panels/legend_panel.py` 仅保留 `LegendPanel` 组装类。
-- `panels/legend/panel.py` 承载图例面板全部构建与交互逻辑。
+- `panels/legend/panel.py` 作为 mixin 组合层。
+- `panels/legend/build.py`：图例页面构建、色阶/形状自定义对话框、图标生成与位置按钮同步。
+- `panels/legend/actions.py`：图例位置变更、色阶联动、自动样式分配与偏移微调。
 
 ### GeoPanel
 - 模型选择与参数管理
