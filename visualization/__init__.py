@@ -22,8 +22,8 @@ from .events import (
     refresh_selection_overlay,
     toggle_selection_mode,
     sync_selection_tools,
-    draw_confidence_ellipse,
 )
+from .selection_overlay import draw_confidence_ellipse
 
 from .plotting import (
     plot_embedding,
