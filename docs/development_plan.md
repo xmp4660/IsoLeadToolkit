@@ -408,6 +408,11 @@ src/
     - `visualization/plotting/geo.py` 已抽离覆盖层与 plumbotectonics 逻辑到 `visualization/plotting/geo_overlay_helpers.py`，主文件聚焦等时线拟合、模型年龄线、方程覆盖等核心计算。
     - 兼容性验证：`pytest`（8 passed）与导入冒烟通过，`scripts/check_state_mutations.py --fail-on-hits` 仍保持 `TOTAL=0`。
     - 量化结果：`render.py` 由约 1297 行降至 758 行；`geo.py` 由约 1733 行降至 1140 行。
+- 已完成 plotting 包结构清理（2026-04-01 夜间补充）：
+    - 删除未被引用的冗余模块 `visualization/plotting/overlay_helpers.py`，减少同类 helper 重叠。
+    - 新增 `visualization/plotting/event_bridge.py`，统一 `plotting -> events` 的回调桥接，移除 `render.py` 与 `style.py` 的分散式动态导入。
+    - `visualization/plotting/legend_model.py` 已改为直接依赖 `geo_overlay_helpers` 的元数据函数，减少对 `geo.py` 主模块的耦合。
+    - 验证结果：`pytest` 全通过，改动文件错误检查通过。
 
 ## 全局改进计划
 
