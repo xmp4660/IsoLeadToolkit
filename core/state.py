@@ -25,7 +25,7 @@ class DataState:
 
     @df_global.setter
     def df_global(self, value: Any) -> None:
-        self.app_state.df_global = value
+        setattr(self.app_state, 'df_global', value)
 
     @property
     def data_cols(self) -> Any:
@@ -33,7 +33,7 @@ class DataState:
 
     @data_cols.setter
     def data_cols(self, value: Any) -> None:
-        self.app_state.data_cols = value
+        setattr(self.app_state, 'data_cols', value)
 
     @property
     def group_cols(self) -> Any:
@@ -41,7 +41,7 @@ class DataState:
 
     @group_cols.setter
     def group_cols(self, value: Any) -> None:
-        self.app_state.group_cols = value
+        setattr(self.app_state, 'group_cols', value)
 
     @property
     def active_subset_indices(self) -> Any:
@@ -49,7 +49,7 @@ class DataState:
 
     @active_subset_indices.setter
     def active_subset_indices(self, value: Any) -> None:
-        self.app_state.active_subset_indices = value
+        setattr(self.app_state, 'active_subset_indices', value)
 
 
 @dataclass
@@ -64,7 +64,7 @@ class AlgorithmState:
 
     @algorithm.setter
     def algorithm(self, value: Any) -> None:
-        self.app_state.algorithm = value
+        setattr(self.app_state, 'algorithm', value)
 
     @property
     def embedding_cache(self) -> Any:
@@ -76,7 +76,7 @@ class AlgorithmState:
 
     @umap_params.setter
     def umap_params(self, value: Any) -> None:
-        self.app_state.umap_params = value
+        setattr(self.app_state, 'umap_params', value)
 
     @property
     def tsne_params(self) -> Any:
@@ -84,7 +84,7 @@ class AlgorithmState:
 
     @tsne_params.setter
     def tsne_params(self, value: Any) -> None:
-        self.app_state.tsne_params = value
+        setattr(self.app_state, 'tsne_params', value)
 
     @property
     def pca_params(self) -> Any:
@@ -92,7 +92,7 @@ class AlgorithmState:
 
     @pca_params.setter
     def pca_params(self, value: Any) -> None:
-        self.app_state.pca_params = value
+        setattr(self.app_state, 'pca_params', value)
 
     @property
     def robust_pca_params(self) -> Any:
@@ -100,7 +100,7 @@ class AlgorithmState:
 
     @robust_pca_params.setter
     def robust_pca_params(self, value: Any) -> None:
-        self.app_state.robust_pca_params = value
+        setattr(self.app_state, 'robust_pca_params', value)
 
 
 @dataclass
@@ -115,7 +115,7 @@ class VisualState:
 
     @fig.setter
     def fig(self, value: Any) -> None:
-        self.app_state.fig = value
+        setattr(self.app_state, 'fig', value)
 
     @property
     def ax(self) -> Any:
@@ -123,7 +123,7 @@ class VisualState:
 
     @ax.setter
     def ax(self, value: Any) -> None:
-        self.app_state.ax = value
+        setattr(self.app_state, 'ax', value)
 
     @property
     def scatter_collections(self) -> Any:
@@ -157,7 +157,7 @@ class StyleState:
 
     @current_palette.setter
     def current_palette(self, value: Any) -> None:
-        self.app_state.current_palette = value
+        setattr(self.app_state, 'current_palette', value)
 
     @property
     def color_scheme(self) -> Any:
@@ -165,7 +165,7 @@ class StyleState:
 
     @color_scheme.setter
     def color_scheme(self, value: Any) -> None:
-        self.app_state.color_scheme = value
+        setattr(self.app_state, 'color_scheme', value)
 
     @property
     def custom_primary_font(self) -> Any:
@@ -188,7 +188,7 @@ class InteractionState:
 
     @selection_tool.setter
     def selection_tool(self, value: Any) -> None:
-        self.app_state.selection_tool = value
+        setattr(self.app_state, 'selection_tool', value)
 
     @property
     def selected_indices(self) -> Any:
@@ -196,7 +196,7 @@ class InteractionState:
 
     @selected_indices.setter
     def selected_indices(self, value: Any) -> None:
-        self.app_state.selected_indices = value
+        setattr(self.app_state, 'selected_indices', value)
 
     @property
     def artist_to_sample(self) -> Any:

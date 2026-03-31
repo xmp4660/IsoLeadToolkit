@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 
-from core import translate, app_state, available_languages
+from core import app_state, available_languages, state_gateway, translate
 from ui.panels import (
     DataPanel, DisplayPanel, AnalysisPanel,
     ExportPanel, LegendPanel, GeoPanel,
@@ -449,7 +449,7 @@ def create_section_dialog(section_key, callback, parent=None):
     _dialog_last_lang = [getattr(app_state, 'language', None)]
 
     def _on_show(_event):
-        app_state.control_panel_ref = panel
+        state_gateway.set_attr('control_panel_ref', panel)
         try:
             panel.update_selection_controls()
         except Exception:
@@ -489,7 +489,7 @@ def create_section_dialog(section_key, callback, parent=None):
 
     def _on_close(_event):
         if getattr(app_state, 'control_panel_ref', None) is panel:
-            app_state.control_panel_ref = None
+            state_gateway.set_attr('control_panel_ref', None)
         _dialog_last_lang[0] = getattr(app_state, 'language', None)
         listeners = getattr(app_state, 'language_listeners', [])
         if _on_language_refresh in listeners:

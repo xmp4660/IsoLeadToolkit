@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 import matplotlib.pyplot as plt
 
-from core import CONFIG, app_state
+from core import CONFIG, app_state, state_gateway
 from core.cache import build_embedding_cache_key
 from . import data as data_utils
 from .data import _lazy_import_ml, _get_analysis_data
@@ -73,15 +73,15 @@ def _ensure_axes(dimensions=2):
                 app_state.fig.clf()
             except Exception:
                 pass
-            app_state.ax = app_state.fig.add_subplot(111, projection='3d')
+            state_gateway.set_attr('ax', app_state.fig.add_subplot(111, projection='3d'))
     else:
         if app_state.ax is None or getattr(app_state.ax, 'name', '') == '3d':
             try:
                 app_state.fig.clf()
             except Exception:
                 pass
-            app_state.ax = app_state.fig.add_subplot(111)
-    app_state.legend_ax = None
+            state_gateway.set_attr('ax', app_state.fig.add_subplot(111))
+    state_gateway.set_attr('legend_ax', None)
 
     return app_state.ax
 
@@ -105,8 +105,7 @@ def get_umap_embedding(params: dict) -> np.ndarray | None:
         reducer = umap.UMAP(**params)
         embedding = reducer.fit_transform(X)
         app_state.embedding_cache.set(key, embedding)
-        app_state.last_embedding = embedding
-        app_state.last_embedding_type = 'UMAP'
+        state_gateway.set_attrs({'last_embedding': embedding, 'last_embedding_type': 'UMAP'})
         return embedding
 
     except Exception as e:
@@ -151,8 +150,7 @@ def get_tsne_embedding(params: dict) -> np.ndarray | None:
 
         embedding = reducer.fit_transform(X)
         app_state.embedding_cache.set(key, embedding)
-        app_state.last_embedding = embedding
-        app_state.last_embedding_type = 'tSNE'
+        state_gateway.set_attrs({'last_embedding': embedding, 'last_embedding_type': 'tSNE'})
         return embedding
 
     except Exception as e:
@@ -189,13 +187,16 @@ def get_pca_embedding(params: dict) -> np.ndarray | None:
         )
 
         embedding = reducer.fit_transform(X_scaled)
-        app_state.last_pca_variance = reducer.explained_variance_ratio_
-        app_state.last_pca_components = reducer.components_
-        app_state.current_feature_names = _data_cols()
+        state_gateway.set_attrs(
+            {
+                'last_pca_variance': reducer.explained_variance_ratio_,
+                'last_pca_components': reducer.components_,
+                'current_feature_names': _data_cols(),
+            }
+        )
 
         app_state.embedding_cache.set(key, embedding)
-        app_state.last_embedding = embedding
-        app_state.last_embedding_type = 'PCA'
+        state_gateway.set_attrs({'last_embedding': embedding, 'last_embedding_type': 'PCA'})
         return embedding
 
     except Exception as e:
@@ -233,8 +234,12 @@ def get_robust_pca_embedding(params: dict) -> np.ndarray | None:
                 random_state=params.get('random_state', 42)
             )
             embedding = reducer.fit_transform(X_scaled)
-            app_state.last_pca_variance = reducer.explained_variance_ratio_
-            app_state.last_pca_components = reducer.components_
+            state_gateway.set_attrs(
+                {
+                    'last_pca_variance': reducer.explained_variance_ratio_,
+                    'last_pca_components': reducer.components_,
+                }
+            )
         else:
             support_fraction = params.get('support_fraction', 0.75)
             mcd = data_utils.MinCovDet(random_state=params.get('random_state', 42), support_fraction=support_fraction)
@@ -249,13 +254,12 @@ def get_robust_pca_embedding(params: dict) -> np.ndarray | None:
             components = eigvecs[:, :n_components]
             embedding = (X_scaled - mean) @ components
             if eigvals.sum() > 0:
-                app_state.last_pca_variance = eigvals[:n_components] / eigvals.sum()
-            app_state.last_pca_components = components.T
+                state_gateway.set_attr('last_pca_variance', eigvals[:n_components] / eigvals.sum())
+            state_gateway.set_attr('last_pca_components', components.T)
 
-        app_state.current_feature_names = _data_cols()
+        state_gateway.set_attr('current_feature_names', _data_cols())
         app_state.embedding_cache.set(key, embedding)
-        app_state.last_embedding = embedding
-        app_state.last_embedding_type = 'RobustPCA'
+        state_gateway.set_attrs({'last_embedding': embedding, 'last_embedding_type': 'RobustPCA'})
         return embedding
 
     except Exception as e:
@@ -285,7 +289,7 @@ def get_embedding(
 def _build_group_palette(unique_cats):
     """Build or reuse a stable group -> color mapping."""
     if not hasattr(app_state, 'current_palette'):
-        app_state.current_palette = {}
+        state_gateway.set_attr('current_palette', {})
 
     prop_cycle = plt.rcParams.get('axes.prop_cycle', None)
     cycle_colors = []

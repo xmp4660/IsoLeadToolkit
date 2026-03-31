@@ -1,0 +1,176 @@
+"""State gateway for coordinated app_state mutations."""
+
+from __future__ import annotations
+
+import logging
+from typing import Any
+
+from .state import app_state
+
+logger = logging.getLogger(__name__)
+
+
+class AppStateGateway:
+    """Provide explicit mutation entry points for shared app state."""
+
+    def __init__(self, state: Any) -> None:
+        self._state = state
+
+    def set_attr(self, name: str, value: Any) -> None:
+        """Set a single app_state attribute via gateway."""
+        setattr(self._state, name, value)
+
+    def set_attrs(self, values: dict[str, Any]) -> None:
+        """Set multiple app_state attributes via gateway."""
+        for name, value in values.items():
+            setattr(self._state, name, value)
+
+    def set_render_mode(self, render_mode: str) -> None:
+        self._state.render_mode = render_mode
+        if render_mode in ("UMAP", "tSNE", "PCA", "RobustPCA"):
+            self._state.algorithm = render_mode
+
+    def set_figure_axes(self, fig: Any, ax: Any) -> None:
+        self._state.fig = fig
+        self._state.ax = ax
+
+    def set_overlay_label_flags(self, *, refreshing: bool, adjust_in_progress: bool) -> None:
+        self._state.overlay_label_refreshing = bool(refreshing)
+        self._state.adjust_text_in_progress = bool(adjust_in_progress)
+
+    def set_overlay_label_state(self, label_state: dict[str, Any]) -> None:
+        for key, value in label_state.items():
+            if isinstance(value, list):
+                setattr(self._state, key, list(value))
+            else:
+                setattr(self._state, key, value)
+
+    def set_palette_and_marker_map(self, palette: dict[str, Any], marker_map: dict[str, Any]) -> None:
+        self._state.current_palette = dict(palette)
+        self._state.group_marker_map = dict(marker_map)
+
+    def set_show_marginal_kde(self, show: bool) -> None:
+        self._state.show_marginal_kde = bool(show)
+
+    def set_marginal_axes(self, marginal_axes: Any) -> None:
+        self._state.marginal_axes = marginal_axes
+
+    def set_draw_selection_ellipse(self, enabled: bool) -> None:
+        self._state.draw_selection_ellipse = bool(enabled)
+
+    def set_preserve_import_render_mode(self, preserve: bool) -> None:
+        self._state.preserve_import_render_mode = preserve
+
+    def set_group_data_columns(self, group_cols: list[str], data_cols: list[str]) -> None:
+        self._state.group_cols = list(group_cols)
+        self._state.data_cols = list(data_cols)
+
+    def set_last_group_col(self, group_col: str | None) -> None:
+        self._state.last_group_col = group_col
+
+    def reset_column_selection(self) -> None:
+        self._state.selected_2d_cols = []
+        self._state.selected_3d_cols = []
+        self._state.selected_2d_confirmed = False
+        self._state.selected_3d_confirmed = False
+        self._state.available_groups = []
+        self._state.visible_groups = None
+
+    def set_selected_2d_columns(self, columns: list[str], *, confirmed: bool = False) -> None:
+        self._state.selected_2d_cols = list(columns)
+        self._state.selected_2d_confirmed = confirmed
+
+    def set_selected_3d_columns(self, columns: list[str], *, confirmed: bool = False) -> None:
+        self._state.selected_3d_cols = list(columns)
+        self._state.selected_3d_confirmed = confirmed
+
+    def set_selected_ternary_columns(self, columns: list[str], *, confirmed: bool = False) -> None:
+        self._state.selected_ternary_cols = list(columns)
+        self._state.selected_ternary_confirmed = confirmed
+
+    def sync_available_and_visible_groups(self, all_groups: list[str]) -> None:
+        self._state.available_groups = list(all_groups)
+        visible_groups = getattr(self._state, "visible_groups", None)
+        if visible_groups:
+            filtered = [group for group in visible_groups if group in all_groups]
+            self._state.visible_groups = filtered if filtered else None
+
+    def set_dataframe_and_source(
+        self,
+        df: Any,
+        *,
+        file_path: str,
+        sheet_name: str | None,
+    ) -> None:
+        self._state.df_global = df
+        self._state.file_path = file_path
+        self._state.sheet_name = sheet_name
+
+    def bump_data_version(self) -> None:
+        try:
+            self._state.data_version += 1
+            self._state.embedding_cache.clear()
+            logger.info("Data version updated: %s", self._state.data_version)
+        except Exception:
+            pass
+
+    def clear_selection(self) -> None:
+        self._state.selected_indices.clear()
+        self._state.selection_mode = False
+
+    def disable_selection_mode(self) -> None:
+        self._state.selection_mode = False
+
+    def set_initial_render_done(self, done: bool) -> None:
+        self._state.initial_render_done = done
+
+    def set_embedding_worker(
+        self,
+        worker: Any,
+        *,
+        running: bool,
+        task_token: int | None = None,
+    ) -> None:
+        if task_token is not None:
+            self._state.embedding_task_token = task_token
+        self._state.embedding_worker = worker
+        self._state.embedding_task_running = running
+
+    def set_rectangle_selector(self, selector: Any) -> None:
+        self._state.rectangle_selector = selector
+
+    def set_lasso_selector(self, selector: Any) -> None:
+        self._state.lasso_selector = selector
+
+    def set_selection_overlay(self, overlay: Any) -> None:
+        self._state.selection_overlay = overlay
+
+    def set_selection_ellipse(self, ellipse: Any) -> None:
+        self._state.selection_ellipse = ellipse
+
+    def set_selected_isochron_data(self, data: Any) -> None:
+        self._state.selected_isochron_data = data
+
+    def set_show_isochrons(self, show: bool) -> None:
+        self._state.show_isochrons = bool(show)
+
+    def set_selection_tool(self, tool: str | None) -> None:
+        self._state.selection_tool = tool
+        self._state.selection_mode = tool is not None
+
+    def set_visible_groups(self, groups: list[str] | None) -> None:
+        self._state.visible_groups = list(groups) if groups is not None else None
+
+    def clear_selected_indices(self) -> None:
+        self._state.selected_indices.clear()
+
+    def add_selected_indices(self, indices: list[int]) -> None:
+        for index in indices:
+            self._state.selected_indices.add(index)
+
+    def remove_selected_indices(self, indices: list[int]) -> None:
+        for index in indices:
+            self._state.selected_indices.discard(index)
+
+
+state_gateway = AppStateGateway(app_state)

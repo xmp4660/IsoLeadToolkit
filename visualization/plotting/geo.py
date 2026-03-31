@@ -7,7 +7,7 @@ import re
 import numpy as np
 import pandas as pd
 
-from core import app_state
+from core import app_state, state_gateway
 from data.plumbotectonics_data import PLUMBOTECTONICS_SECTIONS
 from visualization.line_styles import resolve_line_style, ensure_line_style
 from .label_layout import position_curve_label, apply_adjust_text_to_labels
@@ -45,7 +45,7 @@ def _register_overlay_artist(style_key, artist):
     if artist is None:
         return
     if not hasattr(app_state, 'overlay_artists'):
-        app_state.overlay_artists = {}
+        state_gateway.set_attr('overlay_artists', {})
     app_state.overlay_artists.setdefault(style_key, []).append(artist)
 
 
@@ -100,7 +100,7 @@ def _register_overlay_curve_label(
     if text_artist is None:
         return
     if not hasattr(app_state, 'overlay_curve_label_data'):
-        app_state.overlay_curve_label_data = []
+        state_gateway.set_attr('overlay_curve_label_data', [])
     app_state.overlay_curve_label_data.append({
         'text': text_artist,
         'x_line': list(x_vals),
@@ -548,7 +548,7 @@ def _draw_plumbotectonics_isoage_lines(ax, actual_algorithm):
         }
     )
 
-    app_state.plumbotectonics_isoage_label_data = []
+    state_gateway.set_attr('plumbotectonics_isoage_label_data', [])
 
     for idx in range(n_points):
         pts = []
@@ -821,7 +821,7 @@ def _draw_isochron_overlays(ax, actual_algorithm):
 
             # 保存等时线回归结果到 app_state
             if not hasattr(app_state, 'isochron_results'):
-                app_state.isochron_results = {}
+                state_gateway.set_attr('isochron_results', {})
             app_state.isochron_results[grp] = {
                 'slope': slope,
                 'intercept': intercept,
@@ -1251,7 +1251,7 @@ def _draw_paleoisochrons(ax, actual_algorithm, ages, params):
     if geochemistry is None:
         return
     try:
-        app_state.paleoisochron_label_data = []
+        state_gateway.set_attr('paleoisochron_label_data', [])
         xlim = ax.get_xlim()
         x_min = xlim[0]
         x_max = xlim[1]
@@ -1347,7 +1347,7 @@ def refresh_paleoisochron_labels():
     if bool(getattr(app_state, 'overlay_label_refreshing', False)):
         return
 
-    app_state.overlay_label_refreshing = True
+    state_gateway.set_attr('overlay_label_refreshing', True)
     try:
         adjusted_labels = []
 
@@ -1465,7 +1465,7 @@ def refresh_paleoisochron_labels():
 
         apply_adjust_text_to_labels(ax, adjusted_labels)
     finally:
-        app_state.overlay_label_refreshing = False
+        state_gateway.set_attr('overlay_label_refreshing', False)
 
 def _resolve_model_age(pb206, pb207, params):
     """Resolve model age and T1 override from Pb data and model params.

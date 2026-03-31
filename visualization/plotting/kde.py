@@ -4,7 +4,7 @@ import logging
 import numpy as np
 import pandas as pd
 
-from core import app_state
+from core import app_state, state_gateway
 from visualization.line_styles import ensure_line_style
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ def clear_marginal_axes():
                 ax.remove()
             except Exception:
                 pass
-    app_state.marginal_axes = None
+    state_gateway.set_marginal_axes(None)
 
 
 def draw_marginal_kde(ax, df_plot, group_col, palette, unique_cats, x_col='_emb_x', y_col='_emb_y'):
@@ -138,7 +138,7 @@ def draw_marginal_kde(ax, df_plot, group_col, palette, unique_cats, x_col='_emb_
     for spine in ax_right.spines.values():
         spine.set_visible(False)
 
-    app_state.marginal_axes = (ax_top, ax_right)
+    state_gateway.set_marginal_axes((ax_top, ax_right))
     try:
         ax.figure.set_constrained_layout(True)
         ax.figure.set_constrained_layout_pads(w_pad=0.02, h_pad=0.02, wspace=0.02, hspace=0.02)

@@ -11,7 +11,7 @@ from matplotlib import font_manager
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
-from core import CONFIG, app_state, translate
+from core import CONFIG, app_state, state_gateway, translate
 from . import kde as kde_utils
 from .style import (
     _apply_current_style,
@@ -130,9 +130,13 @@ def _place_inline_legend(
 
     Shared by plot_embedding, plot_2d_data, and plot_3d_data.
     """
-    app_state.legend_last_title = group_col
-    app_state.legend_last_handles = legend_handles
-    app_state.legend_last_labels = legend_labels
+    state_gateway.set_attrs(
+        {
+            'legend_last_title': group_col,
+            'legend_last_handles': legend_handles,
+            'legend_last_labels': legend_labels,
+        }
+    )
     _notify_legend_panel(group_col, legend_handles, legend_labels)
 
     n_cats = len(legend_labels)
@@ -472,7 +476,7 @@ def _render_title_labels(actual_algorithm, group_col, umap_params, tsne_params, 
             except Exception:
                 pass
 
-    app_state.current_plot_title = title
+    state_gateway.set_attr('current_plot_title', title)
     if getattr(app_state, 'show_plot_title', True):
         app_state.ax.set_title(title, pad=getattr(app_state, 'title_pad', 20.0), **title_font_dict)
     else:
@@ -647,16 +651,15 @@ def plot_embedding(
         if precomputed_embedding is not None and actual_algorithm in ('UMAP', 'TSNE', 'PCA', 'RobustPCA'):
             embedding = np.asarray(precomputed_embedding)
             last_type = 'tSNE' if actual_algorithm == 'TSNE' else actual_algorithm
-            app_state.last_embedding = embedding
-            app_state.last_embedding_type = last_type
+            state_gateway.set_attrs({'last_embedding': embedding, 'last_embedding_type': last_type})
 
             if isinstance(precomputed_meta, dict):
                 if precomputed_meta.get('last_pca_variance') is not None:
-                    app_state.last_pca_variance = precomputed_meta.get('last_pca_variance')
+                    state_gateway.set_attr('last_pca_variance', precomputed_meta.get('last_pca_variance'))
                 if precomputed_meta.get('last_pca_components') is not None:
-                    app_state.last_pca_components = precomputed_meta.get('last_pca_components')
+                    state_gateway.set_attr('last_pca_components', precomputed_meta.get('last_pca_components'))
                 if precomputed_meta.get('current_feature_names') is not None:
-                    app_state.current_feature_names = precomputed_meta.get('current_feature_names')
+                    state_gateway.set_attr('current_feature_names', precomputed_meta.get('current_feature_names'))
 
             logger.debug("Using precomputed embedding for %s", actual_algorithm)
 
@@ -724,8 +727,7 @@ def plot_embedding(
                 v1 = results['V1']
                 v2 = results['V2']
                 embedding = np.column_stack((v1, v2))
-                app_state.last_embedding = embedding
-                app_state.last_embedding_type = 'V1V2'
+                state_gateway.set_attrs({'last_embedding': embedding, 'last_embedding_type': 'V1V2'})
             except Exception as e:
                 logger.error(f"V1V2 calculation failed: {e}")
                 return False
@@ -794,8 +796,7 @@ def plot_embedding(
                 else:
                     embedding = np.column_stack((pb206, pb208))
 
-            app_state.last_embedding = embedding
-            app_state.last_embedding_type = actual_algorithm
+            state_gateway.set_attrs({'last_embedding': embedding, 'last_embedding_type': actual_algorithm})
 
         elif actual_algorithm == 'TERNARY':
             logger.debug("Computing Ternary embedding")
@@ -827,8 +828,7 @@ def plot_embedding(
                 right_vals = pd.to_numeric(df_subset[c_right], errors='coerce').fillna(0).values
 
                 embedding = np.column_stack((top_vals, left_vals, right_vals))
-                app_state.last_embedding = embedding
-                app_state.last_embedding_type = 'TERNARY'
+                state_gateway.set_attrs({'last_embedding': embedding, 'last_embedding_type': 'TERNARY'})
 
                 if hasattr(app_state, 'ternary_manual_ranges'):
                     del app_state.ternary_manual_ranges
@@ -904,7 +904,7 @@ def plot_embedding(
             return False
 
         all_groups = sorted(df_plot[group_col].unique())
-        app_state.available_groups = all_groups
+        state_gateway.sync_available_and_visible_groups(all_groups)
 
         visible_groups = app_state.visible_groups
         if visible_groups is not None:
@@ -914,7 +914,7 @@ def plot_embedding(
                 df_plot = df_plot[mask].copy()
             elif not mask.any():
                 logger.info("No data matches the selected legend filter; showing all groups instead.")
-                app_state.visible_groups = None
+                state_gateway.set_visible_groups(None)
             else:
                 df_plot = df_plot[mask].copy()
                 if df_plot.empty:
@@ -922,8 +922,8 @@ def plot_embedding(
                     df_plot = _reset_plot_dataframe()
                     if df_plot is None:
                         return False
-                    app_state.visible_groups = None
-                    app_state.available_groups = sorted(df_plot[group_col].unique())
+                    state_gateway.set_visible_groups(None)
+                    state_gateway.sync_available_and_visible_groups(sorted(df_plot[group_col].unique()))
 
         unique_cats = sorted(df_plot[group_col].unique())
         logger.debug(f"Unique categories in {group_col}: {unique_cats}")
@@ -983,7 +983,9 @@ def plot_embedding(
 
         app_state.ax.tick_params()
 
-        app_state.annotation = app_state.ax.annotate(
+        state_gateway.set_attr(
+            'annotation',
+            app_state.ax.annotate(
             "",
             xy=(0, 0),
             xytext=(20, 20),
@@ -991,6 +993,7 @@ def plot_embedding(
             bbox=dict(boxstyle="round,pad=0.5", fc="white", ec="#cbd5e1", alpha=0.95),
             arrowprops=dict(arrowstyle="->", color="#475569"),
             zorder=15,
+            ),
         )
         app_state.annotation.set_visible(False)
         try:
@@ -1086,7 +1089,7 @@ def plot_2d_data(group_col: str, data_columns: list[str], size: int = 60, show_k
         df_plot[group_col] = df_plot[group_col].fillna('Unknown').astype(str)
 
         all_groups = sorted(df_plot[group_col].unique())
-        app_state.available_groups = all_groups
+        state_gateway.sync_available_and_visible_groups(all_groups)
 
         visible_groups = app_state.visible_groups
         if visible_groups is not None:
@@ -1096,16 +1099,16 @@ def plot_2d_data(group_col: str, data_columns: list[str], size: int = 60, show_k
                 df_plot = df_plot[mask].copy()
             elif not mask.any():
                 logger.info("No 2D data matches the selected legend filter; reverting to all groups.")
-                app_state.visible_groups = None
+                state_gateway.set_visible_groups(None)
             else:
                 df_plot = df_plot[mask].copy()
                 if df_plot.empty:
                     logger.info("Filtered 2D data is empty; reverting to all groups.")
                     df_plot = df_global.dropna(subset=data_columns).copy()
                     df_plot[group_col] = df_plot[group_col].fillna('Unknown').astype(str)
-                    app_state.visible_groups = None
+                    state_gateway.set_visible_groups(None)
                     all_groups = sorted(df_plot[group_col].unique())
-                    app_state.available_groups = all_groups
+                    state_gateway.sync_available_and_visible_groups(all_groups)
 
         _apply_current_style()
 
@@ -1249,12 +1252,12 @@ def plot_2d_data(group_col: str, data_columns: list[str], size: int = 60, show_k
             except Exception:
                 pass
 
-        app_state.current_plot_title = title
+        state_gateway.set_attr('current_plot_title', title)
         if getattr(app_state, 'show_plot_title', True):
             app_state.ax.set_title(title, pad=getattr(app_state, 'title_pad', 20.0))
         else:
             app_state.ax.set_title("")
-        app_state.last_2d_cols = list(data_columns)
+        state_gateway.set_attr('last_2d_cols', list(data_columns))
         app_state.ax.set_xlabel(data_columns[0])
         app_state.ax.set_ylabel(data_columns[1])
         _apply_axis_text_style(app_state.ax)
@@ -1265,7 +1268,9 @@ def plot_2d_data(group_col: str, data_columns: list[str], size: int = 60, show_k
 
         _draw_equation_overlays(app_state.ax)
 
-        app_state.annotation = app_state.ax.annotate(
+        state_gateway.set_attr(
+            'annotation',
+            app_state.ax.annotate(
             "",
             xy=(0, 0),
             xytext=(20, 20),
@@ -1273,6 +1278,7 @@ def plot_2d_data(group_col: str, data_columns: list[str], size: int = 60, show_k
             bbox=dict(boxstyle="round,pad=0.5", fc="white", ec="#cbd5e1", alpha=0.95),
             arrowprops=dict(arrowstyle="->", color="#475569"),
             zorder=15,
+            ),
         )
         app_state.annotation.set_visible(False)
         try:
@@ -1395,7 +1401,7 @@ def plot_3d_data(group_col: str, data_columns: list[str], size: int = 60) -> boo
             f"3D Scatter Plot{subset_info} ({data_columns[0]}, {data_columns[1]}, {data_columns[2]})\n"
             f"Colored by {group_col}"
         )
-        app_state.current_plot_title = title
+        state_gateway.set_attr('current_plot_title', title)
         if getattr(app_state, 'show_plot_title', True):
             app_state.ax.set_title(title, pad=getattr(app_state, 'title_pad', 20.0))
         else:
@@ -1405,7 +1411,7 @@ def plot_3d_data(group_col: str, data_columns: list[str], size: int = 60) -> boo
         app_state.ax.set_zlabel(data_columns[2])
         _apply_axis_text_style(app_state.ax)
 
-        app_state.annotation = None
+        state_gateway.set_attr('annotation', None)
         return True
 
     except Exception as err:

@@ -10,7 +10,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 import numpy as np
 
-from core import app_state, translate
+from core import app_state, state_gateway, translate
 
 logger = logging.getLogger(__name__)
 
@@ -366,8 +366,8 @@ class EndmemberAnalysisDialog(QDialog):
             app_state.group_cols.append(col_name)
 
         # 触发重绘
-        app_state.last_group_col = col_name
-        app_state.visible_groups = None
+        state_gateway.set_last_group_col(col_name)
+        state_gateway.set_visible_groups(None)
 
         if hasattr(app_state, '_notify_listeners'):
             app_state._notify_listeners()

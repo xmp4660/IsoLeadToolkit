@@ -13,7 +13,7 @@ from PyQt5.QtGui import QFont
 import numpy as np
 import pandas as pd
 
-from core import app_state, translate, CONFIG
+from core import CONFIG, app_state, state_gateway, translate
 
 logger = logging.getLogger(__name__)
 
@@ -544,8 +544,12 @@ class ProvenanceMLDialog(QDialog):
             result['prediction_count'] = int(len(df_pred))
 
             self._result = result
-            app_state.ml_last_result = result
-            app_state.ml_last_model_meta = result.get('model_info')
+            state_gateway.set_attrs(
+                {
+                    'ml_last_result': result,
+                    'ml_last_model_meta': result.get('model_info'),
+                }
+            )
 
             self._display_results()
         except ProvenanceMLError as exc:
@@ -615,8 +619,8 @@ class ProvenanceMLDialog(QDialog):
         if col_label not in app_state.group_cols:
             app_state.group_cols.append(col_label)
 
-        app_state.last_group_col = col_label
-        app_state.visible_groups = None
+        state_gateway.set_last_group_col(col_label)
+        state_gateway.set_visible_groups(None)
 
         if hasattr(app_state, '_notify_listeners'):
             app_state._notify_listeners()

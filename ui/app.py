@@ -12,8 +12,16 @@ from PyQt5.QtWidgets import QApplication, QMessageBox, QWidget, QStyleFactory
 from PyQt5.QtCore import Qt, QSettings, QTranslator, QLocale, QObject, QEvent
 from PyQt5.QtGui import QFont, QIcon
 
-from core import (CONFIG, app_state, load_session_params, save_session_params,
-                  translate, set_language, validate_language)
+from core import (
+    CONFIG,
+    app_state,
+    load_session_params,
+    save_session_params,
+    set_language,
+    state_gateway,
+    translate,
+    validate_language,
+)
 from ui.main_window import Qt5MainWindow
 
 logger = logging.getLogger(__name__)
@@ -202,18 +210,17 @@ class Qt5Application:
     def _restore_session_state(self, session_data):
         """恢复会话状态"""
         if not session_data:
-            app_state.algorithm = 'UMAP'
-            app_state.render_mode = 'UMAP'
+            state_gateway.set_attrs({'algorithm': 'UMAP', 'render_mode': 'UMAP'})
             logger.info("No session data, using default algorithm: UMAP")
             return
 
         # 算法参数
-        app_state.algorithm = session_data.get('algorithm', 'UMAP')
+        state_gateway.set_attr('algorithm', session_data.get('algorithm', 'UMAP'))
         logger.info("Algorithm from session: %s", app_state.algorithm)
 
         app_state.umap_params.update(session_data.get('umap_params', {}))
         app_state.tsne_params.update(session_data.get('tsne_params', {}))
-        app_state.point_size = session_data.get('point_size', app_state.point_size)
+        state_gateway.set_attr('point_size', session_data.get('point_size', app_state.point_size))
 
         preserve_import_mode = bool(getattr(app_state, 'preserve_import_render_mode', False))
         render_mode = session_data.get('render_mode')
@@ -227,28 +234,28 @@ class Qt5Application:
                 render_mode = app_state.algorithm
 
         if not preserve_import_mode:
-            app_state.render_mode = render_mode or 'UMAP'
+            state_gateway.set_attr('render_mode', render_mode or 'UMAP')
         else:
             logger.info("Preserving render mode selected during import: %s", app_state.render_mode)
-        app_state.selected_2d_cols = session_data.get('selected_2d_cols', [])
-        app_state.selected_3d_cols = session_data.get('selected_3d_cols', [])
+        state_gateway.set_selected_2d_columns(session_data.get('selected_2d_cols', []))
+        state_gateway.set_selected_3d_columns(session_data.get('selected_3d_cols', []))
 
         # 恢复 tooltip 列
         saved_cols = session_data.get('tooltip_columns')
         if saved_cols is not None:
-            app_state.tooltip_columns = saved_cols
+            state_gateway.set_attr('tooltip_columns', saved_cols)
             logger.debug("Restored tooltip columns from session: %s", saved_cols)
         else:
             logger.debug("No tooltip columns in session, using default: %s", app_state.tooltip_columns)
 
         # 恢复 UI 主题
-        app_state.ui_theme = session_data.get('ui_theme') or 'Modern Light'
+        state_gateway.set_attr('ui_theme', session_data.get('ui_theme') or 'Modern Light')
         logger.info("Restored UI theme: %s", app_state.ui_theme)
 
         # 分组列：从会话恢复
         session_group_col = session_data.get('group_col')
         if session_group_col and session_group_col in app_state.group_cols:
-            app_state.last_group_col = session_group_col
+            state_gateway.set_last_group_col(session_group_col)
             logger.info("Group column restored from session: %s", app_state.last_group_col)
 
     def _validate_render_mode(self):
@@ -258,39 +265,39 @@ class Qt5Application:
         if app_state.render_mode == '3D' and num_numeric_cols < 3:
             if num_numeric_cols >= 2:
                 logger.info("Not enough numeric columns for 3D; switching to 2D scatter.")
-                app_state.render_mode = '2D'
+                state_gateway.set_render_mode('2D')
             else:
                 logger.info("Not enough numeric columns for 3D; switching to UMAP.")
-                app_state.render_mode = 'UMAP'
+                state_gateway.set_render_mode('UMAP')
 
         if app_state.render_mode == '2D' and num_numeric_cols < 2:
             logger.info("Not enough numeric columns for 2D; switching to UMAP.")
-            app_state.render_mode = 'UMAP'
+            state_gateway.set_render_mode('UMAP')
 
         if app_state.render_mode == '3D':
             if num_numeric_cols == 3:
-                app_state.selected_3d_cols = app_state.data_cols[:3]
+                state_gateway.set_selected_3d_columns(app_state.data_cols[:3])
             else:
                 valid_cols = [col for col in app_state.selected_3d_cols if col in app_state.data_cols][:3]
                 if len(valid_cols) == 3:
-                    app_state.selected_3d_cols = valid_cols
+                    state_gateway.set_selected_3d_columns(valid_cols)
                 else:
-                    app_state.selected_3d_cols = []
+                    state_gateway.set_selected_3d_columns([])
                     logger.info("Stored 3D column selection invalid or incomplete; will prompt user on demand.")
 
         if app_state.render_mode == '2D':
             if num_numeric_cols == 2:
-                app_state.selected_2d_cols = app_state.data_cols[:2]
+                state_gateway.set_selected_2d_columns(app_state.data_cols[:2])
             else:
                 valid_2d = [col for col in app_state.selected_2d_cols if col in app_state.data_cols][:2]
                 if len(valid_2d) == 2:
-                    app_state.selected_2d_cols = valid_2d
+                    state_gateway.set_selected_2d_columns(valid_2d)
                 else:
-                    app_state.selected_2d_cols = []
+                    state_gateway.set_selected_2d_columns([])
                     logger.info("Stored 2D column selection invalid or incomplete; will prompt user on demand.")
 
         if app_state.render_mode in ('UMAP', 'tSNE'):
-            app_state.algorithm = 'UMAP' if app_state.render_mode == 'UMAP' else 'tSNE'
+            state_gateway.set_attr('algorithm', 'UMAP' if app_state.render_mode == 'UMAP' else 'tSNE')
 
     def _create_plot_figure(self):
         """创建主绘图图形"""
@@ -298,7 +305,8 @@ class Qt5Application:
         logger.info("Creating plot figure...")
 
         # 使用 constrained_layout 进行自适应布局
-        app_state.fig, app_state.ax = plt.subplots(figsize=CONFIG['figure_size'], constrained_layout=True)
+        fig, ax = plt.subplots(figsize=CONFIG['figure_size'], constrained_layout=True)
+        state_gateway.set_figure_axes(fig, ax)
         try:
             app_state.fig.set_constrained_layout_pads(w_pad=0.02, h_pad=0.02, wspace=0.02, hspace=0.02)
         except Exception:
@@ -324,15 +332,15 @@ class Qt5Application:
             def _on_draw(event):
                 try:
                     if getattr(app_state, 'paleo_label_refreshing', False):
-                        app_state.paleo_label_refreshing = False
+                        state_gateway.set_attr('paleo_label_refreshing', False)
                         return
                     from visualization.plotting import refresh_paleoisochron_labels
                     refresh_paleoisochron_labels()
                     if app_state.fig is not None and app_state.fig.canvas is not None:
-                        app_state.paleo_label_refreshing = True
+                        state_gateway.set_attr('paleo_label_refreshing', True)
                         app_state.fig.canvas.draw_idle()
                 except Exception:
-                    app_state.paleo_label_refreshing = False
+                    state_gateway.set_attr('paleo_label_refreshing', False)
 
             app_state.fig.canvas.mpl_connect('draw_event', _on_draw)
 
@@ -359,7 +367,7 @@ class Qt5Application:
         self.control_panel = None
         import core.state as state
         state.control_panel = None
-        app_state.control_panel_ref = None
+        state_gateway.set_attr('control_panel_ref', None)
 
     def _connect_event_handlers(self):
         """连接事件处理器"""
@@ -416,15 +424,19 @@ class Qt5Application:
             # 加载会话
             session_data = self._load_session()
             if session_data:
-                app_state.file_path = session_data.get('file_path') or app_state.file_path
-                app_state.sheet_name = session_data.get('sheet_name') or app_state.sheet_name
-                app_state.group_cols = session_data.get('group_cols') or []
-                app_state.data_cols = session_data.get('data_cols') or []
+                state_gateway.set_attrs(
+                    {
+                        'file_path': session_data.get('file_path') or app_state.file_path,
+                        'sheet_name': session_data.get('sheet_name') or app_state.sheet_name,
+                        'group_cols': session_data.get('group_cols') or [],
+                        'data_cols': session_data.get('data_cols') or [],
+                    }
+                )
 
             # 加载数据
             logger.info("Loading data...")
-            from data.loader import load_data
-            if not load_data(show_file_dialog=True, show_config_dialog=True):
+            from application.use_cases import load_dataset
+            if not load_dataset(show_file_dialog=True, show_config_dialog=True):
                 logger.error("Failed to load data. Exiting.")
                 return False
 
@@ -432,7 +444,7 @@ class Qt5Application:
 
             # 确保 last_group_col 已设置
             if not app_state.last_group_col and app_state.group_cols:
-                app_state.last_group_col = app_state.group_cols[0]
+                state_gateway.set_last_group_col(app_state.group_cols[0])
                 logger.info("Set default group column: %s", app_state.last_group_col)
 
             # 恢复会话参数

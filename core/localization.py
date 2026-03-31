@@ -108,7 +108,7 @@ def set_language(language: str) -> bool:
     except Exception:
         return False
 
-    app_state.language = language
+    setattr(app_state, 'language', language)
     notify = getattr(app_state, 'notify_language_change', None)
     if callable(notify):
         notify()

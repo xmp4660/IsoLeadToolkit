@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QColor
 
-from core import translate, app_state, CONFIG
+from core import CONFIG, app_state, state_gateway, translate
 from ui.icons import apply_color_swatch, normalize_color_hex
 from .base_panel import BasePanel
 
@@ -677,16 +677,16 @@ class DisplayPanel(BasePanel):
     def _refresh_theme_list(self):
         """从磁盘加载主题并刷新下拉列表"""
         if not hasattr(app_state, 'saved_themes'):
-            app_state.saved_themes = {}
+            state_gateway.set_attr('saved_themes', {})
 
         theme_file = CONFIG['temp_dir'] / 'user_themes.json'
         if theme_file.exists():
             try:
                 with open(theme_file, 'r', encoding='utf-8') as handle:
-                    app_state.saved_themes = json.load(handle)
+                    state_gateway.set_attr('saved_themes', json.load(handle))
             except Exception as exc:
                 logger.warning("Failed to load themes: %s", exc)
-                app_state.saved_themes = {}
+                state_gateway.set_attr('saved_themes', {})
 
         if self.theme_load_combo is None:
             return
@@ -704,7 +704,7 @@ class DisplayPanel(BasePanel):
             return
 
         if not hasattr(app_state, 'saved_themes'):
-            app_state.saved_themes = {}
+            state_gateway.set_attr('saved_themes', {})
 
         theme_data = {
             'grid': bool(self.grid_check.isChecked()) if self.grid_check else False,
@@ -808,7 +808,7 @@ class DisplayPanel(BasePanel):
         if self.color_combo:
             self.color_combo.setCurrentText(data.get('color_scheme', 'vibrant'))
         else:
-            app_state.color_scheme = data.get('color_scheme', getattr(app_state, 'color_scheme', 'vibrant'))
+            state_gateway.set_attr('color_scheme', data.get('color_scheme', getattr(app_state, 'color_scheme', 'vibrant')))
 
         primary_font = data.get('primary_font', '') or '<Default>'
         if self.primary_font_combo:
@@ -888,7 +888,7 @@ class DisplayPanel(BasePanel):
         if self.isochron_width_spin:
             self.isochron_width_spin.setValue(float(data.get('isochron_line_width', 1.5)))
         if 'line_styles' in data:
-            app_state.line_styles = data.get('line_styles', {})
+            state_gateway.set_attr('line_styles', data.get('line_styles', {}))
         if self.label_color_edit:
             self._set_color_control_value(self.label_color_edit, data.get('label_color', '#1f2937'), '#1f2937')
         if self.label_weight_combo:
@@ -955,8 +955,7 @@ class DisplayPanel(BasePanel):
         if legend_outside not in {'outside_left', 'outside_right'}:
             legend_outside = None
 
-        app_state.legend_location = legend_outside
-        app_state.legend_position = legend_inside
+        state_gateway.set_attrs({'legend_location': legend_outside, 'legend_position': legend_inside})
         self._set_legend_position_button(legend_inside, legend_outside)
 
         self._on_style_change()
@@ -1019,4 +1018,4 @@ class DisplayPanel(BasePanel):
         """保存 UI 主题选择"""
         if not theme_name:
             theme_name = 'Modern Light'
-        app_state.ui_theme = theme_name
+        state_gateway.set_attr('ui_theme', theme_name)

@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QTimer
 
-from core import translate, app_state
+from core import translate, app_state, state_gateway
 from ui.icons import apply_color_swatch
 from .base_panel import BasePanel
 
@@ -759,11 +759,10 @@ class DataPanel(BasePanel):
     def _on_render_mode_change(self, mode):
         """渲染模式变化处理"""
         mode = self._normalize_render_mode(self._combo_value(self.render_combo, mode))
-        app_state.render_mode = mode
+        state_gateway.set_render_mode(mode)
 
         # 如果是算法模式，同步算法选择
         if mode in ['UMAP', 'tSNE', 'PCA', 'RobustPCA']:
-            app_state.algorithm = mode
             self._set_combo_value(self.algo_combo, mode)
 
         # 如果是 2D/3D/Ternary，可能需要弹出列选择对话框
@@ -782,8 +781,7 @@ class DataPanel(BasePanel):
     def _on_algorithm_change(self, algorithm):
         """算法变化处理"""
         algorithm = self._normalize_algorithm(self._combo_value(self.algo_combo, algorithm))
-        app_state.algorithm = algorithm
-        app_state.render_mode = algorithm
+        state_gateway.set_render_mode(algorithm)
         self._set_combo_value(self.render_combo, algorithm)
         self._update_algorithm_visibility()
         self._on_change()
@@ -912,7 +910,7 @@ class DataPanel(BasePanel):
 
     def _on_standardize_change(self, state):
         """标准化选项变化"""
-        app_state.standardize_data = (state == Qt.Checked)
+        state_gateway.set_attr('standardize_data', state == Qt.Checked)
         self._on_change()
 
     def _on_pca_dim_change(self):
@@ -933,7 +931,7 @@ class DataPanel(BasePanel):
                 self.rpca_y_spin.blockSignals(False)
 
             # 更新状态
-            app_state.pca_component_indices = [x_idx, y_idx]
+            state_gateway.set_attr('pca_component_indices', [x_idx, y_idx])
             logger.info("PCA dimensions changed to: PC%d vs PC%d", x_idx+1, y_idx+1)
 
             # 如果当前是 PCA 或 RobustPCA 模式，刷新绘图
@@ -971,23 +969,23 @@ class DataPanel(BasePanel):
 
     def _on_ternary_zoom_change(self, state):
         """Ternary Auto-Zoom 变化"""
-        app_state.ternary_auto_zoom = (state == Qt.Checked)
+        state_gateway.set_attr('ternary_auto_zoom', state == Qt.Checked)
         self._on_change()
 
     def _on_ternary_stretch_mode_change(self, index):
         """Ternary Stretch Mode 变化"""
         modes = ['power', 'minmax', 'hybrid']
         if 0 <= index < len(modes):
-            app_state.ternary_stretch_mode = modes[index]
+            state_gateway.set_attr('ternary_stretch_mode', modes[index])
             self._on_change()
 
     def _on_ternary_scale_change(self, value):
         """Ternary Stretch Mode slider change"""
         idx = max(0, min(2, int(value)))
         mode = self._ternary_stretch_modes[idx]
-        app_state.ternary_stretch_mode = mode
+        state_gateway.set_attr('ternary_stretch_mode', mode)
         self._update_ternary_scale_label(mode)
-        app_state.ternary_stretch = True
+        state_gateway.set_attr('ternary_stretch', True)
         if hasattr(self, 'ternary_stretch_check'):
             self.ternary_stretch_check.blockSignals(True)
             self.ternary_stretch_check.setChecked(True)
@@ -996,7 +994,7 @@ class DataPanel(BasePanel):
 
     def _on_ternary_stretch_change(self, state):
         """Ternary Stretch to Fill 变化"""
-        app_state.ternary_stretch = (state == Qt.Checked)
+        state_gateway.set_attr('ternary_stretch', state == Qt.Checked)
         self._on_change()
 
     def _update_ternary_scale_label(self, mode):
@@ -1025,8 +1023,7 @@ class DataPanel(BasePanel):
         # 如果没有当前选择，尝试选择前两列
         if (not current or len(current) != 2) and len(cols) >= 2:
             current = [cols[0], cols[1]]
-            app_state.selected_2d_cols = current
-            app_state.selected_2d_confirmed = True
+            state_gateway.set_selected_2d_columns(current, confirmed=True)
 
         if len(current) == 2:
             if current[0] in cols:
@@ -1040,8 +1037,7 @@ class DataPanel(BasePanel):
         y_col = self.yaxis_combo.currentText()
 
         if x_col and y_col:
-            app_state.selected_2d_cols = [x_col, y_col]
-            app_state.selected_2d_confirmed = True
+            state_gateway.set_selected_2d_columns([x_col, y_col], confirmed=True)
             logger.debug("2D Axes Changed: X=%s, Y=%s", x_col, y_col)
             self._on_change()
 
@@ -1051,8 +1047,7 @@ class DataPanel(BasePanel):
 
         result = get_2d_column_selection()
         if result:
-            app_state.selected_2d_cols = result
-            app_state.selected_2d_confirmed = True
+            state_gateway.set_selected_2d_columns(result, confirmed=True)
             logger.info("Selected 2D columns: %s", result)
             self._on_change()
 
@@ -1062,8 +1057,7 @@ class DataPanel(BasePanel):
 
         result = get_3d_column_selection()
         if result:
-            app_state.selected_3d_cols = result
-            app_state.selected_3d_confirmed = True
+            state_gateway.set_selected_3d_columns(result, confirmed=True)
             logger.info("Selected 3D columns: %s", result)
             self._on_change()
 
@@ -1073,17 +1067,18 @@ class DataPanel(BasePanel):
 
         result = get_ternary_column_selection()
         if result:
-            app_state.selected_ternary_cols = result['columns']
-            app_state.ternary_stretch = result['stretch']
-            app_state.ternary_factors = result['factors']
-            app_state.selected_ternary_confirmed = True
+            state_gateway.set_selected_ternary_columns(result['columns'], confirmed=True)
+            state_gateway.set_attrs({
+                'ternary_stretch': result['stretch'],
+                'ternary_factors': result['factors'],
+            })
             logger.info("Selected ternary columns: %s", result['columns'])
             logger.info("Ternary stretch: %s, factors: %s", result['stretch'], result['factors'])
             self._on_change()
 
     def _on_model_curves_change(self, state):
         """模型曲线显示变化"""
-        app_state.show_model_curves = (state == Qt.Checked)
+        state_gateway.set_attr('show_model_curves', state == Qt.Checked)
         self._sync_geochem_toggle_widgets(
             app_state.show_model_curves,
             getattr(self, 'modeling_show_model_check', None),
@@ -1093,7 +1088,7 @@ class DataPanel(BasePanel):
 
     def _on_plumbotectonics_curves_change(self, state):
         """Plumbotectonics 模型曲线显示变化"""
-        app_state.show_plumbotectonics_curves = (state == Qt.Checked)
+        state_gateway.set_attr('show_plumbotectonics_curves', state == Qt.Checked)
         self._sync_geochem_toggle_widgets(
             app_state.show_plumbotectonics_curves,
             getattr(self, 'modeling_show_plumbotectonics_check', None)
@@ -1102,7 +1097,7 @@ class DataPanel(BasePanel):
 
     def _on_paleoisochron_change(self, state):
         """古等时线显示变化"""
-        app_state.show_paleoisochrons = (state == Qt.Checked)
+        state_gateway.set_attr('show_paleoisochrons', state == Qt.Checked)
         self._sync_geochem_toggle_widgets(
             app_state.show_paleoisochrons,
             getattr(self, 'modeling_show_paleoisochron_check', None),
@@ -1112,7 +1107,7 @@ class DataPanel(BasePanel):
 
     def _on_model_age_change(self, state):
         """模型年龄线显示变化"""
-        app_state.show_model_age_lines = (state == Qt.Checked)
+        state_gateway.set_attr('show_model_age_lines', state == Qt.Checked)
         self._sync_geochem_toggle_widgets(
             app_state.show_model_age_lines,
             getattr(self, 'modeling_show_model_age_check', None),
@@ -1122,7 +1117,7 @@ class DataPanel(BasePanel):
 
     def _on_growth_curves_change(self, state):
         """生长曲线显示变化"""
-        app_state.show_growth_curves = (state == Qt.Checked)
+        state_gateway.set_attr('show_growth_curves', state == Qt.Checked)
         self._sync_geochem_toggle_widgets(
             app_state.show_growth_curves,
             getattr(self, 'modeling_show_growth_curve_check', None)
@@ -1131,7 +1126,7 @@ class DataPanel(BasePanel):
 
     def _on_mu_kappa_real_age_change(self, state):
         """Mu/Kappa 图使用真实年龄列"""
-        app_state.use_real_age_for_mu_kappa = (state == Qt.Checked)
+        state_gateway.set_attr('use_real_age_for_mu_kappa', state == Qt.Checked)
         self._sync_geochem_toggle_widgets(
             app_state.use_real_age_for_mu_kappa,
             getattr(self, 'modeling_use_real_age_check', None),
@@ -1194,11 +1189,11 @@ class DataPanel(BasePanel):
             return
 
         if selection == none_label:
-            app_state.mu_kappa_age_col = None
+            state_gateway.set_attr('mu_kappa_age_col', None)
         else:
-            app_state.mu_kappa_age_col = selection
+            state_gateway.set_attr('mu_kappa_age_col', selection)
 
-        app_state.use_real_age_for_mu_kappa = False
+        state_gateway.set_attr('use_real_age_for_mu_kappa', False)
         self._sync_geochem_toggle_widgets(
             app_state.use_real_age_for_mu_kappa,
             getattr(self, 'modeling_use_real_age_check', None),
@@ -1238,7 +1233,7 @@ class DataPanel(BasePanel):
                 combo.setCurrentIndex(self.plumbotectonics_model_keys.index(current_key))
             else:
                 combo.setCurrentIndex(0)
-                app_state.plumbotectonics_variant = self.plumbotectonics_model_keys[0]
+                state_gateway.set_attr('plumbotectonics_variant', self.plumbotectonics_model_keys[0])
             combo.setEnabled(True)
         else:
             combo.addItem(translate("No plumbotectonics data"))
@@ -1251,7 +1246,7 @@ class DataPanel(BasePanel):
             return
         if index < 0 or index >= len(self.plumbotectonics_model_keys):
             return
-        app_state.plumbotectonics_variant = self.plumbotectonics_model_keys[index]
+        state_gateway.set_attr('plumbotectonics_variant', self.plumbotectonics_model_keys[index])
         if app_state.render_mode in ('PLUMBOTECTONICS_76', 'PLUMBOTECTONICS_86'):
             self._on_change()
 
@@ -1273,7 +1268,7 @@ class DataPanel(BasePanel):
 
         if self.modeling_use_real_age_check is not None:
             if not has_col:
-                app_state.use_real_age_for_mu_kappa = False
+                state_gateway.set_attr('use_real_age_for_mu_kappa', False)
             self.modeling_use_real_age_check.blockSignals(True)
             self.modeling_use_real_age_check.setVisible(enabled)
             self.modeling_use_real_age_check.setEnabled(enabled and has_col)
@@ -1284,7 +1279,7 @@ class DataPanel(BasePanel):
 
     def _on_isochron_change(self, state):
         """等时线显示变化"""
-        app_state.show_isochrons = (state == Qt.Checked)
+        state_gateway.set_show_isochrons(state == Qt.Checked)
         self._sync_geochem_toggle_widgets(
             app_state.show_isochrons,
             getattr(self, 'modeling_show_isochron_check', None),
@@ -1352,9 +1347,8 @@ class DataPanel(BasePanel):
 
         # 如果等时线已显示，关闭它
         if getattr(app_state, 'show_isochrons', False) or getattr(app_state, 'selected_isochron_data', None):
-            app_state.show_isochrons = False
-            app_state.isochron_results = {}
-            app_state.selected_isochron_data = None
+            state_gateway.set_show_isochrons(False)
+            state_gateway.set_attrs({'isochron_results': {}, 'selected_isochron_data': None})
             self._update_isochron_btn_text()
             try:
                 on_slider_change()
@@ -1386,7 +1380,7 @@ class DataPanel(BasePanel):
         if selected:
             calculate_selected_isochron()
         else:
-            app_state.show_isochrons = True
+            state_gateway.set_show_isochrons(True)
 
         try:
             on_slider_change()
@@ -1444,15 +1438,19 @@ class DataPanel(BasePanel):
 
         mode = settings.get('mode')
         if mode == 'columns':
-            app_state.isochron_error_mode = 'columns'
-            app_state.isochron_sx_col = settings.get('sx_col', '')
-            app_state.isochron_sy_col = settings.get('sy_col', '')
-            app_state.isochron_rxy_col = settings.get('rxy_col', '')
+            state_gateway.set_attrs({
+                'isochron_error_mode': 'columns',
+                'isochron_sx_col': settings.get('sx_col', ''),
+                'isochron_sy_col': settings.get('sy_col', ''),
+                'isochron_rxy_col': settings.get('rxy_col', ''),
+            })
         else:
-            app_state.isochron_error_mode = 'fixed'
-            app_state.isochron_sx_value = float(settings.get('sx_value', 0.001))
-            app_state.isochron_sy_value = float(settings.get('sy_value', 0.001))
-            app_state.isochron_rxy_value = float(settings.get('rxy_value', 0.0))
+            state_gateway.set_attrs({
+                'isochron_error_mode': 'fixed',
+                'isochron_sx_value': float(settings.get('sx_value', 0.001)),
+                'isochron_sy_value': float(settings.get('sy_value', 0.001)),
+                'isochron_rxy_value': float(settings.get('rxy_value', 0.0)),
+            })
 
         self._on_change()
         return True
@@ -1460,7 +1458,7 @@ class DataPanel(BasePanel):
     def _on_paleo_step_change(self, value):
         """古等时线密度变化"""
         step_val = max(10, int(value))
-        app_state.paleoisochron_step = step_val
+        state_gateway.set_attr('paleoisochron_step', step_val)
         min_age = int(getattr(app_state, 'paleoisochron_min_age', 0))
         max_age = int(getattr(app_state, 'paleoisochron_max_age', 3000))
         if max_age < min_age:
@@ -1468,7 +1466,7 @@ class DataPanel(BasePanel):
         ages = list(range(max_age, min_age - 1, -step_val))
         if not ages or ages[-1] != min_age:
             ages.append(min_age)
-        app_state.paleoisochron_ages = ages
+        state_gateway.set_attr('paleoisochron_ages', ages)
         self._on_change()
 
     def _refresh_group_column_radios(self):
@@ -1490,8 +1488,8 @@ class DataPanel(BasePanel):
 
         if app_state.group_cols:
             if app_state.last_group_col not in app_state.group_cols:
-                app_state.last_group_col = app_state.group_cols[0]
-                app_state.visible_groups = None
+                state_gateway.set_last_group_col(app_state.group_cols[0])
+                state_gateway.set_visible_groups(None)
 
             for col in app_state.group_cols:
                 btn = QRadioButton(col)
@@ -1512,8 +1510,8 @@ class DataPanel(BasePanel):
 
         col = button.property('group_col') or button.text()
         if col and app_state.last_group_col != col:
-            app_state.last_group_col = col
-            app_state.visible_groups = None
+            state_gateway.set_last_group_col(col)
+            state_gateway.set_visible_groups(None)
             self._update_group_list()
             self._on_change()
 
@@ -1562,10 +1560,10 @@ class DataPanel(BasePanel):
                     translate("Please select at least one grouping column.")
                 )
                 return
-            app_state.group_cols = selected
+            state_gateway.set_attr('group_cols', selected)
             if app_state.last_group_col not in app_state.group_cols:
-                app_state.last_group_col = app_state.group_cols[0]
-                app_state.visible_groups = None
+                state_gateway.set_last_group_col(app_state.group_cols[0])
+                state_gateway.set_visible_groups(None)
 
             self._refresh_group_column_radios()
             self._update_group_list()
@@ -1600,7 +1598,7 @@ class DataPanel(BasePanel):
 
     def _on_tooltip_change(self, state):
         """工具提示显示变化"""
-        app_state.show_tooltip = (state == Qt.Checked)
+        state_gateway.set_attr('show_tooltip', state == Qt.Checked)
         self._on_change()
 
     def _on_configure_tooltip(self):
@@ -1609,7 +1607,7 @@ class DataPanel(BasePanel):
             from ui.dialogs.tooltip_dialog import get_tooltip_configuration
             result = get_tooltip_configuration(self)
             if result:
-                app_state.tooltip_columns = result
+                state_gateway.set_attr('tooltip_columns', result)
                 logger.info("Tooltip columns configured: %s", result)
                 self._on_change()
         except Exception as e:

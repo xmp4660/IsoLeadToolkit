@@ -26,7 +26,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
-from core import translate, available_languages, set_language, app_state
+from core import app_state, available_languages, set_language, state_gateway, translate
 from data.loader import read_data_frame
 
 
@@ -379,7 +379,7 @@ class Qt5DataImportDialog(QDialog):
         if not code:
             return
         if set_language(code):
-            app_state.language = code
+            state_gateway.set_attr('language', code)
             self._update_language_label(code)
             self._apply_translations()
 
@@ -597,7 +597,7 @@ class Qt5DataImportDialog(QDialog):
         recent_files = [p for p in recent_files if p and p != file_path]
         recent_files.insert(0, file_path)
         recent_files = recent_files[:8]
-        app_state.recent_files = recent_files
+        state_gateway.set_attr('recent_files', recent_files)
         self._refresh_recent_files()
 
     def _on_recent_file_selected(self, item):

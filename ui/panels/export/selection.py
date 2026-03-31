@@ -2,7 +2,7 @@
 
 import logging
 
-from core import app_state, translate
+from core import app_state, state_gateway, translate
 
 logger = logging.getLogger(__name__)
 
@@ -106,8 +106,7 @@ class ExportPanelSelectionMixin:
 
     def _clear_selection_only(self):
         """Clear selection and refresh overlays."""
-        if app_state.selected_indices:
-            app_state.selected_indices.clear()
+        state_gateway.clear_selected_indices()
         try:
             from visualization.events import refresh_selection_overlay
             refresh_selection_overlay()
@@ -127,7 +126,9 @@ class ExportPanelSelectionMixin:
     def _on_toggle_ellipse_selection(self):
         """切换置信椭圆显示"""
         try:
-            app_state.draw_selection_ellipse = not getattr(app_state, 'draw_selection_ellipse', False)
+            state_gateway.set_draw_selection_ellipse(
+                not getattr(app_state, 'draw_selection_ellipse', False)
+            )
             from visualization.events import refresh_selection_overlay
             refresh_selection_overlay()
         except Exception as err:

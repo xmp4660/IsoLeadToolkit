@@ -7,7 +7,7 @@ from typing import Callable
 from PyQt5.QtWidgets import QWidget, QGroupBox, QLabel, QPushButton, QCheckBox, QRadioButton
 from PyQt5.QtCore import QTimer
 
-from core import app_state, translate
+from core import app_state, state_gateway, translate
 
 logger = logging.getLogger(__name__)
 
@@ -181,128 +181,130 @@ class BasePanel(QWidget):
             getattr(app_state, 'isochron_line_width', 1.5),
         )
 
+        style_updates: dict[str, object] = {}
+
         grid_check = getattr(self, 'grid_check', None)
         if grid_check is not None:
-            app_state.plot_style_grid = bool(grid_check.isChecked())
+            style_updates['plot_style_grid'] = bool(grid_check.isChecked())
         color_combo = getattr(self, 'color_combo', None)
         new_scheme = color_combo.currentText() if color_combo is not None else app_state.color_scheme
-        app_state.color_scheme = new_scheme
+        style_updates['color_scheme'] = new_scheme
 
         primary_combo = getattr(self, 'primary_font_combo', None)
         primary_font = primary_combo.currentText() if primary_combo is not None else ''
         if primary_font == '<Default>':
             primary_font = ''
-        app_state.custom_primary_font = primary_font
+        style_updates['custom_primary_font'] = primary_font
 
         cjk_combo = getattr(self, 'cjk_font_combo', None)
         cjk_font = cjk_combo.currentText() if cjk_combo is not None else ''
         if cjk_font == '<Default>':
             cjk_font = ''
-        app_state.custom_cjk_font = cjk_font
+        style_updates['custom_cjk_font'] = cjk_font
 
         font_size_spins = getattr(self, 'font_size_spins', {})
         if font_size_spins:
-            app_state.plot_font_sizes = {k: v.value() for k, v in font_size_spins.items()}
+            style_updates['plot_font_sizes'] = {k: v.value() for k, v in font_size_spins.items()}
         marker_size_spin = getattr(self, 'marker_size_spin', None)
         if marker_size_spin is not None:
-            app_state.plot_marker_size = marker_size_spin.value()
+            style_updates['plot_marker_size'] = marker_size_spin.value()
         marker_alpha_spin = getattr(self, 'marker_alpha_spin', None)
         if marker_alpha_spin is not None:
-            app_state.plot_marker_alpha = marker_alpha_spin.value()
+            style_updates['plot_marker_alpha'] = marker_alpha_spin.value()
         show_title_check = getattr(self, 'show_title_check', None)
         if show_title_check is not None:
-            app_state.show_plot_title = bool(show_title_check.isChecked())
+            style_updates['show_plot_title'] = bool(show_title_check.isChecked())
 
         figure_dpi_spin = getattr(self, 'figure_dpi_spin', None)
         if figure_dpi_spin is not None:
-            app_state.plot_dpi = int(figure_dpi_spin.value())
+            style_updates['plot_dpi'] = int(figure_dpi_spin.value())
         figure_bg_edit = getattr(self, 'figure_bg_edit', None)
         if figure_bg_edit is not None:
-            app_state.plot_facecolor = _safe_color(figure_bg_edit, '#ffffff')
+            style_updates['plot_facecolor'] = _safe_color(figure_bg_edit, '#ffffff')
         axes_bg_edit = getattr(self, 'axes_bg_edit', None)
         if axes_bg_edit is not None:
-            app_state.axes_facecolor = _safe_color(axes_bg_edit, '#ffffff')
+            style_updates['axes_facecolor'] = _safe_color(axes_bg_edit, '#ffffff')
         grid_color_edit = getattr(self, 'grid_color_edit', None)
         if grid_color_edit is not None:
-            app_state.grid_color = _safe_color(grid_color_edit, '#e2e8f0')
+            style_updates['grid_color'] = _safe_color(grid_color_edit, '#e2e8f0')
         grid_width_spin = getattr(self, 'grid_width_spin', None)
         if grid_width_spin is not None:
-            app_state.grid_linewidth = float(grid_width_spin.value())
+            style_updates['grid_linewidth'] = float(grid_width_spin.value())
         grid_alpha_spin = getattr(self, 'grid_alpha_spin', None)
         if grid_alpha_spin is not None:
-            app_state.grid_alpha = float(grid_alpha_spin.value())
+            style_updates['grid_alpha'] = float(grid_alpha_spin.value())
         grid_style_combo = getattr(self, 'grid_style_combo', None)
         if grid_style_combo is not None:
-            app_state.grid_linestyle = grid_style_combo.currentText() or '--'
+            style_updates['grid_linestyle'] = grid_style_combo.currentText() or '--'
         tick_dir_combo = getattr(self, 'tick_dir_combo', None)
         if tick_dir_combo is not None:
-            app_state.tick_direction = tick_dir_combo.currentText() or 'out'
+            style_updates['tick_direction'] = tick_dir_combo.currentText() or 'out'
         tick_color_edit = getattr(self, 'tick_color_edit', None)
         if tick_color_edit is not None:
-            app_state.tick_color = _safe_color(tick_color_edit, '#1f2937')
+            style_updates['tick_color'] = _safe_color(tick_color_edit, '#1f2937')
         tick_length_spin = getattr(self, 'tick_length_spin', None)
         if tick_length_spin is not None:
-            app_state.tick_length = float(tick_length_spin.value())
+            style_updates['tick_length'] = float(tick_length_spin.value())
         tick_width_spin = getattr(self, 'tick_width_spin', None)
         if tick_width_spin is not None:
-            app_state.tick_width = float(tick_width_spin.value())
+            style_updates['tick_width'] = float(tick_width_spin.value())
         minor_ticks_check = getattr(self, 'minor_ticks_check', None)
         if minor_ticks_check is not None:
-            app_state.minor_ticks = bool(minor_ticks_check.isChecked())
+            style_updates['minor_ticks'] = bool(minor_ticks_check.isChecked())
         minor_tick_length_spin = getattr(self, 'minor_tick_length_spin', None)
         if minor_tick_length_spin is not None:
-            app_state.minor_tick_length = float(minor_tick_length_spin.value())
+            style_updates['minor_tick_length'] = float(minor_tick_length_spin.value())
         minor_tick_width_spin = getattr(self, 'minor_tick_width_spin', None)
         if minor_tick_width_spin is not None:
-            app_state.minor_tick_width = float(minor_tick_width_spin.value())
+            style_updates['minor_tick_width'] = float(minor_tick_width_spin.value())
         axis_linewidth_spin = getattr(self, 'axis_linewidth_spin', None)
         if axis_linewidth_spin is not None:
-            app_state.axis_linewidth = float(axis_linewidth_spin.value())
+            style_updates['axis_linewidth'] = float(axis_linewidth_spin.value())
         axis_line_color_edit = getattr(self, 'axis_line_color_edit', None)
         if axis_line_color_edit is not None:
-            app_state.axis_line_color = _safe_color(axis_line_color_edit, '#1f2937')
+            style_updates['axis_line_color'] = _safe_color(axis_line_color_edit, '#1f2937')
         show_top_spine_check = getattr(self, 'show_top_spine_check', None)
         if show_top_spine_check is not None:
-            app_state.show_top_spine = bool(show_top_spine_check.isChecked())
+            style_updates['show_top_spine'] = bool(show_top_spine_check.isChecked())
         show_right_spine_check = getattr(self, 'show_right_spine_check', None)
         if show_right_spine_check is not None:
-            app_state.show_right_spine = bool(show_right_spine_check.isChecked())
+            style_updates['show_right_spine'] = bool(show_right_spine_check.isChecked())
         minor_grid_check = getattr(self, 'minor_grid_check', None)
         if minor_grid_check is not None:
-            app_state.minor_grid = bool(minor_grid_check.isChecked())
+            style_updates['minor_grid'] = bool(minor_grid_check.isChecked())
         minor_grid_color_edit = getattr(self, 'minor_grid_color_edit', None)
         if minor_grid_color_edit is not None:
-            app_state.minor_grid_color = _safe_color(minor_grid_color_edit, '#e2e8f0')
+            style_updates['minor_grid_color'] = _safe_color(minor_grid_color_edit, '#e2e8f0')
         minor_grid_width_spin = getattr(self, 'minor_grid_width_spin', None)
         if minor_grid_width_spin is not None:
-            app_state.minor_grid_linewidth = float(minor_grid_width_spin.value())
+            style_updates['minor_grid_linewidth'] = float(minor_grid_width_spin.value())
         minor_grid_alpha_spin = getattr(self, 'minor_grid_alpha_spin', None)
         if minor_grid_alpha_spin is not None:
-            app_state.minor_grid_alpha = float(minor_grid_alpha_spin.value())
+            style_updates['minor_grid_alpha'] = float(minor_grid_alpha_spin.value())
         minor_grid_style_combo = getattr(self, 'minor_grid_style_combo', None)
         if minor_grid_style_combo is not None:
-            app_state.minor_grid_linestyle = minor_grid_style_combo.currentText() or ':'
+            style_updates['minor_grid_linestyle'] = minor_grid_style_combo.currentText() or ':'
         scatter_edgecolor_edit = getattr(self, 'scatter_edgecolor_edit', None)
         scatter_edge_check = getattr(self, 'scatter_edge_check', None)
         if scatter_edge_check is not None:
-            app_state.scatter_show_edge = bool(scatter_edge_check.isChecked())
+            style_updates['scatter_show_edge'] = bool(scatter_edge_check.isChecked())
         if scatter_edgecolor_edit is not None:
-            app_state.scatter_edgecolor = _safe_color(scatter_edgecolor_edit, '#1e293b')
+            style_updates['scatter_edgecolor'] = _safe_color(scatter_edgecolor_edit, '#1e293b')
         scatter_edgewidth_spin = getattr(self, 'scatter_edgewidth_spin', None)
         if scatter_edgewidth_spin is not None:
-            app_state.scatter_edgewidth = float(scatter_edgewidth_spin.value())
+            style_updates['scatter_edgewidth'] = float(scatter_edgewidth_spin.value())
         model_curve_width_spin = getattr(self, 'model_curve_width_spin', None)
         if model_curve_width_spin is not None:
-            app_state.model_curve_width = float(model_curve_width_spin.value())
+            style_updates['model_curve_width'] = float(model_curve_width_spin.value())
         paleoisochron_width_spin = getattr(self, 'paleoisochron_width_spin', None)
         if paleoisochron_width_spin is not None:
-            app_state.paleoisochron_width = float(paleoisochron_width_spin.value())
+            style_updates['paleoisochron_width'] = float(paleoisochron_width_spin.value())
         model_age_width_spin = getattr(self, 'model_age_width_spin', None)
         if model_age_width_spin is not None:
-            app_state.model_age_line_width = float(model_age_width_spin.value())
+            style_updates['model_age_line_width'] = float(model_age_width_spin.value())
         isochron_width_spin = getattr(self, 'isochron_width_spin', None)
         if isochron_width_spin is not None:
-            app_state.isochron_line_width = float(isochron_width_spin.value())
+            style_updates['isochron_line_width'] = float(isochron_width_spin.value())
 
         if hasattr(app_state, 'line_styles'):
             app_state.line_styles.setdefault('model_curve', {})['linewidth'] = app_state.model_curve_width
@@ -312,63 +314,66 @@ class BasePanel(QWidget):
 
         label_color_edit = getattr(self, 'label_color_edit', None)
         if label_color_edit is not None:
-            app_state.label_color = _safe_color(label_color_edit, '#1f2937')
+            style_updates['label_color'] = _safe_color(label_color_edit, '#1f2937')
         label_weight_combo = getattr(self, 'label_weight_combo', None)
         if label_weight_combo is not None:
-            app_state.label_weight = label_weight_combo.currentText() or 'normal'
+            style_updates['label_weight'] = label_weight_combo.currentText() or 'normal'
         label_pad_spin = getattr(self, 'label_pad_spin', None)
         if label_pad_spin is not None:
-            app_state.label_pad = float(label_pad_spin.value())
+            style_updates['label_pad'] = float(label_pad_spin.value())
         title_color_edit = getattr(self, 'title_color_edit', None)
         if title_color_edit is not None:
-            app_state.title_color = _safe_color(title_color_edit, '#111827')
+            style_updates['title_color'] = _safe_color(title_color_edit, '#111827')
         title_weight_combo = getattr(self, 'title_weight_combo', None)
         if title_weight_combo is not None:
-            app_state.title_weight = title_weight_combo.currentText() or 'bold'
+            style_updates['title_weight'] = title_weight_combo.currentText() or 'bold'
         title_pad_spin = getattr(self, 'title_pad_spin', None)
         if title_pad_spin is not None:
-            app_state.title_pad = float(title_pad_spin.value())
+            style_updates['title_pad'] = float(title_pad_spin.value())
 
         adjust_force_text_x_spin = getattr(self, 'adjust_force_text_x_spin', None)
         adjust_force_text_y_spin = getattr(self, 'adjust_force_text_y_spin', None)
         if adjust_force_text_x_spin is not None and adjust_force_text_y_spin is not None:
-            app_state.adjust_text_force_text = (
+            style_updates['adjust_text_force_text'] = (
                 float(adjust_force_text_x_spin.value()),
                 float(adjust_force_text_y_spin.value()),
             )
         adjust_force_static_x_spin = getattr(self, 'adjust_force_static_x_spin', None)
         adjust_force_static_y_spin = getattr(self, 'adjust_force_static_y_spin', None)
         if adjust_force_static_x_spin is not None and adjust_force_static_y_spin is not None:
-            app_state.adjust_text_force_static = (
+            style_updates['adjust_text_force_static'] = (
                 float(adjust_force_static_x_spin.value()),
                 float(adjust_force_static_y_spin.value()),
             )
         adjust_expand_x_spin = getattr(self, 'adjust_expand_x_spin', None)
         adjust_expand_y_spin = getattr(self, 'adjust_expand_y_spin', None)
         if adjust_expand_x_spin is not None and adjust_expand_y_spin is not None:
-            app_state.adjust_text_expand = (
+            style_updates['adjust_text_expand'] = (
                 float(adjust_expand_x_spin.value()),
                 float(adjust_expand_y_spin.value()),
             )
         adjust_iter_lim_spin = getattr(self, 'adjust_iter_lim_spin', None)
         if adjust_iter_lim_spin is not None:
-            app_state.adjust_text_iter_lim = int(adjust_iter_lim_spin.value())
+            style_updates['adjust_text_iter_lim'] = int(adjust_iter_lim_spin.value())
         adjust_time_lim_spin = getattr(self, 'adjust_time_lim_spin', None)
         if adjust_time_lim_spin is not None:
-            app_state.adjust_text_time_lim = float(adjust_time_lim_spin.value())
+            style_updates['adjust_text_time_lim'] = float(adjust_time_lim_spin.value())
 
         legend_frame_on_check = getattr(self, 'legend_frame_on_check', None)
         if legend_frame_on_check is not None:
-            app_state.legend_frame_on = bool(legend_frame_on_check.isChecked())
+            style_updates['legend_frame_on'] = bool(legend_frame_on_check.isChecked())
         legend_frame_alpha_spin = getattr(self, 'legend_frame_alpha_spin', None)
         if legend_frame_alpha_spin is not None:
-            app_state.legend_frame_alpha = float(legend_frame_alpha_spin.value())
+            style_updates['legend_frame_alpha'] = float(legend_frame_alpha_spin.value())
         legend_frame_face_edit = getattr(self, 'legend_frame_face_edit', None)
         if legend_frame_face_edit is not None:
-            app_state.legend_frame_facecolor = legend_frame_face_edit.text() or '#ffffff'
+            style_updates['legend_frame_facecolor'] = legend_frame_face_edit.text() or '#ffffff'
         legend_frame_edge_edit = getattr(self, 'legend_frame_edge_edit', None)
         if legend_frame_edge_edit is not None:
-            app_state.legend_frame_edgecolor = legend_frame_edge_edit.text() or '#cbd5f5'
+            style_updates['legend_frame_edgecolor'] = legend_frame_edge_edit.text() or '#cbd5f5'
+
+        if style_updates:
+            state_gateway.set_attrs(style_updates)
 
         if app_state.fig is not None:
             try:

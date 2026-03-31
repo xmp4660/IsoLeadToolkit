@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QColor
 
-from core import app_state, translate
+from core import app_state, state_gateway, translate
 from ui.icons import apply_color_swatch, normalize_color_hex
 
 
@@ -203,7 +203,7 @@ def open_line_style_dialog(parent, style_key, swatch=None, on_applied=None) -> b
 
     def _apply():
         if not hasattr(app_state, 'line_styles'):
-            app_state.line_styles = {}
+            state_gateway.set_attr('line_styles', {})
         style_ref = app_state.line_styles.setdefault(style_key, {})
         if auto_color_check.isChecked():
             style_ref['color'] = None
@@ -217,22 +217,22 @@ def open_line_style_dialog(parent, style_key, swatch=None, on_applied=None) -> b
         style_ref['alpha'] = float(alpha_spin.value())
 
         if style_key == 'model_curve':
-            app_state.model_curve_width = style_ref['linewidth']
+            state_gateway.set_attr('model_curve_width', style_ref['linewidth'])
         elif style_key == 'plumbotectonics_curve':
-            app_state.plumbotectonics_curve_width = style_ref['linewidth']
+            state_gateway.set_attr('plumbotectonics_curve_width', style_ref['linewidth'])
         elif style_key == 'paleoisochron':
-            app_state.paleoisochron_width = style_ref['linewidth']
+            state_gateway.set_attr('paleoisochron_width', style_ref['linewidth'])
         elif style_key == 'model_age_line':
-            app_state.model_age_line_width = style_ref['linewidth']
+            state_gateway.set_attr('model_age_line_width', style_ref['linewidth'])
         elif style_key == 'isochron':
-            app_state.isochron_line_width = style_ref['linewidth']
+            state_gateway.set_attr('isochron_line_width', style_ref['linewidth'])
             if label_checks:
                 if not hasattr(app_state, 'isochron_label_options'):
-                    app_state.isochron_label_options = {}
+                    state_gateway.set_attr('isochron_label_options', {})
                 for key, chk in label_checks.items():
                     app_state.isochron_label_options[key] = chk.isChecked()
         elif style_key == 'selected_isochron':
-            app_state.selected_isochron_line_width = style_ref['linewidth']
+            state_gateway.set_attr('selected_isochron_line_width', style_ref['linewidth'])
 
         if label_text_edit is not None:
             style_ref['label_text'] = label_text_edit.text().strip()

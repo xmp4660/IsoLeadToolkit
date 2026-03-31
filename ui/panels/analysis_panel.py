@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt
 from visualization.line_styles import ensure_line_style
 
-from core import translate, app_state
+from core import app_state, state_gateway, translate
 from ui.icons import apply_color_swatch
 from .base_panel import BasePanel
 
@@ -438,7 +438,9 @@ class AnalysisPanel(BasePanel):
     def _on_toggle_ellipse_selection(self):
         """切换置信椭圆显示（不激活选择工具）"""
         try:
-            app_state.draw_selection_ellipse = not getattr(app_state, 'draw_selection_ellipse', False)
+            state_gateway.set_draw_selection_ellipse(
+                not getattr(app_state, 'draw_selection_ellipse', False)
+            )
             from visualization.events import refresh_selection_overlay
             refresh_selection_overlay()
         except Exception as err:
@@ -481,7 +483,7 @@ class AnalysisPanel(BasePanel):
 
     def _on_kde_change(self, state):
         """KDE 显示变化"""
-        app_state.show_kde = (state == Qt.Checked)
+        state_gateway.set_attr('show_kde', state == Qt.Checked)
         self._sync_toggle_widgets(
             app_state.show_kde,
             getattr(self, 'kde_check', None),
@@ -492,7 +494,7 @@ class AnalysisPanel(BasePanel):
 
     def _on_marginal_kde_change(self, state):
         """边际 KDE 显示变化"""
-        app_state.show_marginal_kde = (state == Qt.Checked)
+        state_gateway.set_show_marginal_kde(state == Qt.Checked)
         self._sync_toggle_widgets(
             app_state.show_marginal_kde,
             getattr(self, 'marginal_kde_check', None),
@@ -502,7 +504,7 @@ class AnalysisPanel(BasePanel):
 
     def _on_equation_overlays_change(self, state):
         """方程叠加显示变化"""
-        app_state.show_equation_overlays = (state == Qt.Checked)
+        state_gateway.set_attr('show_equation_overlays', state == Qt.Checked)
         self._on_change()
 
     def _on_equation_overlay_toggle(self, overlay, state):
@@ -683,9 +685,9 @@ class AnalysisPanel(BasePanel):
                 style_ref['levels'] = int(levels_spin.value())
             if target == 'marginal_kde':
                 if top_size_spin is not None:
-                    app_state.marginal_kde_top_size = float(top_size_spin.value())
+                    state_gateway.set_attr('marginal_kde_top_size', float(top_size_spin.value()))
                 if right_size_spin is not None:
-                    app_state.marginal_kde_right_size = float(right_size_spin.value())
+                    state_gateway.set_attr('marginal_kde_right_size', float(right_size_spin.value()))
             legacy_payload = {
                 'alpha': style_ref.get('alpha', 0.6 if target == 'kde' else 0.25),
                 'linewidth': style_ref.get('linewidth', 1.0),
@@ -916,8 +918,12 @@ class AnalysisPanel(BasePanel):
                     overlay['enabled'] = checked
                     new_overlays.append(overlay)
 
-            app_state.equation_overlays = new_overlays
-            app_state.show_equation_overlays = any(ov.get('enabled', False) for ov in new_overlays)
+            state_gateway.set_attrs(
+                {
+                    'equation_overlays': new_overlays,
+                    'show_equation_overlays': any(ov.get('enabled', False) for ov in new_overlays),
+                }
+            )
             self._on_change()
             dialog.accept()
 
@@ -932,7 +938,7 @@ class AnalysisPanel(BasePanel):
 
     def _on_tooltip_change(self, state):
         """工具提示显示变化"""
-        app_state.show_tooltip = (state == Qt.Checked)
+        state_gateway.set_attr('show_tooltip', state == Qt.Checked)
         self._on_change()
 
     def _on_configure_tooltip(self):
@@ -941,7 +947,7 @@ class AnalysisPanel(BasePanel):
             from ui.dialogs.tooltip_dialog import get_tooltip_configuration
             result = get_tooltip_configuration(self)
             if result:
-                app_state.tooltip_columns = result
+                state_gateway.set_attr('tooltip_columns', result)
                 logger.info("Tooltip columns configured: %s", result)
                 self._on_change()
         except Exception as e:
@@ -973,9 +979,9 @@ class AnalysisPanel(BasePanel):
 
         # 初始化混合组
         if not hasattr(app_state, 'mixing_endmembers'):
-            app_state.mixing_endmembers = {}
+            state_gateway.set_attr('mixing_endmembers', {})
         if not hasattr(app_state, 'mixing_mixtures'):
-            app_state.mixing_mixtures = {}
+            state_gateway.set_attr('mixing_mixtures', {})
 
         selected_list = list(app_state.selected_indices)
         app_state.mixing_endmembers[group_name] = selected_list
@@ -1010,9 +1016,9 @@ class AnalysisPanel(BasePanel):
 
         # 初始化混合组
         if not hasattr(app_state, 'mixing_endmembers'):
-            app_state.mixing_endmembers = {}
+            state_gateway.set_attr('mixing_endmembers', {})
         if not hasattr(app_state, 'mixing_mixtures'):
-            app_state.mixing_mixtures = {}
+            state_gateway.set_attr('mixing_mixtures', {})
 
         selected_list = list(app_state.selected_indices)
         app_state.mixing_mixtures[group_name] = selected_list
@@ -1039,8 +1045,7 @@ class AnalysisPanel(BasePanel):
 
     def _on_clear_mixing_groups(self):
         """清除混合组"""
-        app_state.mixing_endmembers = {}
-        app_state.mixing_mixtures = {}
+        state_gateway.set_attrs({'mixing_endmembers': {}, 'mixing_mixtures': {}})
         self._update_mixing_status()
         QMessageBox.information(
             self,
@@ -1134,6 +1139,6 @@ class AnalysisPanel(BasePanel):
 
     def _on_confidence_change(self, level):
         """置信水平变化"""
-        app_state.confidence_level = level
+        state_gateway.set_attr('confidence_level', level)
         logger.info("Confidence level changed to: %s", level)
         self._on_change()

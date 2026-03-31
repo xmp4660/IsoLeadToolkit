@@ -12,7 +12,8 @@ from matplotlib.patches import Ellipse
 from matplotlib.path import Path
 from matplotlib.widgets import RectangleSelector, LassoSelector
 
-from core import app_state, translate
+from application import RenderPlotUseCase
+from core import app_state, state_gateway, translate
 from visualization.plotting.isochron import resolve_isochron_errors as _resolve_isochron_errors
 
 logger = logging.getLogger(__name__)
@@ -122,9 +123,9 @@ def _refresh_isochron_after_selection() -> None:
     if selected and len(selected) >= 2:
         calculate_selected_isochron()
     else:
-        app_state.selected_isochron_data = None
+        state_gateway.set_selected_isochron_data(None)
         if had_selected:
-            app_state.show_isochrons = True
+            state_gateway.set_show_isochrons(True)
 
     if getattr(app_state, 'show_isochrons', False) or app_state.selected_isochron_data is not None or had_selected:
         try:
@@ -176,17 +177,17 @@ def _ensure_rectangle_selector():
                     selector.disconnect_events()
                 except Exception:
                     pass
-                app_state.rectangle_selector = None
+                state_gateway.set_rectangle_selector(None)
                 selector = None
             else:
                 selector.set_active(True)
         except Exception:
-            app_state.rectangle_selector = None
+            state_gateway.set_rectangle_selector(None)
             selector = None
 
     if selector is None:
         try:
-            app_state.rectangle_selector = RectangleSelector(
+            selector = RectangleSelector(
                 app_state.ax,
                 _handle_rectangle_select,
                 useblit=True,
@@ -194,9 +195,10 @@ def _ensure_rectangle_selector():
                 spancoords='data',
                 interactive=False
             )
+            state_gateway.set_rectangle_selector(selector)
         except Exception as err:
             logger.warning("Unable to initialize rectangle selector: %s", err)
-            app_state.rectangle_selector = None
+            state_gateway.set_rectangle_selector(None)
 
 
 def _ensure_lasso_selector():
@@ -220,24 +222,25 @@ def _ensure_lasso_selector():
                     selector.disconnect_events()
                 except Exception:
                     pass
-                app_state.lasso_selector = None
+                state_gateway.set_lasso_selector(None)
                 selector = None
             else:
                 selector.set_active(True)
         except Exception:
-            app_state.lasso_selector = None
+            state_gateway.set_lasso_selector(None)
             selector = None
 
     if selector is None:
         try:
-            app_state.lasso_selector = LassoSelector(
+            selector = LassoSelector(
                 app_state.ax,
                 _handle_lasso_select,
                 button=[1]
             )
+            state_gateway.set_lasso_selector(selector)
         except Exception as err:
             logger.warning("Unable to initialize lasso selector: %s", err)
-            app_state.lasso_selector = None
+            state_gateway.set_lasso_selector(None)
 
 
 def _handle_rectangle_select(eclick, erelease):
@@ -262,14 +265,11 @@ def _handle_rectangle_select(eclick, erelease):
         if not indices_in_box:
             return
 
-        current = app_state.selected_indices
-        if all(idx in current for idx in indices_in_box):
-            for idx in indices_in_box:
-                current.discard(idx)
+        if all(idx in app_state.selected_indices for idx in indices_in_box):
+            state_gateway.remove_selected_indices(indices_in_box)
             logger.info("Deselected %d samples via box selection.", len(indices_in_box))
         else:
-            for idx in indices_in_box:
-                current.add(idx)
+            state_gateway.add_selected_indices(indices_in_box)
             logger.info("Selected %d samples via box selection.", len(indices_in_box))
 
         refresh_selection_overlay()
@@ -297,14 +297,11 @@ def _handle_lasso_select(vertices):
         if not indices_in_shape:
             return
 
-        current = app_state.selected_indices
-        if all(idx in current for idx in indices_in_shape):
-            for idx in indices_in_shape:
-                current.discard(idx)
+        if all(idx in app_state.selected_indices for idx in indices_in_shape):
+            state_gateway.remove_selected_indices(indices_in_shape)
             logger.info("Deselected %d samples via custom shape.", len(indices_in_shape))
         else:
-            for idx in indices_in_shape:
-                current.add(idx)
+            state_gateway.add_selected_indices(indices_in_shape)
             logger.info("Selected %d samples via custom shape.", len(indices_in_shape))
 
         refresh_selection_overlay()
@@ -323,7 +320,7 @@ def refresh_selection_overlay() -> None:
                     app_state.selection_overlay.remove()
                 except Exception:
                     pass
-                app_state.selection_overlay = None
+                state_gateway.set_selection_overlay(None)
             _notify_selection_ui()
             return
 
@@ -332,7 +329,7 @@ def refresh_selection_overlay() -> None:
                 app_state.selection_overlay.remove()
             except Exception:
                 pass
-            app_state.selection_overlay = None
+            state_gateway.set_selection_overlay(None)
         
         # Clear previous selection ellipse
         if app_state.selection_ellipse is not None:
@@ -340,7 +337,7 @@ def refresh_selection_overlay() -> None:
                 app_state.selection_ellipse.remove()
             except Exception:
                 pass
-            app_state.selection_ellipse = None
+            state_gateway.set_selection_ellipse(None)
 
         valid_indices = [idx for idx in app_state.selected_indices if idx in app_state.sample_coordinates]
         # Do not remove invisible indices from selection state, just don't draw them
@@ -365,7 +362,7 @@ def refresh_selection_overlay() -> None:
             base_marker_size = getattr(app_state, 'plot_marker_size', app_state.point_size)
             highlight_size = max(int(base_marker_size * 1.8), 20)
 
-            app_state.selection_overlay = app_state.ax.scatter(
+            overlay = app_state.ax.scatter(
                 xs,
                 ys,
                 s=[highlight_size] * len(xs),
@@ -374,6 +371,7 @@ def refresh_selection_overlay() -> None:
                 linewidths=1.6,
                 zorder=6
             )
+            state_gateway.set_selection_overlay(overlay)
         
         # Draw confidence ellipse for selected points if enabled
         should_draw_ellipse = app_state.show_ellipses or getattr(app_state, 'draw_selection_ellipse', False)
@@ -383,11 +381,12 @@ def refresh_selection_overlay() -> None:
                 x_arr = np.array(xs)
                 y_arr = np.array(ys)
                 # Use a distinct style for the selection ellipse
-                app_state.selection_ellipse = draw_confidence_ellipse(
+                ellipse = draw_confidence_ellipse(
                     x_arr, y_arr, app_state.ax, 
                     confidence=app_state.ellipse_confidence,
                     edgecolor='#f97316', linestyle='--', linewidth=2, zorder=5, alpha=0.8
                 )
+                state_gateway.set_selection_ellipse(ellipse)
                 logger.info("Drawn %.0f%% confidence ellipse for %d selected points.", app_state.ellipse_confidence * 100, len(xs))
             except Exception as e:
                 logger.warning("Failed to draw selection ellipse: %s", e)
@@ -408,13 +407,13 @@ def calculate_selected_isochron() -> None:
         # Check if we have selected points
         if not app_state.selected_indices or len(app_state.selected_indices) < 2:
             logger.warning("Isochron calculation requires at least 2 selected points.")
-            app_state.selected_isochron_data = None
+            state_gateway.set_selected_isochron_data(None)
             return
 
         # Check if we're in a Pb evolution mode
         if app_state.render_mode != 'PB_EVOL_76':
             logger.warning("Isochron calculation is only available for Pb evolution plot (PB_EVOL_76).")
-            app_state.selected_isochron_data = None
+            state_gateway.set_selected_isochron_data(None)
             return
 
         # Determine isochron mode
@@ -426,7 +425,7 @@ def calculate_selected_isochron() -> None:
         df = _df_global()
         if df is None or x_col not in df.columns or y_col not in df.columns:
             logger.warning("Required columns %s and %s not found in data.", x_col, y_col)
-            app_state.selected_isochron_data = None
+            state_gateway.set_selected_isochron_data(None)
             return
 
         # Extract selected points
@@ -450,7 +449,7 @@ def calculate_selected_isochron() -> None:
 
         if len(x_data) < 2:
             logger.warning("Not enough valid data points for isochron calculation.")
-            app_state.selected_isochron_data = None
+            state_gateway.set_selected_isochron_data(None)
             return
 
         # Perform York regression
@@ -465,7 +464,7 @@ def calculate_selected_isochron() -> None:
             p_value = fit['p_value']
         except Exception as e:
             logger.warning("Isochron regression failed: %s", e)
-            app_state.selected_isochron_data = None
+            state_gateway.set_selected_isochron_data(None)
             return
 
         # Calculate R² value
@@ -489,7 +488,7 @@ def calculate_selected_isochron() -> None:
         x_range = [x_min - span * 0.1, x_max + span * 0.1]
         y_range = [slope * x_range[0] + intercept, slope * x_range[1] + intercept]
 
-        app_state.selected_isochron_data = {
+        state_gateway.set_selected_isochron_data({
             'slope': slope,
             'intercept': intercept,
             'slope_err': slope_err,
@@ -505,14 +504,14 @@ def calculate_selected_isochron() -> None:
             'y_range': y_range,
             'x_col': x_col,
             'y_col': y_col
-        }
+        })
 
         logger.info("Isochron calculated: Age = %.1f Ma, n = %d, R² = %.4f", age_ma, len(x_data), r_squared)
         logger.info("Slope = %.6f, Intercept = %.6f", slope, intercept)
 
     except Exception as err:
         logger.warning("Isochron calculation failed: %s", err)
-        app_state.selected_isochron_data = None
+        state_gateway.set_selected_isochron_data(None)
 
 
 def _resolve_sample_index(event):
@@ -570,13 +569,12 @@ def toggle_selection_mode(tool_type: str = 'export') -> None:
              _disable_lasso_selector()
              # Clear selection only if ellipse is not active
              if app_state.selected_indices and not getattr(app_state, 'draw_selection_ellipse', False):
-                 app_state.selected_indices.clear()
+                 state_gateway.clear_selected_indices()
              # Clear isochron data if switching away from isochron tool
              if app_state.selection_tool == 'isochron':
-                 app_state.selected_isochron_data = None
+                 state_gateway.set_selected_isochron_data(None)
 
-        app_state.selection_tool = new_tool
-        app_state.selection_mode = (new_tool is not None) # Keep legacy flag in sync
+        state_gateway.set_selection_tool(new_tool)
 
         if app_state.selection_tool:
             logger.info("Selection tool '%s' enabled.", new_tool)
@@ -761,10 +759,10 @@ def on_click(event) -> None:
                     lab_label = str(sample_idx)
 
                 if sample_idx in app_state.selected_indices:
-                    app_state.selected_indices.discard(sample_idx)
+                    state_gateway.remove_selected_indices([sample_idx])
                     logger.info("Deselected sample %s.", lab_label)
                 else:
-                    app_state.selected_indices.add(sample_idx)
+                    state_gateway.add_selected_indices([sample_idx])
                     logger.info("Selected sample %s.", lab_label)
 
                 refresh_selection_overlay()
@@ -826,20 +824,23 @@ def on_legend_click(event) -> None:
                                 legend.legendHandles[i].set_alpha(1.0 if new_visible else 0.5)
 
                             # Update app_state.visible_groups
-                            if app_state.visible_groups is None:
+                            visible_groups = list(app_state.visible_groups) if app_state.visible_groups is not None else None
+                            if visible_groups is None:
                                 # If None, it means all were visible. Initialize with all.
-                                app_state.visible_groups = list(app_state.current_groups)
+                                visible_groups = list(app_state.current_groups)
                             
                             if new_visible:
-                                if label not in app_state.visible_groups:
-                                    app_state.visible_groups.append(label)
+                                if label not in visible_groups:
+                                    visible_groups.append(label)
                             else:
-                                if label in app_state.visible_groups:
-                                    app_state.visible_groups.remove(label)
+                                if label in visible_groups:
+                                    visible_groups.remove(label)
                             
                             # If all are visible again, set to None to indicate "all"
-                            if len(app_state.visible_groups) == len(app_state.current_groups):
-                                app_state.visible_groups = None
+                            if len(visible_groups) == len(app_state.current_groups):
+                                state_gateway.set_visible_groups(None)
+                            else:
+                                state_gateway.set_visible_groups(visible_groups)
 
                             # Notify Control Panel to update checkboxes
                             panel = getattr(app_state, 'control_panel_ref', None)
@@ -862,103 +863,12 @@ def on_legend_click(event) -> None:
         pass
 
 
-def _resolve_group_col():
-    """Resolve the current group column, falling back to the first available."""
-    group_col = app_state.last_group_col
-    group_cols = _group_cols()
-    if not group_col or group_col not in group_cols:
-        if group_cols:
-            group_col = group_cols[0]
-            logger.debug("Using default group_col: %s", group_col)
-        else:
-            return None
-    return group_col
-
-
-def _sync_visible_groups(group_col):
-    """Refresh available_groups and prune visible_groups."""
-    try:
-        df = _df_global()
-        if df is None:
-            all_groups = []
-        else:
-            df_groups_source = df[group_col].fillna('Unknown').astype(str)
-            all_groups = sorted(df_groups_source.unique())
-    except Exception:
-        all_groups = []
-
-    app_state.available_groups = all_groups
-    if app_state.visible_groups:
-        filtered = [g for g in app_state.visible_groups if g in all_groups]
-        app_state.visible_groups = filtered if filtered else None
-
-
-def _validate_render_columns(render_mode, selected_columns_2d, selected_columns_3d):
-    """Validate and adjust render mode / column selections.
-
-    Returns (render_mode, selected_columns_2d, selected_columns_3d).
-    """
-    df = _df_global()
-    data_cols = _data_cols()
-
-    if render_mode == '3D':
-        available_cols = [c for c in data_cols if df is not None and c in df.columns]
-        logger.debug("Available numeric columns for 3D: %s", available_cols)
-        if len(available_cols) < 3:
-            logger.warning("Not enough numeric columns for 3D view; reverting to 2D")
-            render_mode = '2D'
-        else:
-            preselected = [c for c in selected_columns_3d if c in available_cols]
-            if len(preselected) == 3:
-                selected_columns_3d = preselected
-            elif len(available_cols) >= 3:
-                selected_columns_3d = available_cols[:3]
-                app_state.selected_3d_cols = selected_columns_3d
-                app_state.selected_3d_confirmed = False
-                logger.info("Using default 3D columns: %s", selected_columns_3d)
-
-    if render_mode == '2D':
-        available_cols_2d = [c for c in data_cols if df is not None and c in df.columns]
-        logger.debug("Available numeric columns for 2D: %s", available_cols_2d)
-        if len(available_cols_2d) < 2:
-            logger.warning("Not enough numeric columns for 2D view; falling back to UMAP")
-            render_mode = 'UMAP'
-        else:
-            preselected_2d = [c for c in selected_columns_2d if c in available_cols_2d][:2]
-            if len(preselected_2d) == 2:
-                selected_columns_2d = preselected_2d
-            elif len(available_cols_2d) >= 2:
-                selected_columns_2d = available_cols_2d[:2]
-                app_state.selected_2d_cols = selected_columns_2d
-                app_state.selected_2d_confirmed = False
-                logger.info("Using default 2D columns: %s", selected_columns_2d)
-
-    if render_mode == 'Ternary':
-        available_cols_ternary = [c for c in data_cols if df is not None and c in df.columns]
-        if len(available_cols_ternary) < 3:
-            logger.warning("Not enough numeric columns for Ternary view; falling back to UMAP")
-            render_mode = 'UMAP'
-        else:
-            preselected = getattr(app_state, 'selected_ternary_cols', [])
-            valid_preselected = [c for c in preselected if c in available_cols_ternary]
-            if len(valid_preselected) == 3:
-                if not app_state.selected_ternary_confirmed:
-                    app_state.selected_ternary_cols = valid_preselected
-            elif len(available_cols_ternary) >= 3:
-                app_state.selected_ternary_cols = available_cols_ternary[:3]
-                app_state.selected_ternary_confirmed = False
-
-    return render_mode, selected_columns_2d, selected_columns_3d
-
-
 def _sync_render_mode(render_mode):
     """Update app_state and control panel if render_mode changed."""
     if render_mode == app_state.render_mode:
         return
     logger.debug("Adjusted render mode: %s -> %s", app_state.render_mode, render_mode)
-    app_state.render_mode = render_mode
-    if app_state.render_mode in ('UMAP', 'tSNE', 'PCA', 'RobustPCA'):
-        app_state.algorithm = app_state.render_mode
+    state_gateway.set_render_mode(render_mode)
     try:
         panel = getattr(app_state, 'control_panel_ref', None)
         if panel is not None and 'render_mode' in panel.radio_vars:
@@ -997,8 +907,7 @@ def _on_embedding_task_finished(task_token: int, payload: dict, group_col: str) 
         logger.debug("Ignore stale embedding result token=%s", task_token)
         return
 
-    app_state.embedding_task_running = False
-    app_state.embedding_worker = None
+    state_gateway.set_embedding_worker(None, running=False)
 
     algorithm = payload.get('algorithm', app_state.render_mode)
     if app_state.render_mode != algorithm:
@@ -1027,7 +936,7 @@ def _on_embedding_task_finished(task_token: int, payload: dict, group_col: str) 
             app_state.fig.canvas.draw_idle()
         except Exception:
             pass
-        app_state.initial_render_done = True
+        state_gateway.set_initial_render_done(True)
         logger.debug("Async embedding render completed for %s", algorithm)
     else:
         logger.warning("Async embedding render failed for %s", algorithm)
@@ -1037,8 +946,7 @@ def _on_embedding_task_failed(task_token: int, error_message: str) -> None:
     if task_token != getattr(app_state, 'embedding_task_token', -1):
         return
 
-    app_state.embedding_task_running = False
-    app_state.embedding_worker = None
+    state_gateway.set_embedding_worker(None, running=False)
     logger.warning("Embedding task failed: %s", error_message)
 
 
@@ -1046,8 +954,7 @@ def _on_embedding_task_cancelled(task_token: int) -> None:
     if task_token != getattr(app_state, 'embedding_task_token', -1):
         return
 
-    app_state.embedding_task_running = False
-    app_state.embedding_worker = None
+    state_gateway.set_embedding_worker(None, running=False)
     logger.debug("Embedding task cancelled: token=%s", task_token)
 
 
@@ -1075,7 +982,6 @@ def _start_async_embedding_render(group_col: str) -> bool:
     _cancel_embedding_task(reason='start_new_task')
 
     task_token = int(getattr(app_state, 'embedding_task_token', 0)) + 1
-    app_state.embedding_task_token = task_token
 
     worker = EmbeddingWorker(
         task_token=task_token,
@@ -1090,151 +996,38 @@ def _start_async_embedding_render(group_col: str) -> bool:
     worker.failed.connect(_on_embedding_task_failed)
     worker.cancelled.connect(_on_embedding_task_cancelled)
 
-    app_state.embedding_worker = worker
-    app_state.embedding_task_running = True
+    state_gateway.set_embedding_worker(worker, running=True, task_token=task_token)
     worker.start()
     logger.debug("Started async embedding task token=%s, algorithm=%s", task_token, algorithm)
     return True
 
 
-def _dispatch_render(group_col, selected_columns_2d, selected_columns_3d):
-    """Dispatch to the appropriate plot function.
-
-    Returns:
-        tuple[bool, bool]: (render_ok, pending_async_result)
-    """
+def _build_render_use_case() -> RenderPlotUseCase:
     from .plotting import plot_embedding, plot_3d_data, plot_2d_data
 
-    if app_state.render_mode == '3D':
-        if app_state.selection_mode:
-            app_state.selection_mode = False
-            _disable_rectangle_selector()
-            refresh_selection_overlay()
-            _notify_selection_ui()
-            logger.info("Selection mode automatically disabled for 3D view.")
-        if len(selected_columns_3d) != 3:
-            logger.warning("Invalid 3D column selection; skipping plot")
-            return False, False
-        _cancel_embedding_task(reason='switch_to_3d')
-        logger.debug("Rendering 3D plot with columns=%s", selected_columns_3d)
-        return plot_3d_data(group_col, selected_columns_3d, size=app_state.point_size), False
-
-    if app_state.render_mode == '2D':
-        if len(selected_columns_2d) != 2:
-            logger.warning("Invalid 2D column selection; skipping plot")
-            return False, False
-        _cancel_embedding_task(reason='switch_to_2d')
-        logger.debug("Rendering 2D plot with columns=%s", selected_columns_2d)
-        is_kde = getattr(app_state, 'show_kde', False) or getattr(app_state, 'show_2d_kde', False)
-        return plot_2d_data(group_col, selected_columns_2d, size=app_state.point_size, show_kde=is_kde), False
-
-    algorithm = app_state.render_mode
-    if algorithm in _ASYNC_EMBEDDING_ALGORITHMS:
-        started = _start_async_embedding_render(group_col)
-        return started, started
-
-    _cancel_embedding_task(reason='switch_to_sync_embedding')
-    logger.debug("Calling plot_embedding with algorithm=%s, group_col=%s", algorithm, group_col)
-    return (
-        plot_embedding(
-            group_col,
-            algorithm,
-            umap_params=app_state.umap_params,
-            tsne_params=app_state.tsne_params,
-            pca_params=app_state.pca_params,
-            robust_pca_params=app_state.robust_pca_params,
-            size=app_state.point_size,
-        ),
-        False,
+    return RenderPlotUseCase(
+        state=app_state,
+        get_df_global=_df_global,
+        get_data_cols=_data_cols,
+        get_group_cols=_group_cols,
+        sync_render_mode=_sync_render_mode,
+        cancel_embedding_task=_cancel_embedding_task,
+        start_async_embedding_render=_start_async_embedding_render,
+        plot_embedding=plot_embedding,
+        plot_2d_data=plot_2d_data,
+        plot_3d_data=plot_3d_data,
+        refresh_selection_overlay=refresh_selection_overlay,
+        sync_selection_tools=sync_selection_tools,
+        notify_selection_ui=_notify_selection_ui,
+        disable_rectangle_selector=_disable_rectangle_selector,
     )
-
-
-def _handle_render_fallback(group_col):
-    """Fall back to UMAP when 2D/3D rendering fails."""
-    from .plotting import plot_embedding
-
-    if app_state.render_mode not in ('2D', '3D'):
-        return
-    logger.info("Falling back to UMAP embedding for display")
-    app_state.render_mode = 'UMAP'
-    app_state.algorithm = 'UMAP'
-    try:
-        panel = getattr(app_state, 'control_panel_ref', None)
-        if panel is not None and 'render_mode' in panel.radio_vars:
-            panel.radio_vars['render_mode'].set('UMAP')
-    except Exception:
-        pass
-
-    fallback_ok = plot_embedding(
-        group_col,
-        'UMAP',
-        umap_params=app_state.umap_params,
-        tsne_params=app_state.tsne_params,
-        size=app_state.point_size,
-    )
-    if fallback_ok:
-        refresh_selection_overlay()
-        sync_selection_tools()
-        _notify_selection_ui()
-        try:
-            app_state.fig.canvas.draw_idle()
-        except Exception:
-            pass
-    else:
-        logger.warning("Fallback UMAP plot also failed")
 
 
 def on_slider_change(val=None) -> None:
     """Handle slider and radio button changes from the control panel."""
     try:
         logger.debug("on_slider_change called, val=%s", val)
-
-        df = _df_global()
-        if df is None or len(df) == 0:
-            logger.warning("No data available")
-            return
-
-        try:
-            group_col = _resolve_group_col()
-            if group_col is None:
-                logger.warning("No group columns available")
-                return
-
-            render_mode = app_state.render_mode
-            selected_columns_3d = list(app_state.selected_3d_cols)
-            selected_columns_2d = list(getattr(app_state, 'selected_2d_cols', []))
-
-            _sync_visible_groups(group_col)
-
-            render_mode, selected_columns_2d, selected_columns_3d = _validate_render_columns(
-                render_mode, selected_columns_2d, selected_columns_3d,
-            )
-            _sync_render_mode(render_mode)
-
-            rendered_ok, pending_async = _dispatch_render(group_col, selected_columns_2d, selected_columns_3d)
-
-            if pending_async:
-                logger.debug("Render deferred to async embedding task")
-                return
-
-            if rendered_ok:
-                logger.debug("Plot rendered successfully, calling draw_idle")
-                refresh_selection_overlay()
-                sync_selection_tools()
-                _notify_selection_ui()
-                try:
-                    app_state.fig.canvas.draw_idle()
-                except Exception as draw_err:
-                    logger.warning("Draw error: %s", draw_err)
-            else:
-                logger.warning("Plot rendering failed")
-                _handle_render_fallback(group_col)
-
-            app_state.initial_render_done = True
-        except Exception as plot_err:
-            logger.error("Plotting error: %s", plot_err)
-            import traceback
-            traceback.print_exc()
+        _build_render_use_case().execute()
     except Exception as e:
         logger.error("on_slider_change error: %s", e)
         import traceback

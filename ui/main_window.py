@@ -18,7 +18,7 @@ from PyQt5.QtGui import QIcon, QKeySequence, QColor, QCursor
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
-from core import app_state, translate
+from core import app_state, state_gateway, translate
 from visualization.plotting.legend_model import overlay_legend_items, normalize_render_mode, OVERLAY_TOGGLE_MAP
 from visualization.line_styles import resolve_line_style
 from ui.icons import apply_color_swatch, build_marker_icon
@@ -52,7 +52,7 @@ class Qt5MainWindow(QMainWindow):
         self._setup_toolbar()
         self._setup_statusbar()
         self._restore_state()
-        app_state.legend_update_callback = self._update_legend_panel
+        state_gateway.set_attr('legend_update_callback', self._update_legend_panel)
 
     def _setup_ui(self):
         """设置 UI 基本属性"""
@@ -419,10 +419,13 @@ class Qt5MainWindow(QMainWindow):
                         pass
             target_z -= 1
 
-        app_state.legend_item_order = [
+        state_gateway.set_attr(
+            'legend_item_order',
+            [
             self._legend_order_key(entry_type, entry_key)
             for entry_type, entry_key in order
-        ]
+            ],
+        )
 
         if app_state.fig is not None and app_state.fig.canvas is not None:
             app_state.fig.canvas.draw_idle()
@@ -463,10 +466,13 @@ class Qt5MainWindow(QMainWindow):
             return
 
         new_order = [target] + [entry for entry in order if entry != target]
-        app_state.legend_item_order = [
+        state_gateway.set_attr(
+            'legend_item_order',
+            [
             self._legend_order_key(current_type, current_key)
             for current_type, current_key in new_order
-        ]
+            ],
+        )
 
         title = getattr(app_state, 'legend_last_title', None)
         handles = getattr(app_state, 'legend_last_handles', None)
@@ -540,8 +546,10 @@ class Qt5MainWindow(QMainWindow):
         checked = state == Qt.Checked
         if self._is_plumbotectonics_group_style(style_key):
             if not hasattr(app_state, 'plumbotectonics_group_visibility'):
-                app_state.plumbotectonics_group_visibility = {}
-            app_state.plumbotectonics_group_visibility[style_key] = checked
+                state_gateway.set_attr('plumbotectonics_group_visibility', {})
+            visibility = getattr(app_state, 'plumbotectonics_group_visibility', {}) or {}
+            visibility[style_key] = checked
+            state_gateway.set_attr('plumbotectonics_group_visibility', visibility)
             try:
                 from visualization.plotting.style import refresh_overlay_visibility
                 refresh_overlay_visibility()
@@ -550,7 +558,7 @@ class Qt5MainWindow(QMainWindow):
             return
         if style_key == 'isochron':
             if checked:
-                app_state.show_isochrons = True
+                state_gateway.set_show_isochrons(True)
                 try:
                     selected = getattr(app_state, 'selected_indices', set()) or set()
                     if app_state.render_mode == 'PB_EVOL_76' and len(selected) >= 2:
@@ -559,21 +567,21 @@ class Qt5MainWindow(QMainWindow):
                 except Exception as err:
                     logger.warning("Failed to calculate selected isochron: %s", err)
             else:
-                app_state.show_isochrons = False
-                app_state.selected_isochron_data = None
-                app_state.isochron_results = {}
+                state_gateway.set_show_isochrons(False)
+                state_gateway.set_selected_isochron_data(None)
+                state_gateway.set_attr('isochron_results', {})
 
             self._sync_geochem_toggle_panels(style_key)
             self._refresh_plot()
             return
         attr = OVERLAY_TOGGLE_MAP.get(style_key)
         if attr:
-            setattr(app_state, attr, checked)
+            state_gateway.set_attr(attr, checked)
 
         # Special case: clear isochron data when unchecked
         if style_key == 'isochron' and not checked:
-            app_state.selected_isochron_data = None
-            app_state.isochron_results = {}
+            state_gateway.set_selected_isochron_data(None)
+            state_gateway.set_attr('isochron_results', {})
 
         self._sync_geochem_toggle_panels(style_key)
 
@@ -755,9 +763,9 @@ class Qt5MainWindow(QMainWindow):
             current_visible.discard(group)
 
         if len(current_visible) == len(groups):
-            app_state.visible_groups = None
+            state_gateway.set_visible_groups(None)
         else:
-            app_state.visible_groups = sorted(current_visible)
+            state_gateway.set_visible_groups(sorted(current_visible))
 
         self._sync_legend_panel_ui()
         self._refresh_plot()
@@ -1019,8 +1027,8 @@ class Qt5MainWindow(QMainWindow):
         self.canvas_layout.addWidget(canvas)
 
         # 保存引用
-        app_state.fig = fig
-        app_state.canvas = canvas
+        state_gateway.set_attr('fig', fig)
+        state_gateway.set_attr('canvas', canvas)
 
         # 连接事件处理器
         self._connect_event_handlers(canvas)
@@ -1145,11 +1153,11 @@ class Qt5MainWindow(QMainWindow):
 
     def _reload_data(self):
         """重新加载数据"""
-        from data.loader import load_data
-        if load_data(show_file_dialog=True, show_config_dialog=True):
+        from application.use_cases import load_dataset
+        if load_dataset(show_file_dialog=True, show_config_dialog=True):
             self.statusBar().showMessage(translate("Data reloaded successfully"), 3000)
             if not app_state.last_group_col and app_state.group_cols:
-                app_state.last_group_col = app_state.group_cols[0]
+                state_gateway.set_last_group_col(app_state.group_cols[0])
             # 触发重绘
             if hasattr(self, 'on_data_reload'):
                 self.on_data_reload()

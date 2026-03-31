@@ -96,7 +96,7 @@ def calculate_auto_ternary_factors() -> bool:
         if min_f > 0:
             factors = factors / min_f
 
-        app_state.ternary_factors = factors.tolist()
+        setattr(app_state, 'ternary_factors', factors.tolist())
         logger.info("Auto-Calculated Factors: %s", app_state.ternary_factors)
         return True
 

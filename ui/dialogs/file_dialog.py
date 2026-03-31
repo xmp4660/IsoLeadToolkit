@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout,
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
-from core import translate, available_languages, set_language, app_state
+from core import translate, available_languages, set_language, app_state, state_gateway
 
 
 class Qt5FileDialog(QDialog):
@@ -167,7 +167,7 @@ class Qt5FileDialog(QDialog):
         """语言变化处理"""
         code = self.lang_combo.currentData()
         if code and set_language(code):
-            app_state.language = code
+            state_gateway.set_attr('language', code)
             self._apply_translations()
 
     def closeEvent(self, event):

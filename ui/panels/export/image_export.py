@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
 )
 
-from core import app_state, translate
+from core import app_state, state_gateway, translate
 
 logger = logging.getLogger(__name__)
 
@@ -163,14 +163,12 @@ class ExportPanelImageExportMixin:
                 )
                 export_ax = export_fig.add_subplot(111)
 
-                app_state.fig = export_fig
-                app_state.ax = export_ax
-                app_state.current_palette = dict(locked_palette)
-                app_state.group_marker_map = dict(locked_marker_map)
+                state_gateway.set_figure_axes(export_fig, export_ax)
+                state_gateway.set_palette_and_marker_map(locked_palette, locked_marker_map)
 
                 # Preserve visible marginal KDE when current interactive figure uses marginal axes.
                 if original_has_marginal_axes:
-                    app_state.show_marginal_kde = True
+                    state_gateway.set_show_marginal_kde(True)
 
                 render_ok = self._render_current_mode_sync(point_size=point_size_for_export)
                 if not render_ok:
@@ -197,12 +195,10 @@ class ExportPanelImageExportMixin:
                 self._attach_preview_label_state(export_fig)
                 return export_fig
         finally:
-            app_state.fig = original_fig
-            app_state.ax = original_ax
-            app_state.current_palette = dict(original_palette)
-            app_state.group_marker_map = dict(original_marker_map)
-            app_state.show_marginal_kde = original_show_marginal_kde
-            app_state.marginal_axes = original_marginal_axes
+            state_gateway.set_figure_axes(original_fig, original_ax)
+            state_gateway.set_palette_and_marker_map(original_palette, original_marker_map)
+            state_gateway.set_show_marginal_kde(original_show_marginal_kde)
+            state_gateway.set_marginal_axes(original_marginal_axes)
             try:
                 self._render_current_mode_sync(point_size=int(getattr(app_state, 'point_size', 60)))
                 if app_state.fig is not None and app_state.fig.canvas is not None:

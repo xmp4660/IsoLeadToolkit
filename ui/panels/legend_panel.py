@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QColor, QPainter, QPixmap, QIcon
 
-from core import translate, app_state
+from core import app_state, state_gateway, translate
 from .base_panel import BasePanel
 from ui.icons import build_marker_icon
 
@@ -114,8 +114,12 @@ class LegendPanel(BasePanel):
         if outside_location not in self.legend_outside_buttons:
             outside_location = None
 
-        app_state.legend_position = inside_location
-        app_state.legend_location = outside_location
+        state_gateway.set_attrs(
+            {
+                'legend_position': inside_location,
+                'legend_location': outside_location,
+            }
+        )
 
         self._set_legend_inside_position_button(inside_location)
         self._set_legend_outside_position_button(outside_location)
@@ -320,7 +324,7 @@ class LegendPanel(BasePanel):
                     self.auto_palette_combo.setCurrentIndex(index)
                     self.auto_palette_combo.blockSignals(False)
                 return
-        app_state.color_scheme = palette_name
+        state_gateway.set_attr('color_scheme', palette_name)
         self._last_palette_name = palette_name
         try:
             from visualization import refresh_plot_style
@@ -422,7 +426,7 @@ class LegendPanel(BasePanel):
             pass
 
         if not hasattr(app_state, 'custom_palettes'):
-            app_state.custom_palettes = {}
+            state_gateway.set_attr('custom_palettes', {})
         app_state.custom_palettes[name] = colors
 
         try:
@@ -568,7 +572,7 @@ class LegendPanel(BasePanel):
             return None, None
 
         if not hasattr(app_state, 'custom_shape_sets'):
-            app_state.custom_shape_sets = {}
+            state_gateway.set_attr('custom_shape_sets', {})
         app_state.custom_shape_sets[name] = shapes
         return name, shapes
 
@@ -635,25 +639,25 @@ class LegendPanel(BasePanel):
     def _on_legend_inside_position_change(self, position):
         current = getattr(app_state, 'legend_position', None)
         if current == position:
-            app_state.legend_position = None
+            state_gateway.set_attr('legend_position', None)
             self._set_legend_inside_position_button(None)
         else:
-            app_state.legend_position = position
+            state_gateway.set_attr('legend_position', position)
             self._set_legend_inside_position_button(position)
         self._on_change()
 
     def _on_legend_outside_position_change(self, position):
         current = getattr(app_state, 'legend_location', None)
         if current == position:
-            app_state.legend_location = None
+            state_gateway.set_attr('legend_location', None)
             self._set_legend_outside_position_button(None)
         else:
-            app_state.legend_location = position
+            state_gateway.set_attr('legend_location', position)
             self._set_legend_outside_position_button(position)
         self._on_change()
 
     def _on_legend_columns_change(self, columns):
-        app_state.legend_columns = columns
+        state_gateway.set_attr('legend_columns', columns)
         self._on_change()
 
     def _on_nudge_step_change(self, value):
@@ -662,7 +666,7 @@ class LegendPanel(BasePanel):
         except Exception:
             return
         self.legend_nudge_step = step
-        app_state.legend_nudge_step = step
+        state_gateway.set_attr('legend_nudge_step', step)
 
     def _nudge_legend(self, dx, dy):
         current = getattr(app_state, 'legend_offset', (0.0, 0.0))
@@ -670,7 +674,7 @@ class LegendPanel(BasePanel):
             new_offset = (float(current[0]) + float(dx), float(current[1]) + float(dy))
         except Exception:
             new_offset = (0.0, 0.0)
-        app_state.legend_offset = new_offset
+        state_gateway.set_attr('legend_offset', new_offset)
         try:
             from visualization import refresh_plot_style
             refresh_plot_style()
@@ -690,7 +694,7 @@ class LegendPanel(BasePanel):
         if palette_name:
             if palette_name == "__custom__":
                 palette_name = getattr(app_state, 'color_scheme', None)
-            app_state.color_scheme = palette_name
+            state_gateway.set_attr('color_scheme', palette_name)
 
         color_pool = []
         try:

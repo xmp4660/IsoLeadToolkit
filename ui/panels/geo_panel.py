@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (
     QGroupBox, QGridLayout, QComboBox, QDoubleSpinBox, QMessageBox, QToolBox,
 )
 
-from core import translate, app_state
+from core import translate, app_state, state_gateway
 from .base_panel import BasePanel
 
 logger = logging.getLogger(__name__)
@@ -204,7 +204,7 @@ class GeoPanel(BasePanel):
                     if key in self.geo_params:
                         self.geo_params[key].setValue(current_params[key])
 
-                app_state.geo_model_name = model_name
+                state_gateway.set_attr('geo_model_name', model_name)
                 logger.info("Loaded Geochemistry Model: %s", model_name)
 
                 if app_state.render_mode in ('V1V2', 'PB_EVOL_76', 'PB_EVOL_86', 'PB_MU_AGE', 'PB_KAPPA_AGE'):
