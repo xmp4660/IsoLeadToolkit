@@ -15,6 +15,9 @@ from .export_image import (
 )
 from .render_plot import RenderPlotUseCase
 from .load_dataset import load_dataset
+from .selection_interaction import SelectionInteractionUseCase
+from .selected_isochron import SelectedIsochronUseCase
+from .tooltip_content import TooltipContentUseCase
 
 __all__ = [
 	"append_selected_data_to_excel",
@@ -26,6 +29,9 @@ __all__ = [
 	"normalize_export_target",
 	"resolve_image_save_options",
 	"RenderPlotUseCase",
+	"SelectionInteractionUseCase",
+	"SelectedIsochronUseCase",
+	"TooltipContentUseCase",
 	"load_dataset",
 	"save_export_figure",
 ]

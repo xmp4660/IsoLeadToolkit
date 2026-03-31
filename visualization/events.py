@@ -4,16 +4,17 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-import matplotlib
-import numpy as np
 import pandas as pd
-import scipy.stats
-from matplotlib.patches import Ellipse
-from matplotlib.path import Path
 from matplotlib.widgets import RectangleSelector, LassoSelector
 
-from application import RenderPlotUseCase
+from application import (
+    RenderPlotUseCase,
+    SelectedIsochronUseCase,
+    SelectionInteractionUseCase,
+    TooltipContentUseCase,
+)
 from core import app_state, state_gateway, translate
+from visualization.selection_overlay import refresh_selection_overlay_state
 from visualization.plotting.isochron import resolve_isochron_errors as _resolve_isochron_errors
 
 logger = logging.getLogger(__name__)
@@ -23,6 +24,12 @@ _SELECTION_MIN_SPAN = 1e-9
 # Maximum distance (data units) for hover nearest-neighbor lookup
 _HOVER_DISTANCE_THRESHOLD = 0.15
 _ASYNC_EMBEDDING_ALGORITHMS = {'UMAP', 'tSNE', 'PCA', 'RobustPCA'}
+
+_SELECTION_USE_CASE = SelectionInteractionUseCase(
+    hover_distance_threshold=_HOVER_DISTANCE_THRESHOLD,
+)
+_SELECTED_ISOCHRON_USE_CASE = SelectedIsochronUseCase()
+_TOOLTIP_CONTENT_USE_CASE = TooltipContentUseCase()
 
 
 def _data_state() -> Any:
@@ -40,54 +47,6 @@ def _data_cols() -> list[str]:
 
 def _group_cols() -> list[str]:
     return getattr(_data_state(), 'group_cols', app_state.group_cols)
-
-def draw_confidence_ellipse(x, y, ax, confidence: float = 0.95, facecolor: str = 'none', **kwargs) -> Ellipse | None:
-    """
-    Create a plot of the covariance confidence ellipse of *x* and *y*.
-    confidence: float, e.g. 0.95 for 95% confidence interval
-    """
-    if x.size < 2 or y.size < 2:
-        return None
-
-    # Calculate n_std based on confidence level for 2D (Chi-squared with 2 DoF)
-    # ppf is the inverse of cdf
-    chi2_val = scipy.stats.chi2.ppf(confidence, df=2)
-    n_std = np.sqrt(chi2_val)
-
-    cov = np.cov(x, y)
-    if not np.all(np.isfinite(cov)):
-        return None
-
-    var_x = cov[0, 0]
-    var_y = cov[1, 1]
-    if var_x <= 0 or var_y <= 0:
-        return None
-
-    pearson = cov[0, 1] / np.sqrt(var_x * var_y)
-    pearson = float(np.clip(pearson, -1.0, 1.0))
-    
-    ell_radius_x = np.sqrt(1 + pearson)
-    ell_radius_y = np.sqrt(1 - pearson)
-    
-    ellipse = Ellipse((0, 0), width=ell_radius_x * 2, height=ell_radius_y * 2,
-                      facecolor=facecolor, **kwargs)
-
-    scale_x = np.sqrt(cov[0, 0]) * n_std
-    mean_x = np.mean(x)
-    scale_y = np.sqrt(cov[1, 1]) * n_std
-    mean_y = np.mean(y)
-
-    theta = 0.5 * np.arctan2(2 * cov[0, 1], var_x - var_y)
-    transf = (
-        matplotlib.transforms.Affine2D()
-        .rotate(theta)
-        .scale(scale_x, scale_y)
-        .translate(mean_x, mean_y)
-    )
-
-    ellipse.set_transform(transf + ax.transData)
-    return ax.add_patch(ellipse)
-
 
 def _notify_selection_ui():
     """Ask the control panel to refresh selection-related widgets."""
@@ -257,19 +216,23 @@ def _handle_rectangle_select(eclick, erelease):
         if abs(x_max - x_min) < _SELECTION_MIN_SPAN or abs(y_max - y_min) < _SELECTION_MIN_SPAN:
             return
 
-        indices_in_box = [
-            idx for idx, (x_val, y_val) in app_state.sample_coordinates.items()
-            if x_min <= x_val <= x_max and y_min <= y_val <= y_max
-        ]
+        indices_in_box = _SELECTION_USE_CASE.rectangle_indices(
+            app_state.sample_coordinates,
+            x_min=x_min,
+            x_max=x_max,
+            y_min=y_min,
+            y_max=y_max,
+        )
 
         if not indices_in_box:
             return
 
-        if all(idx in app_state.selected_indices for idx in indices_in_box):
-            state_gateway.remove_selected_indices(indices_in_box)
+        plan = _SELECTION_USE_CASE.plan_toggle(app_state.selected_indices, indices_in_box)
+        if plan.action == 'remove':
+            state_gateway.remove_selected_indices(plan.indices)
             logger.info("Deselected %d samples via box selection.", len(indices_in_box))
-        else:
-            state_gateway.add_selected_indices(indices_in_box)
+        elif plan.action == 'add':
+            state_gateway.add_selected_indices(plan.indices)
             logger.info("Selected %d samples via box selection.", len(indices_in_box))
 
         refresh_selection_overlay()
@@ -287,21 +250,20 @@ def _handle_lasso_select(vertices):
         if not vertices:
             return
 
-        path = Path(vertices)
-
-        indices_in_shape = [
-            idx for idx, (x_val, y_val) in app_state.sample_coordinates.items()
-            if path.contains_point((x_val, y_val))
-        ]
+        indices_in_shape = _SELECTION_USE_CASE.lasso_indices(
+            app_state.sample_coordinates,
+            vertices,
+        )
 
         if not indices_in_shape:
             return
 
-        if all(idx in app_state.selected_indices for idx in indices_in_shape):
-            state_gateway.remove_selected_indices(indices_in_shape)
+        plan = _SELECTION_USE_CASE.plan_toggle(app_state.selected_indices, indices_in_shape)
+        if plan.action == 'remove':
+            state_gateway.remove_selected_indices(plan.indices)
             logger.info("Deselected %d samples via custom shape.", len(indices_in_shape))
-        else:
-            state_gateway.add_selected_indices(indices_in_shape)
+        elif plan.action == 'add':
+            state_gateway.add_selected_indices(plan.indices)
             logger.info("Selected %d samples via custom shape.", len(indices_in_shape))
 
         refresh_selection_overlay()
@@ -313,201 +275,45 @@ def _handle_lasso_select(vertices):
 
 def refresh_selection_overlay() -> None:
     """Update selection overlay scatter to highlight chosen points."""
-    try:
-        if app_state.fig is None or app_state.ax is None or app_state.render_mode == '3D':
-            if app_state.selection_overlay is not None:
-                try:
-                    app_state.selection_overlay.remove()
-                except Exception:
-                    pass
-                state_gateway.set_selection_overlay(None)
-            _notify_selection_ui()
-            return
-
-        if app_state.selection_overlay is not None:
-            try:
-                app_state.selection_overlay.remove()
-            except Exception:
-                pass
-            state_gateway.set_selection_overlay(None)
-        
-        # Clear previous selection ellipse
-        if app_state.selection_ellipse is not None:
-            try:
-                app_state.selection_ellipse.remove()
-            except Exception:
-                pass
-            state_gateway.set_selection_ellipse(None)
-
-        valid_indices = [idx for idx in app_state.selected_indices if idx in app_state.sample_coordinates]
-        # Do not remove invisible indices from selection state, just don't draw them
-        # removed = set(app_state.selected_indices) - set(valid_indices)
-        # if removed:
-        #     app_state.selected_indices -= removed
-
-        if not valid_indices:
-            app_state.fig.canvas.draw_idle()
-            _notify_selection_ui()
-            return
-
-        # Save current view limits to prevent auto-scaling
-        current_xlim = app_state.ax.get_xlim()
-        current_ylim = app_state.ax.get_ylim()
-
-        xs = [app_state.sample_coordinates[idx][0] for idx in valid_indices]
-        ys = [app_state.sample_coordinates[idx][1] for idx in valid_indices]
-
-        # Only draw highlight rings when a selection tool is active
-        if app_state.selection_tool:
-            base_marker_size = getattr(app_state, 'plot_marker_size', app_state.point_size)
-            highlight_size = max(int(base_marker_size * 1.8), 20)
-
-            overlay = app_state.ax.scatter(
-                xs,
-                ys,
-                s=[highlight_size] * len(xs),
-                facecolors='none',
-                edgecolors='#f97316',
-                linewidths=1.6,
-                zorder=6
-            )
-            state_gateway.set_selection_overlay(overlay)
-        
-        # Draw confidence ellipse for selected points if enabled
-        should_draw_ellipse = app_state.show_ellipses or getattr(app_state, 'draw_selection_ellipse', False)
-        
-        if should_draw_ellipse and len(xs) >= 3:
-            try:
-                x_arr = np.array(xs)
-                y_arr = np.array(ys)
-                # Use a distinct style for the selection ellipse
-                ellipse = draw_confidence_ellipse(
-                    x_arr, y_arr, app_state.ax, 
-                    confidence=app_state.ellipse_confidence,
-                    edgecolor='#f97316', linestyle='--', linewidth=2, zorder=5, alpha=0.8
-                )
-                state_gateway.set_selection_ellipse(ellipse)
-                logger.info("Drawn %.0f%% confidence ellipse for %d selected points.", app_state.ellipse_confidence * 100, len(xs))
-            except Exception as e:
-                logger.warning("Failed to draw selection ellipse: %s", e)
-
-        # Restore view limits
-        app_state.ax.set_xlim(current_xlim)
-        app_state.ax.set_ylim(current_ylim)
-
-        app_state.fig.canvas.draw_idle()
-        _notify_selection_ui()
-    except Exception as err:
-        logger.warning("Unable to refresh selection overlay: %s", err)
+    refresh_selection_overlay_state(
+        state=app_state,
+        state_write=state_gateway,
+        notify_selection_ui=_notify_selection_ui,
+    )
 
 
 def calculate_selected_isochron() -> None:
     """Calculate isochron age for selected data points."""
     try:
-        # Check if we have selected points
-        if not app_state.selected_indices or len(app_state.selected_indices) < 2:
-            logger.warning("Isochron calculation requires at least 2 selected points.")
+        from data.geochemistry import york_regression, calculate_pbpb_age_from_ratio, engine
+
+        payload = _SELECTED_ISOCHRON_USE_CASE.execute(
+            df=_df_global(),
+            selected_indices=list(app_state.selected_indices),
+            render_mode=app_state.render_mode,
+            resolve_errors=_resolve_isochron_errors,
+            york_regression=york_regression,
+            calculate_age=calculate_pbpb_age_from_ratio,
+            get_engine_parameters=engine.get_parameters,
+        )
+
+        if payload is None:
+            logger.warning("Isochron calculation did not produce a valid result.")
             state_gateway.set_selected_isochron_data(None)
             return
 
-        # Check if we're in a Pb evolution mode
-        if app_state.render_mode != 'PB_EVOL_76':
-            logger.warning("Isochron calculation is only available for Pb evolution plot (PB_EVOL_76).")
-            state_gateway.set_selected_isochron_data(None)
-            return
-
-        # Determine isochron mode
-        mode = 'ISOCHRON1'
-        x_col = "206Pb/204Pb"
-        y_col = "207Pb/204Pb"
-
-        # Get data
-        df = _df_global()
-        if df is None or x_col not in df.columns or y_col not in df.columns:
-            logger.warning("Required columns %s and %s not found in data.", x_col, y_col)
-            state_gateway.set_selected_isochron_data(None)
-            return
-
-        # Extract selected points
-        selected_list = list(app_state.selected_indices)
-        df_selected = df.iloc[selected_list]
-
-        x_data = pd.to_numeric(df_selected[x_col], errors='coerce').values
-        y_data = pd.to_numeric(df_selected[y_col], errors='coerce').values
-
-        sx_data, sy_data, rxy_data = _resolve_isochron_errors(df_selected, len(x_data))
-
-        # Remove NaN values
-        valid = ~np.isnan(x_data) & ~np.isnan(y_data)
-        valid = valid & np.isfinite(sx_data) & np.isfinite(sy_data) & np.isfinite(rxy_data)
-        valid = valid & (sx_data > 0) & (sy_data > 0) & (np.abs(rxy_data) <= 1)
-        x_data = x_data[valid]
-        y_data = y_data[valid]
-        sx_data = sx_data[valid]
-        sy_data = sy_data[valid]
-        rxy_data = rxy_data[valid]
-
-        if len(x_data) < 2:
-            logger.warning("Not enough valid data points for isochron calculation.")
-            state_gateway.set_selected_isochron_data(None)
-            return
-
-        # Perform York regression
-        try:
-            from data.geochemistry import york_regression, calculate_pbpb_age_from_ratio, engine
-            fit = york_regression(x_data, sx_data, y_data, sy_data, rxy_data)
-            slope = fit['b']
-            intercept = fit['a']
-            slope_err = fit['sb']
-            intercept_err = fit['sa']
-            mswd = fit['mswd']
-            p_value = fit['p_value']
-        except Exception as e:
-            logger.warning("Isochron regression failed: %s", e)
-            state_gateway.set_selected_isochron_data(None)
-            return
-
-        # Calculate R² value
-        y_pred = slope * x_data + intercept
-        ss_res = np.sum((y_data - y_pred) ** 2)
-        ss_tot = np.sum((y_data - np.mean(y_data)) ** 2)
-        r_squared = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0.0
-
-        # Calculate age from slope
-        try:
-            params = engine.get_parameters()
-            age_ma, age_err = calculate_pbpb_age_from_ratio(slope, slope_err, params)
-        except Exception as e:
-            logger.warning("Age calculation failed: %s", e)
-            age_ma = 0.0
-            age_err = None
-
-        # Store results
-        x_min, x_max = np.min(x_data), np.max(x_data)
-        span = x_max - x_min
-        x_range = [x_min - span * 0.1, x_max + span * 0.1]
-        y_range = [slope * x_range[0] + intercept, slope * x_range[1] + intercept]
-
-        state_gateway.set_selected_isochron_data({
-            'slope': slope,
-            'intercept': intercept,
-            'slope_err': slope_err,
-            'intercept_err': intercept_err,
-            'age': age_ma,
-            'age_err': age_err,
-            'r_squared': r_squared,
-            'mswd': mswd,
-            'p_value': p_value,
-            'n_points': len(x_data),
-            'mode': mode,
-            'x_range': x_range,
-            'y_range': y_range,
-            'x_col': x_col,
-            'y_col': y_col
-        })
-
-        logger.info("Isochron calculated: Age = %.1f Ma, n = %d, R² = %.4f", age_ma, len(x_data), r_squared)
-        logger.info("Slope = %.6f, Intercept = %.6f", slope, intercept)
+        state_gateway.set_selected_isochron_data(payload)
+        logger.info(
+            "Isochron calculated: Age = %.1f Ma, n = %d, R² = %.4f",
+            payload.get('age', 0.0),
+            payload.get('n_points', 0),
+            payload.get('r_squared', 0.0),
+        )
+        logger.info(
+            "Slope = %.6f, Intercept = %.6f",
+            payload.get('slope', 0.0),
+            payload.get('intercept', 0.0),
+        )
 
     except Exception as err:
         logger.warning("Isochron calculation failed: %s", err)
@@ -532,16 +338,11 @@ def _resolve_sample_index(event):
                 return sample_idx
 
         if event is not None and event.xdata is not None and event.ydata is not None:
-            x_val = float(event.xdata)
-            y_val = float(event.ydata)
-            best_idx = None
-            best_distance = float('inf')
-            for idx, (sx, sy) in app_state.sample_coordinates.items():
-                distance = ((x_val - sx) ** 2 + (y_val - sy) ** 2) ** 0.5
-                if distance < _HOVER_DISTANCE_THRESHOLD and distance < best_distance:
-                    best_distance = distance
-                    best_idx = idx
-            return best_idx
+            return _SELECTION_USE_CASE.nearest_sample_index(
+                app_state.sample_coordinates,
+                x=float(event.xdata),
+                y=float(event.ydata),
+            )
     except Exception:
         return None
     return None
@@ -553,13 +354,13 @@ def toggle_selection_mode(tool_type: str = 'export') -> None:
     tool_type: 'export', 'lasso', or 'isochron'
     """
     try:
-        # If switching to the same tool that is already active, toggle it off
-        if app_state.selection_tool == tool_type:
-            new_tool = None
-        else:
-            new_tool = tool_type
-
-        if new_tool and app_state.render_mode == '3D':
+        try:
+            new_tool = _SELECTION_USE_CASE.resolve_next_tool(
+                app_state.selection_tool,
+                tool_type,
+                app_state.render_mode,
+            )
+        except ValueError:
             logger.warning('Selection mode is only available for 2D projections.')
             return
 
@@ -678,30 +479,14 @@ def on_hover(event) -> None:
                 except KeyError:
                     continue
 
-                lines = []
-                # Use configured columns if available, otherwise fallback to defaults
-                cols_to_show = getattr(app_state, 'tooltip_columns', None)
-                if cols_to_show is None:
-                    cols_to_show = ['Lab No.', 'Discovery site', 'Period']
-
-                # If user deselected all columns, show at least the ID
-                if not cols_to_show:
-                     lines.append(f"ID: {sample_idx}")
-                else:
-                    found_any = False
-                    for col in cols_to_show:
-                        if col in df.columns:
-                            val = row[col]
-                            val_str = str(val) if pd.notna(val) else 'N/A'
-                            lines.append(f"{col}: {val_str}")
-                            found_any = True
-                    
-                    if not found_any:
-                        lines.append(f"ID: {sample_idx}")
-                
-                txt = "\n".join(lines)
-                if sample_idx in app_state.selected_indices:
-                    txt += "\n" + translate("Status: Selected")
+                txt = _TOOLTIP_CONTENT_USE_CASE.build_text(
+                    row=row,
+                    df_columns=df.columns,
+                    sample_idx=sample_idx,
+                    tooltip_columns=getattr(app_state, 'tooltip_columns', None),
+                    selected=sample_idx in app_state.selected_indices,
+                    selected_status_label=translate("Status: Selected"),
+                )
 
                 app_state.annotation.xy = (x, y)
                 app_state.annotation.set_text(txt)
@@ -823,24 +608,17 @@ def on_legend_click(event) -> None:
                             if i < len(legend.legendHandles):
                                 legend.legendHandles[i].set_alpha(1.0 if new_visible else 0.5)
 
-                            # Update app_state.visible_groups
-                            visible_groups = list(app_state.visible_groups) if app_state.visible_groups is not None else None
-                            if visible_groups is None:
-                                # If None, it means all were visible. Initialize with all.
-                                visible_groups = list(app_state.current_groups)
-                            
-                            if new_visible:
-                                if label not in visible_groups:
-                                    visible_groups.append(label)
-                            else:
-                                if label in visible_groups:
-                                    visible_groups.remove(label)
-                            
-                            # If all are visible again, set to None to indicate "all"
-                            if len(visible_groups) == len(app_state.current_groups):
-                                state_gateway.set_visible_groups(None)
-                            else:
-                                state_gateway.set_visible_groups(visible_groups)
+                            visible_groups = _SELECTION_USE_CASE.next_visible_groups(
+                                current_visible_groups=(
+                                    list(app_state.visible_groups)
+                                    if app_state.visible_groups is not None
+                                    else None
+                                ),
+                                all_groups=list(app_state.current_groups),
+                                target_group=label,
+                                target_visible=new_visible,
+                            )
+                            state_gateway.set_visible_groups(visible_groups)
 
                             # Notify Control Panel to update checkboxes
                             panel = getattr(app_state, 'control_panel_ref', None)
