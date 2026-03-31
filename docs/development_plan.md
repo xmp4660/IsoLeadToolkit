@@ -319,6 +319,14 @@ src/
 
 ---
 
+## 阶段进展（2026-04-01）
+
+- 已创建并推送架构改造总分支：`epic/architecture-modernization-2026q2`。
+- 已启动 A3（Application 层）首个可回滚迁移样例：
+    - 新增应用层用例：`application/use_cases/export_dataframe.py`。
+    - 导出 UI 层 `ui/panels/export/data_export.py` 改为通过用例构建导出数据，UI 仅负责参数采集与导出触发。
+- 本次迁移目标：不改外部行为，仅降低 UI 业务逻辑密度，作为后续 `LoadDatasetUseCase` / `RenderPlotUseCase` / `ExportImageUseCase` 迁移模板。
+
 ## 全局改进计划
 
 ### 第一优先级：功能与性能
