@@ -392,6 +392,11 @@ src/
     - `ui/main_window_parts/legend.py` 已收敛为组合入口。
     - 新增 `ui/main_window_parts/legend_core.py` 与 `legend_actions.py`，将图例排序核心与 UI 交互动作解耦。
     - 兼容性验证：`Qt5MainWindow` 外部行为不变，图例导入与启动冒烟通过。
+- 已完成 Display/Legend 与 ProvenanceML 第四轮模块细化（2026-04-01 夜间）：
+    - `ui/panels/display/build.py` 已剥离颜色与图例按钮辅助逻辑到 `ui/panels/display/helpers.py`，`DisplayPanelMixin` 更新为 build/themes/helpers 三层组合。
+    - `ui/panels/legend/build.py` 已剥离色阶/形状编辑器逻辑到 `ui/panels/legend/editors.py`，`LegendPanelMixin` 更新为 build/editors/actions 三层组合。
+    - `ui/dialogs/provenance_ml_dialog.py` 已收敛为兼容包装器，新增 `ui/dialogs/provenance_ml/dialog.py`、`build.py`、`workflow.py` 形成初始化/构建/执行分层。
+    - 兼容性验证：`ProvenanceMLDialog` 与 `show_provenance_ml` 入口保持不变，导入冒烟通过。
 
 ## 全局改进计划
 

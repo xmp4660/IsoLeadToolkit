@@ -400,7 +400,8 @@ def _delete_theme(self)   # 删除已保存主题
 模块拆分说明（2026-04）:
 - `panels/display_panel.py` 仅保留 `DisplayPanel` 组装类。
 - `panels/display/panel.py` 作为 mixin 组合层。
-- `panels/display/build.py`：控件初始化、`QToolBox` 页面构建、颜色控件辅助方法。
+- `panels/display/build.py`：控件初始化与 `QToolBox` 页面构建。
+- `panels/display/helpers.py`：颜色控件辅助方法、图例位置按钮同步。
 - `panels/display/themes.py`：主题保存/加载/删除、自动布局与 UI 主题切换。
 
 ### AnalysisPanel
@@ -445,7 +446,8 @@ def _delete_theme(self)   # 删除已保存主题
 模块拆分说明（2026-04）:
 - `panels/legend_panel.py` 仅保留 `LegendPanel` 组装类。
 - `panels/legend/panel.py` 作为 mixin 组合层。
-- `panels/legend/build.py`：图例页面构建、色阶/形状自定义对话框、图标生成与位置按钮同步。
+- `panels/legend/build.py`：图例页面构建与位置按钮同步。
+- `panels/legend/editors.py`：色阶/形状自定义对话框、图标生成与列表编辑。
 - `panels/legend/actions.py`：图例位置变更、色阶联动、自动样式分配与偏移微调。
 
 ### GeoPanel
@@ -466,7 +468,7 @@ def _delete_theme(self)   # 删除已保存主题
 | 对话框 | 行数 | 职责 |
 |--------|------|------|
 | `data_import_dialog.py` + `data_import/*.py` | 27 + 442 | 统一数据导入 (文件+工作表+列)，包装器 + 模块化逻辑层 |
-| `provenance_ml_dialog.py` | 663 | ML 产地分析配置 |
+| `provenance_ml_dialog.py` + `provenance_ml/*.py` | 20 + 509 | ML 产地分析配置，包装器 + 模块化逻辑层 |
 | `endmember_dialog.py` | 431 | 端元识别参数 |
 | `isochron_dialog.py` | 317 | 等时线回归设置 |
 | `ternary_dialog.py` | 243 | 三元图配置 |
@@ -519,11 +521,12 @@ class SomeDialog(QDialog):
 - 拉伸模式 (power/minmax/hybrid)
 - 缩放因子
 
-#### Qt5ProvenanceMLDialog (provenance_ml_dialog.py)
+#### Qt5ProvenanceMLDialog (provenance_ml_dialog.py + provenance_ml/*.py)
 - 训练数据配置 (区域列 + 特征列)
 - 预测范围 (全部/选中/子集)
 - ML 参数 (DBSCAN eps, XGBoost 参数, SMOTE 开关)
 - 预测阈值
+- 模块分层：`dialog.py`(初始化/默认路径)、`build.py`(UI 构建/列自动识别)、`workflow.py`(数据加载/训练执行/结果应用导出)
 
 ---
 
