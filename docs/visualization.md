@@ -14,7 +14,7 @@
 | `plotting/render.py` | ~20 | 渲染兼容门面（向后兼容导出） |
 | `plotting/rendering/` | 多文件 | 渲染辅助层（图例、KDE、地球化学覆盖层） |
 | `plotting/geo.py` | ~70 | 地球化学兼容门面（向后兼容导出） |
-| `plotting/geochem/` | 多文件 | 地球化学辅助函数（`isochron_fits.py`、`selected_isochron_overlay.py`、`paleoisochron_overlays.py`、模型年龄线、标签刷新、方程覆盖、Plumbotectonics 子域） |
+| `plotting/geochem/` | 多文件 | 地球化学辅助函数（`isochron_fits.py`、`isochron_fit_76.py`、`isochron_fit_86.py`、`selected_isochron_overlay.py`、`paleoisochron_overlays.py`、模型年龄线、标签刷新、方程覆盖、Plumbotectonics 子域） |
 | `plotting/ternary.py` | ~120 | 三元图工具 |
 | `plotting/isochron.py` | 60 | 等时线误差配置与共享工具 |
 | `events.py` | ~170 | 事件编排入口（渲染触发 + 异步 embedding 管理） |

@@ -431,6 +431,10 @@ src/
     - `visualization/plotting/geochem/isochron_rendering.py` 已收敛为兼容门面。
     - 新增 `visualization/plotting/geochem/isochron_fits.py`（等时线拟合主流程）、`selected_isochron_overlay.py`（选中等时线高亮）、`paleoisochron_overlays.py`（古等时线覆盖层）。
     - 兼容性验证：`pytest` 全通过（8 passed），`isochron_rendering` 与 `isochron_overlays` 双路径导入冒烟通过。
+- 已完成 geochem 等时线拟合二次细拆（2026-04-01 夜间续）：
+    - 新增 `visualization/plotting/geochem/isochron_fit_76.py` 与 `isochron_fit_86.py`，将 PB_EVOL_76/PB_EVOL_86 模式分支从主流程中解耦。
+    - `visualization/plotting/geochem/isochron_fits.py` 已收敛为主流程编排层（分组循环 + 公共拟合预处理 + 分支分发）。
+    - 兼容性验证：`pytest` 全通过（8 passed），`isochron_fits` 与 `isochron_rendering` 导入冒烟通过。
     - 验证结果：`pytest` 全通过（8 passed），导入冒烟通过。
 - 已完成 geochem 第二轮拆分（2026-04-01 夜间续）：
     - `visualization/plotting/geo.py` 已收敛为兼容门面，保留原函数导出以避免外部调用断裂。
