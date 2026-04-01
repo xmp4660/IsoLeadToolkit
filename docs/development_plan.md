@@ -39,6 +39,7 @@
     - 通用渲染 helper 归位到 `visualization/plotting/rendering/common/`（`state_access.py`、`legend.py`、`scatter.py`、`title.py`）。
     - raw 渲染归位到 `visualization/plotting/rendering/raw/`（`plot2d.py`、`plot3d.py`）。
     - 已移除无调用的兼容门面文件（旧的 `embedding_*`、`raw_plot_*`、`helpers`/`*_helpers` 等平铺门面），内部调用统一指向子目录实现。
+    - 已进一步移除 visualization 内无调用兼容层：`event_handlers/selection_interaction.py`、`plotting/geochem/isochron_overlays.py`、`plotting/geochem/isochron_rendering.py`；`plotting/geo.py` 改为直接导入底层实现模块。
     - 目标达成：降低平铺文件噪音与导入歧义，进一步提升渲染层可维护性。
 
 ## 架构现代化改造方案（2026-03-31 新增）
