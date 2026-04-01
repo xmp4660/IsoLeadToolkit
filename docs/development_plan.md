@@ -438,6 +438,13 @@ src/
     - 新增 `visualization/plotting/rendering/raw_plots.py`，承载 `plot_2d_data` 与 `plot_3d_data`。
     - 量化结果：`render.py` 由约 902 行降至 17 行。
     - 验证结果：`pytest` 全通过（8 passed），兼容导入冒烟通过。
+- 已完成 geochem 第四轮拆分（2026-04-01 夜间续）：
+    - `visualization/plotting/geochem/overlay_helpers.py` 已收敛为兼容门面。
+    - 新增 `visualization/plotting/geochem/overlay_common.py`，承载通用覆盖层标签/样式辅助函数。
+    - 新增 `visualization/plotting/geochem/model_overlays.py`，承载模型曲线与 Mu/Kappa 古等时线绘制。
+    - 新增 `visualization/plotting/geochem/plumbotectonics.py`，承载 Plumbotectonics 分组元数据、曲线拟合与曲线/同龄线绘制。
+    - 量化结果：`overlay_helpers.py` 由约 686 行降至 45 行。
+    - 验证结果：`pytest` 全通过（8 passed），兼容导入冒烟通过。
 
 ## 全局改进计划
 
