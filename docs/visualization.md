@@ -48,10 +48,12 @@
 - `common/legend.py`: 图例构建、图内放置、外部图例面板通知。
 - `common/scatter.py`: 分组散点绘制与样本命中映射维护。
 - `common/title.py`: 标题与坐标轴标签构建。
+- `raw/plot2d.py`: 原始 2D 散点渲染实现。
+- `raw/plot3d.py`: 原始 3D 散点渲染实现。
 - `raw_plot_2d.py`: 原始 2D 散点渲染实现。
 - `raw_plot_3d.py`: 原始 3D 散点渲染实现。
 - `raw_plots.py`: 仅保留向后兼容导出门面。
-- `embedding_algorithm.py`、`embedding_dataframe.py`、`embedding_compute_*.py`、`state_access.py`、`legend_helpers.py`、`scatter_helpers.py`、`title_helpers.py`、`helpers.py`: 兼容门面，避免旧导入路径失效。
+- `embedding_algorithm.py`、`embedding_dataframe.py`、`embedding_compute_*.py`、`state_access.py`、`legend_helpers.py`、`scatter_helpers.py`、`title_helpers.py`、`helpers.py`、`raw_plot_2d.py`、`raw_plot_3d.py`: 兼容门面，避免旧导入路径失效。
 
 ---
 
