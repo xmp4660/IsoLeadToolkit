@@ -8,8 +8,8 @@ import json
 import logging
 from typing import Any
 
-from .config import CONFIG
-from .session_migration import migrate_session_data
+from ..config import CONFIG
+from .migration import migrate_session_data
 
 logger = logging.getLogger(__name__)
 

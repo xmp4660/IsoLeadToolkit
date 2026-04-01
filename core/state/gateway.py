@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from .state import app_state
+from .app_state import app_state
 
 logger = logging.getLogger(__name__)
 

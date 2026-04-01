@@ -7,11 +7,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from .config import CONFIG
-from .cache import EmbeddingCache
-from .overlay_state import OverlayState
-from .legend_state import LegendState
-from .state_bootstrap import init_runtime_defaults, sync_overlay_kde_styles
+from ..config import CONFIG
+from ..cache import EmbeddingCache
+from ..overlay_state import OverlayState
+from ..legend_state import LegendState
+from .bootstrap import init_runtime_defaults, sync_overlay_kde_styles
 
 
 @dataclass

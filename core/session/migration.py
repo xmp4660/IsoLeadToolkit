@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .config import CONFIG
+from ..config import CONFIG
 
 
 def _normalize_list(value: Any) -> list[Any]:
