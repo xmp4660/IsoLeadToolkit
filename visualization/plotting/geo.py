@@ -21,16 +21,11 @@ from .geochem.overlay_helpers import (
     get_plumbotectonics_group_palette,
     get_plumbotectonics_variants,
 )
-from .geochem.isochron_overlays import (
-    _build_isochron_label,
-    _draw_isochron_overlays,
-    _draw_model_age_lines,
-    _draw_model_age_lines_86,
-    _draw_paleoisochrons,
-    _draw_selected_isochron,
-    _resolve_model_age,
-    refresh_paleoisochron_labels,
-)
+from .geochem.isochron_fits import _draw_isochron_overlays
+from .geochem.isochron_labels import _build_isochron_label, refresh_paleoisochron_labels
+from .geochem.model_age_lines import _draw_model_age_lines, _draw_model_age_lines_86, _resolve_model_age
+from .geochem.paleoisochron_overlays import _draw_paleoisochrons
+from .geochem.selected_isochron_overlay import _draw_selected_isochron
 from .geochem.equation_overlays import (
     _draw_equation_overlays,
     _safe_eval_expression,
