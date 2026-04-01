@@ -41,6 +41,9 @@
 `plotting/rendering/` 近期已拆分出以下实现模块，用于降低 `embedding_plot.py` 与 `raw_plots.py` 的复杂度：
 - `embedding_algorithm.py`: 算法归一化、参数解析、embedding 计算调度。
 - `embedding_dataframe.py`: embedding 与 DataFrame 对齐、可见分组过滤。
+- `embedding_compute_ml.py`: UMAP/t-SNE/PCA/RobustPCA 计算与预计算 embedding 元数据回填。
+- `embedding_compute_geochem.py`: V1V2 与 Pb 演化/Mu/Kappa 图的 embedding 计算。
+- `embedding_compute_ternary.py`: 三元图 embedding 计算与三元范围状态清理。
 - `raw_plot_2d.py`: 原始 2D 散点渲染实现。
 - `raw_plot_3d.py`: 原始 3D 散点渲染实现。
 - `state_access.py`: 渲染层共享状态访问入口（`df_global`、`data_cols`、活动子集）。
