@@ -432,6 +432,12 @@ src/
     - 新增 `visualization/plotting/geochem/model_age_lines.py`，承载模型年龄线与年龄解算逻辑。
     - 量化结果：`isochron_overlays.py` 由约 1021 行降至 27 行。
     - 验证结果：`pytest` 全通过（8 passed），兼容导入冒烟通过。
+- 已完成 rendering 第二轮拆分（2026-04-01 夜间续）：
+    - `visualization/plotting/render.py` 已收敛为兼容门面，保留 `plot_embedding` / `plot_umap` / `plot_2d_data` / `plot_3d_data` 导出。
+    - 新增 `visualization/plotting/rendering/embedding_plot.py`，承载 `plot_embedding` 主流程。
+    - 新增 `visualization/plotting/rendering/raw_plots.py`，承载 `plot_2d_data` 与 `plot_3d_data`。
+    - 量化结果：`render.py` 由约 902 行降至 17 行。
+    - 验证结果：`pytest` 全通过（8 passed），兼容导入冒烟通过。
 
 ## 全局改进计划
 
