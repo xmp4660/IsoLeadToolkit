@@ -419,6 +419,12 @@ src/
     - 新增 `visualization/plotting/geochem/`，并迁移 `geo_overlay_helpers.py` 到 `overlay_helpers.py`。
     - `render.py`、`style.py`、`geo.py`、`legend_model.py` 已完成导入路径切换，plotting 顶层文件堆积明显下降。
     - 验证结果：`pytest` 全通过（8 passed），导入冒烟通过。
+- 已完成 geochem 第二轮拆分（2026-04-01 夜间续）：
+    - `visualization/plotting/geo.py` 已收敛为兼容门面，保留原函数导出以避免外部调用断裂。
+    - 新增 `visualization/plotting/geochem/isochron_overlays.py`，承载等时线拟合、选中等时线、古等时线、模型年龄线、标签刷新。
+    - 新增 `visualization/plotting/geochem/equation_overlays.py`，承载方程表达式安全求值与曲线叠加渲染。
+    - 量化结果：`geo.py` 由约 1233 行降至 64 行。
+    - 验证结果：`pytest` 全通过（8 passed），兼容导入冒烟通过。
 
 ## 全局改进计划
 
