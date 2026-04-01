@@ -37,6 +37,7 @@
 - 可视化渲染层完成新一轮大块拆分（保持旧入口兼容）：
     - `visualization/plotting/rendering/raw_plots.py` 收敛为兼容门面，2D/3D 原始散点实现分别下沉到 `raw_plot_2d.py` 与 `raw_plot_3d.py`。
     - `visualization/plotting/rendering/embedding_plot.py` 继续瘦身，算法归一化与嵌入计算逻辑下沉到 `embedding_algorithm.py`，DataFrame 对齐与可见组过滤下沉到 `embedding_dataframe.py`。
+    - `visualization/plotting/rendering/helpers.py` 进一步门面化，图例/散点/标题/状态访问分别下沉到 `legend_helpers.py`、`scatter_helpers.py`、`title_helpers.py`、`state_access.py`。
     - 目标达成：在不变更外部导入路径的前提下，进一步降低单文件复杂度并提升渲染链路可维护性。
 
 ## 架构现代化改造方案（2026-03-31 新增）

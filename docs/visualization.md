@@ -43,7 +43,12 @@
 - `embedding_dataframe.py`: embedding 与 DataFrame 对齐、可见分组过滤。
 - `raw_plot_2d.py`: 原始 2D 散点渲染实现。
 - `raw_plot_3d.py`: 原始 3D 散点渲染实现。
+- `state_access.py`: 渲染层共享状态访问入口（`df_global`、`data_cols`、活动子集）。
+- `legend_helpers.py`: 图例构建、图内放置、外部图例面板通知。
+- `scatter_helpers.py`: 分组散点绘制与样本命中映射维护。
+- `title_helpers.py`: 标题与坐标轴标签构建。
 - `raw_plots.py`: 仅保留向后兼容导出门面。
+- `helpers.py`: 兼容门面，聚合导出常用 helper 以避免旧导入路径失效。
 
 ---
 
