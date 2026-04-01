@@ -14,13 +14,13 @@ from ..core import (
     _ensure_axes,
     _build_group_palette,
 )
-from .embedding_algorithm import (
+from .embedding.algorithm import (
     compute_embedding,
     normalize_algorithm,
     resolve_embedding_params,
     resolve_target_dimensions,
 )
-from .embedding_dataframe import prepare_plot_dataframe
+from .embedding.dataframe import prepare_plot_dataframe
 from .helpers import (
     _render_geo_overlays,
     _render_kde_overlay,

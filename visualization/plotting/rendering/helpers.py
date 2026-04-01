@@ -1,18 +1,18 @@
 """Compatibility facade for rendering helper symbols."""
 from __future__ import annotations
 
-from .geo_layers import _render_geo_overlays
-from .kde import _render_kde_overlay, _resolve_kde_style
-from .legend_helpers import (
+from .common.legend import (
     _build_legend_proxies,
     _build_overlay_legend_entries,
     _notify_legend_panel,
     _place_inline_legend,
     _render_legend,
 )
-from .scatter_helpers import _render_scatter_groups
-from .state_access import _active_subset_indices, _data_cols, _data_state, _df_global
-from .title_helpers import _render_title_labels
+from .common.scatter import _render_scatter_groups
+from .common.state_access import _active_subset_indices, _data_cols, _data_state, _df_global
+from .common.title import _render_title_labels
+from .geo_layers import _render_geo_overlays
+from .kde import _render_kde_overlay, _resolve_kde_style
 
 __all__ = [
     '_active_subset_indices',
