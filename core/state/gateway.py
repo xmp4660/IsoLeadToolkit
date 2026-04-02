@@ -51,6 +51,9 @@ class AppStateGateway:
         if name == "confidence_level":
             self.set_confidence_level(float(value))
             return
+        if name == "legend_update_callback":
+            self.set_legend_update_callback(value)
+            return
         if name == "render_mode":
             self.set_render_mode(str(value))
             return
@@ -237,6 +240,9 @@ class AppStateGateway:
 
     def set_confidence_level(self, level: float) -> None:
         self._state.confidence_level = float(level)
+
+    def set_legend_update_callback(self, callback: Any) -> None:
+        self._state.legend_update_callback = callback
 
     def set_overlay_label_state(self, label_state: dict[str, Any]) -> None:
         for key, value in label_state.items():

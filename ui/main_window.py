@@ -32,4 +32,4 @@ class Qt5MainWindow(
         self._setup_toolbar()
         self._setup_statusbar()
         self._restore_state()
-        state_gateway.set_attr("legend_update_callback", self._update_legend_panel)
+        state_gateway.set_legend_update_callback(self._update_legend_panel)
