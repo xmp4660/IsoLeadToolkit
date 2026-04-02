@@ -250,6 +250,11 @@
                     `application/core/data/ui/visualization` 中 `state_gateway.set_attr/set_attrs` 调用。
                 - 新增 `tests/test_gateway_generic_mutation_guard.py`，在 CI/本地 pytest 中
                     强制 `TOTAL=0`，避免后续重构回退到通用写入口。
+        - 第四十二批迁移清理（测试侧显式 API 对齐）：
+                - `tests/test_state_store.py` 的通用入口调用最小化：
+                  `_restore_state` 从 `set_attrs` 改为显式 `set_algorithm`/`set_selection_mode`，
+                  tooltip/equation 覆盖测试改为显式 setter；
+                  仅保留 `group_cols/data_cols` 兼容性专用测试使用 `set_attr`。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 
