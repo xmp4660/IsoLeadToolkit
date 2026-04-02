@@ -123,6 +123,12 @@ class AppStateGateway:
         if name == "legend_offset":
             self.set_legend_offset(value)
             return
+        if name == "isochron_results":
+            self.set_isochron_results(value)
+            return
+        if name == "plumbotectonics_group_visibility":
+            self.set_plumbotectonics_group_visibility(value)
+            return
         if name == "render_mode":
             self.set_render_mode(str(value))
             return
@@ -397,6 +403,12 @@ class AppStateGateway:
 
     def set_legend_offset(self, offset: Any) -> None:
         self._state.legend_offset = tuple(offset) if offset is not None else (0.0, 0.0)
+
+    def set_isochron_results(self, results: Any) -> None:
+        self._state.isochron_results = dict(results or {})
+
+    def set_plumbotectonics_group_visibility(self, visibility: Any) -> None:
+        self._state.plumbotectonics_group_visibility = dict(visibility or {})
 
     def set_marginal_axes(self, marginal_axes: Any) -> None:
         self._state.marginal_axes = marginal_axes

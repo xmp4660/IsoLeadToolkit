@@ -78,10 +78,10 @@ class MainWindowLegendActionsMixin:
         checked = state == Qt.Checked
         if self._is_plumbotectonics_group_style(style_key):
             if not hasattr(app_state, "plumbotectonics_group_visibility"):
-                state_gateway.set_attr("plumbotectonics_group_visibility", {})
+                state_gateway.set_plumbotectonics_group_visibility({})
             visibility = getattr(app_state, "plumbotectonics_group_visibility", {}) or {}
             visibility[style_key] = checked
-            state_gateway.set_attr("plumbotectonics_group_visibility", visibility)
+            state_gateway.set_plumbotectonics_group_visibility(visibility)
             try:
                 from visualization.plotting.style import refresh_overlay_visibility
 
@@ -103,7 +103,7 @@ class MainWindowLegendActionsMixin:
             else:
                 state_gateway.set_show_isochrons(False)
                 state_gateway.set_selected_isochron_data(None)
-                state_gateway.set_attr("isochron_results", {})
+                state_gateway.set_isochron_results({})
 
             self._sync_geochem_toggle_panels(style_key)
             self._refresh_plot()
@@ -114,7 +114,7 @@ class MainWindowLegendActionsMixin:
 
         if style_key == "isochron" and not checked:
             state_gateway.set_selected_isochron_data(None)
-            state_gateway.set_attr("isochron_results", {})
+            state_gateway.set_isochron_results({})
 
         self._sync_geochem_toggle_panels(style_key)
 

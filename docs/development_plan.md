@@ -167,6 +167,35 @@
     - 第二十一批迁移清理（叠加标签刷新标记）：
         - `core/state/gateway.py` 新增 `set_overlay_label_refreshing`。
         - `visualization/plotting/geochem/isochron_labels.py` 刷新标记写入改为显式 API。
+    - 第二十二批迁移清理（当前图标题写入）：
+        - `core/state/gateway.py` 新增 `set_current_plot_title`。
+        - `rendering/common/title.py`、`rendering/raw/plot2d.py`、`rendering/raw/plot3d.py` 标题写入改为显式 API。
+    - 第二十三批迁移清理（annotation 写入）：
+        - `core/state/gateway.py` 新增 `set_annotation`。
+        - `rendering/raw/plot2d.py`、`rendering/raw/plot3d.py` 注释对象写入改为显式 API。
+    - 第二十四批迁移清理（last_2d_cols 写入）：
+        - `core/state/gateway.py` 新增 `set_last_2d_cols`。
+        - `rendering/raw/plot2d.py` 最近 2D 轴列记录改为显式 API。
+    - 第二十五批迁移清理（最近文件列表）：
+        - `core/state/gateway.py` 新增 `set_recent_files`。
+        - `ui/dialogs/data_import/workflow.py` 最近文件更新改为显式 API。
+    - 第二十六批迁移清理（语言切换写入）：
+        - `core/state/gateway.py` 新增 `set_language_code`。
+        - `ui/dialogs/file_dialog.py`、`ui/dialogs/data_import/build.py` 语言写入改为显式 API。
+    - 第二十七批迁移清理（line_styles 写入）：
+        - `core/state/gateway.py` 新增 `set_line_styles`。
+        - `ui/dialogs/line_style_dialog.py` 与 `ui/panels/display/themes.py` 对应写入改为显式 API。
+    - 第二十八批迁移清理（saved_themes 写入）：
+        - `core/state/gateway.py` 新增 `set_saved_themes`。
+        - `ui/panels/display/themes.py` 主题加载/初始化写入改为显式 API。
+    - 第二十九批迁移清理（图例样式参数）：
+        - `core/state/gateway.py` 新增 `set_color_scheme`、`set_legend_position`、`set_legend_location`、`set_legend_columns`、`set_legend_nudge_step`、`set_legend_offset`。
+        - `ui/panels/legend/actions.py` 与 `ui/panels/display/themes.py` 对应写入改为显式 API。
+    - 第三十批迁移清理（ui_theme 显式写入）：
+        - `ui/panels/display/themes.py` 中 `ui_theme` 写入改为 `set_ui_theme`。
+    - 第三十一批迁移清理（等时线/Plumbotectonics 可见性结果写入）：
+        - `core/state/gateway.py` 新增 `set_isochron_results`、`set_plumbotectonics_group_visibility`。
+        - `ui/main_window_parts/legend_actions.py`、`visualization/plotting/geochem/isochron_fits.py` 对应写入改为显式 API。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 

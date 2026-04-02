@@ -118,7 +118,7 @@ def _draw_isochron_overlays(ax, actual_algorithm):
                 continue
 
             if not hasattr(app_state, 'isochron_results'):
-                state_gateway.set_attr('isochron_results', {})
+                state_gateway.set_isochron_results({})
             app_state.isochron_results[grp] = {
                 'slope': slope,
                 'intercept': intercept,
