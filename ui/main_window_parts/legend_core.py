@@ -186,8 +186,7 @@ class MainWindowLegendCoreMixin:
                         pass
             target_z -= 1
 
-        state_gateway.set_attr(
-            "legend_item_order",
+        state_gateway.set_legend_item_order(
             [self._legend_order_key(entry_type, entry_key) for entry_type, entry_key in order],
         )
 
@@ -229,8 +228,7 @@ class MainWindowLegendCoreMixin:
             return
 
         new_order = [target] + [entry for entry in order if entry != target]
-        state_gateway.set_attr(
-            "legend_item_order",
+        state_gateway.set_legend_item_order(
             [self._legend_order_key(current_type, current_key) for current_type, current_key in new_order],
         )
 

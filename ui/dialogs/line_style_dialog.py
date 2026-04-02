@@ -217,22 +217,22 @@ def open_line_style_dialog(parent, style_key, swatch=None, on_applied=None) -> b
         style_ref['alpha'] = float(alpha_spin.value())
 
         if style_key == 'model_curve':
-            state_gateway.set_attr('model_curve_width', style_ref['linewidth'])
+            state_gateway.set_model_curve_width(style_ref['linewidth'])
         elif style_key == 'plumbotectonics_curve':
-            state_gateway.set_attr('plumbotectonics_curve_width', style_ref['linewidth'])
+            state_gateway.set_plumbotectonics_curve_width(style_ref['linewidth'])
         elif style_key == 'paleoisochron':
-            state_gateway.set_attr('paleoisochron_width', style_ref['linewidth'])
+            state_gateway.set_paleoisochron_width(style_ref['linewidth'])
         elif style_key == 'model_age_line':
-            state_gateway.set_attr('model_age_line_width', style_ref['linewidth'])
+            state_gateway.set_model_age_line_width(style_ref['linewidth'])
         elif style_key == 'isochron':
-            state_gateway.set_attr('isochron_line_width', style_ref['linewidth'])
+            state_gateway.set_isochron_line_width(style_ref['linewidth'])
             if label_checks:
                 if not hasattr(app_state, 'isochron_label_options'):
-                    state_gateway.set_attr('isochron_label_options', {})
+                    state_gateway.set_isochron_label_options({})
                 for key, chk in label_checks.items():
                     app_state.isochron_label_options[key] = chk.isChecked()
         elif style_key == 'selected_isochron':
-            state_gateway.set_attr('selected_isochron_line_width', style_ref['linewidth'])
+            state_gateway.set_selected_isochron_line_width(style_ref['linewidth'])
 
         if label_text_edit is not None:
             style_ref['label_text'] = label_text_edit.text().strip()

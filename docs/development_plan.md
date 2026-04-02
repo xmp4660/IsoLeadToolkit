@@ -211,6 +211,13 @@
                 - `core/state/gateway.py` 新增 `standardize_data`、`pca_component_indices`、
                     ternary limit/manual/stretch 相关显式 setter，并在 `set_attr` 中添加兼容分发。
                 - `ui/panels/data/projection.py` 将对应固定字段写入从 `set_attr` 迁移到显式 API。
+        - 第三十五批迁移清理（线型/混合/图例顺序固定字段）：
+                - `core/state/gateway.py` 新增线型宽度、`isochron_label_options`、
+                    `mixing_endmembers`/`mixing_mixtures`、`custom_palettes`/`custom_shape_sets`、
+                    `legend_item_order`、`ternary_ranges` 等显式 setter。
+                - `ui/dialogs/line_style_dialog.py`、`ui/panels/analysis/mixing.py`、
+                    `ui/panels/legend/editors.py`、`ui/main_window_parts/legend_core.py`、
+                    `visualization/plotting/rendering/embedding_plot.py` 改为显式 API 调用。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 

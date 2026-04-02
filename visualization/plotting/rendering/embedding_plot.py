@@ -140,8 +140,7 @@ def plot_embedding(
                 labels=t_cols,
                 auto_zoom=auto_zoom,
             )
-            state_gateway.set_attr(
-                'ternary_ranges',
+            state_gateway.set_ternary_ranges(
                 {
                     't': (tmin, tmax),
                     'l': (lmin, lmax),
@@ -170,8 +169,7 @@ def plot_embedding(
 
         app_state.ax.tick_params()
 
-        state_gateway.set_attr(
-            'annotation',
+        state_gateway.set_annotation(
             app_state.ax.annotate(
             "",
             xy=(0, 0),

@@ -201,6 +201,45 @@ class AppStateGateway:
         if name == "ternary_stretch":
             self.set_ternary_stretch(bool(value))
             return
+        if name == "model_curve_width":
+            self.set_model_curve_width(float(value))
+            return
+        if name == "plumbotectonics_curve_width":
+            self.set_plumbotectonics_curve_width(float(value))
+            return
+        if name == "paleoisochron_width":
+            self.set_paleoisochron_width(float(value))
+            return
+        if name == "model_age_line_width":
+            self.set_model_age_line_width(float(value))
+            return
+        if name == "isochron_line_width":
+            self.set_isochron_line_width(float(value))
+            return
+        if name == "selected_isochron_line_width":
+            self.set_selected_isochron_line_width(float(value))
+            return
+        if name == "isochron_label_options":
+            self.set_isochron_label_options(value)
+            return
+        if name == "mixing_endmembers":
+            self.set_mixing_endmembers(value)
+            return
+        if name == "mixing_mixtures":
+            self.set_mixing_mixtures(value)
+            return
+        if name == "custom_palettes":
+            self.set_custom_palettes(value)
+            return
+        if name == "custom_shape_sets":
+            self.set_custom_shape_sets(value)
+            return
+        if name == "legend_item_order":
+            self.set_legend_item_order(value)
+            return
+        if name == "ternary_ranges":
+            self.set_ternary_ranges(value)
+            return
         if name == "render_mode":
             self.set_render_mode(str(value))
             return
@@ -556,6 +595,45 @@ class AppStateGateway:
 
     def set_ternary_stretch(self, enabled: bool) -> None:
         self._state.ternary_stretch = bool(enabled)
+
+    def set_model_curve_width(self, width: float) -> None:
+        self._state.model_curve_width = float(width)
+
+    def set_plumbotectonics_curve_width(self, width: float) -> None:
+        self._state.plumbotectonics_curve_width = float(width)
+
+    def set_paleoisochron_width(self, width: float) -> None:
+        self._state.paleoisochron_width = float(width)
+
+    def set_model_age_line_width(self, width: float) -> None:
+        self._state.model_age_line_width = float(width)
+
+    def set_isochron_line_width(self, width: float) -> None:
+        self._state.isochron_line_width = float(width)
+
+    def set_selected_isochron_line_width(self, width: float) -> None:
+        self._state.selected_isochron_line_width = float(width)
+
+    def set_isochron_label_options(self, options: Any) -> None:
+        self._state.isochron_label_options = dict(options or {})
+
+    def set_mixing_endmembers(self, mapping: Any) -> None:
+        self._state.mixing_endmembers = dict(mapping or {})
+
+    def set_mixing_mixtures(self, mapping: Any) -> None:
+        self._state.mixing_mixtures = dict(mapping or {})
+
+    def set_custom_palettes(self, palettes: Any) -> None:
+        self._state.custom_palettes = dict(palettes or {})
+
+    def set_custom_shape_sets(self, shape_sets: Any) -> None:
+        self._state.custom_shape_sets = dict(shape_sets or {})
+
+    def set_legend_item_order(self, order: Any) -> None:
+        self._state.legend_item_order = list(order or [])
+
+    def set_ternary_ranges(self, ranges: Any) -> None:
+        self._state.ternary_ranges = dict(ranges or {})
 
     def set_marginal_axes(self, marginal_axes: Any) -> None:
         self._state.marginal_axes = marginal_axes

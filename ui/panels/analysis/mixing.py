@@ -32,9 +32,9 @@ class AnalysisPanelMixingMixin:
             return
 
         if not hasattr(app_state, 'mixing_endmembers'):
-            state_gateway.set_attr('mixing_endmembers', {})
+            state_gateway.set_mixing_endmembers({})
         if not hasattr(app_state, 'mixing_mixtures'):
-            state_gateway.set_attr('mixing_mixtures', {})
+            state_gateway.set_mixing_mixtures({})
 
         selected_list = list(app_state.selected_indices)
         app_state.mixing_endmembers[group_name] = selected_list
@@ -69,9 +69,9 @@ class AnalysisPanelMixingMixin:
             return
 
         if not hasattr(app_state, 'mixing_endmembers'):
-            state_gateway.set_attr('mixing_endmembers', {})
+            state_gateway.set_mixing_endmembers({})
         if not hasattr(app_state, 'mixing_mixtures'):
-            state_gateway.set_attr('mixing_mixtures', {})
+            state_gateway.set_mixing_mixtures({})
 
         selected_list = list(app_state.selected_indices)
         app_state.mixing_mixtures[group_name] = selected_list
@@ -100,7 +100,8 @@ class AnalysisPanelMixingMixin:
 
     def _on_clear_mixing_groups(self):
         """Clear all mixing groups."""
-        state_gateway.set_attrs({'mixing_endmembers': {}, 'mixing_mixtures': {}})
+        state_gateway.set_mixing_endmembers({})
+        state_gateway.set_mixing_mixtures({})
         self._update_mixing_status()
         QMessageBox.information(
             self,

@@ -167,7 +167,7 @@ class LegendEditorsMixin:
             pass
 
         if not hasattr(app_state, 'custom_palettes'):
-            state_gateway.set_attr('custom_palettes', {})
+            state_gateway.set_custom_palettes({})
         app_state.custom_palettes[name] = colors
 
         try:
@@ -295,7 +295,7 @@ class LegendEditorsMixin:
             return None, None
 
         if not hasattr(app_state, 'custom_shape_sets'):
-            state_gateway.set_attr('custom_shape_sets', {})
+            state_gateway.set_custom_shape_sets({})
         app_state.custom_shape_sets[name] = shapes
         return name, shapes
 
