@@ -245,6 +245,11 @@
         - 第四十批迁移清理（面板样式批量写入收口）：
             - `core/state/gateway.py` 新增 `set_panel_style_updates(updates)` 专用入口。
             - `ui/panels/base_panel.py` 将样式字典写入从 `set_attrs` 迁移到专用显式 API。
+        - 第四十一批迁移清理（防回退守护）：
+                - 新增 `scripts/check_gateway_generic_mutations.py`，扫描生产目录
+                    `application/core/data/ui/visualization` 中 `state_gateway.set_attr/set_attrs` 调用。
+                - 新增 `tests/test_gateway_generic_mutation_guard.py`，在 CI/本地 pytest 中
+                    强制 `TOTAL=0`，避免后续重构回退到通用写入口。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 
