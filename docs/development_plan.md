@@ -196,6 +196,17 @@
     - 第三十一批迁移清理（等时线/Plumbotectonics 可见性结果写入）：
         - `core/state/gateway.py` 新增 `set_isochron_results`、`set_plumbotectonics_group_visibility`。
         - `ui/main_window_parts/legend_actions.py`、`visualization/plotting/geochem/isochron_fits.py` 对应写入改为显式 API。
+        - 第三十二批迁移清理（地化面板显式写入）：
+                - `core/state/gateway.py` 新增显式 API：
+                    `set_show_model_curves`、`set_show_plumbotectonics_curves`、`set_show_paleoisochrons`、
+                    `set_show_model_age_lines`、`set_show_growth_curves`、`set_use_real_age_for_mu_kappa`、
+                    `set_mu_kappa_age_col`、`set_plumbotectonics_variant`、`set_paleoisochron_step`、`set_paleoisochron_ages`。
+                - `ui/panels/data/geochem.py` 对应状态写入改为显式 API。
+        - 第三十三批迁移清理（叠加标签容器写入）：
+                - `core/state/gateway.py` 新增 `set_overlay_artists`、`set_overlay_curve_label_data`、
+                    `set_paleoisochron_label_data`、`set_plumbotectonics_isoage_label_data`。
+                - `visualization/plotting/geochem/overlay_common.py`、`paleoisochron_overlays.py`、
+                    `plumbotectonics_isoage.py` 对应写入改为显式 API。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 

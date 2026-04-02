@@ -64,7 +64,7 @@ def _draw_plumbotectonics_isoage_lines(ax, actual_algorithm):
         }
     )
 
-    state_gateway.set_attr('plumbotectonics_isoage_label_data', [])
+    state_gateway.set_plumbotectonics_isoage_label_data([])
 
     for idx in range(n_points):
         pts = []

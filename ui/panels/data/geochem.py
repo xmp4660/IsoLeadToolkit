@@ -15,7 +15,7 @@ class DataPanelGeochemMixin:
 
     def _on_model_curves_change(self, state):
         """Handle model curves toggle."""
-        state_gateway.set_attr("show_model_curves", state == Qt.Checked)
+        state_gateway.set_show_model_curves(state == Qt.Checked)
         self._sync_geochem_toggle_widgets(
             app_state.show_model_curves,
             getattr(self, "modeling_show_model_check", None),
@@ -25,7 +25,7 @@ class DataPanelGeochemMixin:
 
     def _on_plumbotectonics_curves_change(self, state):
         """Handle plumbotectonics curves toggle."""
-        state_gateway.set_attr("show_plumbotectonics_curves", state == Qt.Checked)
+        state_gateway.set_show_plumbotectonics_curves(state == Qt.Checked)
         self._sync_geochem_toggle_widgets(
             app_state.show_plumbotectonics_curves,
             getattr(self, "modeling_show_plumbotectonics_check", None),
@@ -34,7 +34,7 @@ class DataPanelGeochemMixin:
 
     def _on_paleoisochron_change(self, state):
         """Handle paleoisochron toggle."""
-        state_gateway.set_attr("show_paleoisochrons", state == Qt.Checked)
+        state_gateway.set_show_paleoisochrons(state == Qt.Checked)
         self._sync_geochem_toggle_widgets(
             app_state.show_paleoisochrons,
             getattr(self, "modeling_show_paleoisochron_check", None),
@@ -44,7 +44,7 @@ class DataPanelGeochemMixin:
 
     def _on_model_age_change(self, state):
         """Handle model age lines toggle."""
-        state_gateway.set_attr("show_model_age_lines", state == Qt.Checked)
+        state_gateway.set_show_model_age_lines(state == Qt.Checked)
         self._sync_geochem_toggle_widgets(
             app_state.show_model_age_lines,
             getattr(self, "modeling_show_model_age_check", None),
@@ -54,7 +54,7 @@ class DataPanelGeochemMixin:
 
     def _on_growth_curves_change(self, state):
         """Handle growth curves toggle."""
-        state_gateway.set_attr("show_growth_curves", state == Qt.Checked)
+        state_gateway.set_show_growth_curves(state == Qt.Checked)
         self._sync_geochem_toggle_widgets(
             app_state.show_growth_curves,
             getattr(self, "modeling_show_growth_curve_check", None),
@@ -63,7 +63,7 @@ class DataPanelGeochemMixin:
 
     def _on_mu_kappa_real_age_change(self, state):
         """Handle Mu/Kappa real age toggle."""
-        state_gateway.set_attr("use_real_age_for_mu_kappa", state == Qt.Checked)
+        state_gateway.set_use_real_age_for_mu_kappa(state == Qt.Checked)
         self._sync_geochem_toggle_widgets(
             app_state.use_real_age_for_mu_kappa,
             getattr(self, "modeling_use_real_age_check", None),
@@ -119,11 +119,11 @@ class DataPanelGeochemMixin:
             return
 
         if selection == none_label:
-            state_gateway.set_attr("mu_kappa_age_col", None)
+            state_gateway.set_mu_kappa_age_col(None)
         else:
-            state_gateway.set_attr("mu_kappa_age_col", selection)
+            state_gateway.set_mu_kappa_age_col(selection)
 
-        state_gateway.set_attr("use_real_age_for_mu_kappa", False)
+        state_gateway.set_use_real_age_for_mu_kappa(False)
         self._sync_geochem_toggle_widgets(
             app_state.use_real_age_for_mu_kappa,
             getattr(self, "modeling_use_real_age_check", None),
@@ -164,7 +164,7 @@ class DataPanelGeochemMixin:
                 combo.setCurrentIndex(self.plumbotectonics_model_keys.index(current_key))
             else:
                 combo.setCurrentIndex(0)
-                state_gateway.set_attr("plumbotectonics_variant", self.plumbotectonics_model_keys[0])
+                state_gateway.set_plumbotectonics_variant(self.plumbotectonics_model_keys[0])
             combo.setEnabled(True)
         else:
             combo.addItem(translate("No plumbotectonics data"))
@@ -177,7 +177,7 @@ class DataPanelGeochemMixin:
             return
         if index < 0 or index >= len(self.plumbotectonics_model_keys):
             return
-        state_gateway.set_attr("plumbotectonics_variant", self.plumbotectonics_model_keys[index])
+        state_gateway.set_plumbotectonics_variant(self.plumbotectonics_model_keys[index])
         if app_state.render_mode in ("PLUMBOTECTONICS_76", "PLUMBOTECTONICS_86"):
             self._on_change()
 
@@ -199,7 +199,7 @@ class DataPanelGeochemMixin:
 
         if self.modeling_use_real_age_check is not None:
             if not has_col:
-                state_gateway.set_attr("use_real_age_for_mu_kappa", False)
+                state_gateway.set_use_real_age_for_mu_kappa(False)
             self.modeling_use_real_age_check.blockSignals(True)
             self.modeling_use_real_age_check.setVisible(enabled)
             self.modeling_use_real_age_check.setEnabled(enabled and has_col)
@@ -365,7 +365,7 @@ class DataPanelGeochemMixin:
     def _on_paleo_step_change(self, value):
         """Handle paleoisochron step changes."""
         step_val = max(10, int(value))
-        state_gateway.set_attr("paleoisochron_step", step_val)
+        state_gateway.set_paleoisochron_step(step_val)
         min_age = int(getattr(app_state, "paleoisochron_min_age", 0))
         max_age = int(getattr(app_state, "paleoisochron_max_age", 3000))
         if max_age < min_age:
@@ -373,5 +373,5 @@ class DataPanelGeochemMixin:
         ages = list(range(max_age, min_age - 1, -step_val))
         if not ages or ages[-1] != min_age:
             ages.append(min_age)
-        state_gateway.set_attr("paleoisochron_ages", ages)
+        state_gateway.set_paleoisochron_ages(ages)
         self._on_change()

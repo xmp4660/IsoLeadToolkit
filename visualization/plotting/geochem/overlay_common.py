@@ -31,7 +31,7 @@ def _register_overlay_artist(style_key, artist):
     if artist is None:
         return
     if not hasattr(app_state, 'overlay_artists'):
-        state_gateway.set_attr('overlay_artists', {})
+        state_gateway.set_overlay_artists({})
     app_state.overlay_artists.setdefault(style_key, []).append(artist)
 
 
@@ -86,7 +86,7 @@ def _register_overlay_curve_label(
     if text_artist is None:
         return
     if not hasattr(app_state, 'overlay_curve_label_data'):
-        state_gateway.set_attr('overlay_curve_label_data', [])
+        state_gateway.set_overlay_curve_label_data([])
     app_state.overlay_curve_label_data.append({
         'text': text_artist,
         'x_line': list(x_vals),

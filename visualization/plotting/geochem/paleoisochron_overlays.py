@@ -26,7 +26,7 @@ def _draw_paleoisochrons(ax, actual_algorithm, ages, params):
     if geochemistry is None:
         return
     try:
-        state_gateway.set_attr('paleoisochron_label_data', [])
+        state_gateway.set_paleoisochron_label_data([])
         xlim = ax.get_xlim()
         x_min = xlim[0]
         x_max = xlim[1]

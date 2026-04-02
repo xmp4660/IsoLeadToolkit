@@ -129,6 +129,48 @@ class AppStateGateway:
         if name == "plumbotectonics_group_visibility":
             self.set_plumbotectonics_group_visibility(value)
             return
+        if name == "show_model_curves":
+            self.set_show_model_curves(bool(value))
+            return
+        if name == "show_plumbotectonics_curves":
+            self.set_show_plumbotectonics_curves(bool(value))
+            return
+        if name == "show_paleoisochrons":
+            self.set_show_paleoisochrons(bool(value))
+            return
+        if name == "show_model_age_lines":
+            self.set_show_model_age_lines(bool(value))
+            return
+        if name == "show_growth_curves":
+            self.set_show_growth_curves(bool(value))
+            return
+        if name == "use_real_age_for_mu_kappa":
+            self.set_use_real_age_for_mu_kappa(bool(value))
+            return
+        if name == "mu_kappa_age_col":
+            self.set_mu_kappa_age_col(value)
+            return
+        if name == "plumbotectonics_variant":
+            self.set_plumbotectonics_variant(str(value))
+            return
+        if name == "paleoisochron_step":
+            self.set_paleoisochron_step(int(value))
+            return
+        if name == "paleoisochron_ages":
+            self.set_paleoisochron_ages(value)
+            return
+        if name == "overlay_artists":
+            self.set_overlay_artists(value)
+            return
+        if name == "overlay_curve_label_data":
+            self.set_overlay_curve_label_data(value)
+            return
+        if name == "paleoisochron_label_data":
+            self.set_paleoisochron_label_data(value)
+            return
+        if name == "plumbotectonics_isoage_label_data":
+            self.set_plumbotectonics_isoage_label_data(value)
+            return
         if name == "render_mode":
             self.set_render_mode(str(value))
             return
@@ -409,6 +451,48 @@ class AppStateGateway:
 
     def set_plumbotectonics_group_visibility(self, visibility: Any) -> None:
         self._state.plumbotectonics_group_visibility = dict(visibility or {})
+
+    def set_show_model_curves(self, show: bool) -> None:
+        self._state.show_model_curves = bool(show)
+
+    def set_show_plumbotectonics_curves(self, show: bool) -> None:
+        self._state.show_plumbotectonics_curves = bool(show)
+
+    def set_show_paleoisochrons(self, show: bool) -> None:
+        self._state.show_paleoisochrons = bool(show)
+
+    def set_show_model_age_lines(self, show: bool) -> None:
+        self._state.show_model_age_lines = bool(show)
+
+    def set_show_growth_curves(self, show: bool) -> None:
+        self._state.show_growth_curves = bool(show)
+
+    def set_use_real_age_for_mu_kappa(self, enabled: bool) -> None:
+        self._state.use_real_age_for_mu_kappa = bool(enabled)
+
+    def set_mu_kappa_age_col(self, column: Any) -> None:
+        self._state.mu_kappa_age_col = column
+
+    def set_plumbotectonics_variant(self, variant: str) -> None:
+        self._state.plumbotectonics_variant = str(variant)
+
+    def set_paleoisochron_step(self, step: int) -> None:
+        self._state.paleoisochron_step = int(step)
+
+    def set_paleoisochron_ages(self, ages: Any) -> None:
+        self._state.paleoisochron_ages = list(ages or [])
+
+    def set_overlay_artists(self, artists: Any) -> None:
+        self._state.overlay_artists = dict(artists or {})
+
+    def set_overlay_curve_label_data(self, data: Any) -> None:
+        self._state.overlay_curve_label_data = list(data or [])
+
+    def set_paleoisochron_label_data(self, data: Any) -> None:
+        self._state.paleoisochron_label_data = list(data or [])
+
+    def set_plumbotectonics_isoage_label_data(self, data: Any) -> None:
+        self._state.plumbotectonics_isoage_label_data = list(data or [])
 
     def set_marginal_axes(self, marginal_axes: Any) -> None:
         self._state.marginal_axes = marginal_axes
