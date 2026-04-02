@@ -137,6 +137,36 @@
         - `core/state/gateway.py` 新增显式 API：`set_paleo_label_refreshing`、`set_control_panel_ref`。
         - `ui/app_parts/plotting.py` 与 `ui/control_panel.py` 对应写入改为显式 API，不再通过 `set_attr` 间接写入。
         - `set_attr` 为上述字段保留兼容转发，确保旧调用路径行为一致。
+    - 第十二批迁移清理（地化模型写入路径）：
+        - `core/state/gateway.py` 新增 `set_geo_model_name`。
+        - `ui/panels/data/grouping.py`、`ui/panels/geo_panel.py` 与 `tests/test_geochem_model_sync.py` 改为显式模型写入 API。
+    - 第十三批迁移清理（data_version 显式写入）：
+        - `core/state/gateway.py` 新增 `set_data_version`，并接入 `set_attr` 兼容转发。
+        - `tests/test_state_store.py` 状态恢复改为显式 API。
+    - 第十四批迁移清理（置信椭圆参数写入）：
+        - `core/state/gateway.py` 新增 `set_confidence_level`。
+        - `ui/panels/analysis/selection.py` 改为显式 API。
+    - 第十五批迁移清理（图例回调注册）：
+        - `core/state/gateway.py` 新增 `set_legend_update_callback`。
+        - `ui/main_window.py` 初始化回调注册改为显式 API。
+    - 第十六批迁移清理（Figure/Canvas 引用写入）：
+        - `core/state/gateway.py` 新增 `set_figure`、`set_canvas`。
+        - `ui/main_window_parts/canvas.py` 改为显式 API。
+    - 第十七批迁移清理（Axes/Legend Axes 写入）：
+        - `core/state/gateway.py` 新增 `set_axis`、`set_legend_ax`。
+        - `visualization/plotting/core.py` 轴对象写入改为显式 API。
+    - 第十八批迁移清理（PCA 诊断元数据）：
+        - `core/state/gateway.py` 新增 `set_pca_diagnostics`。
+        - `visualization/plotting/core.py` 与 `visualization/plotting/rendering/embedding/compute_ml.py` 诊断字段写入统一为显式 API。
+    - 第十九批迁移清理（当前调色板写入）：
+        - `core/state/gateway.py` 新增 `set_current_palette`。
+        - `visualization/plotting/core.py` 调色板初始化改为显式 API。
+    - 第二十批迁移清理（adjustText 运行标记）：
+        - `core/state/gateway.py` 新增 `set_adjust_text_in_progress`。
+        - `visualization/plotting/label_layout.py` 运行标记写入改为显式 API。
+    - 第二十一批迁移清理（叠加标签刷新标记）：
+        - `core/state/gateway.py` 新增 `set_overlay_label_refreshing`。
+        - `visualization/plotting/geochem/isochron_labels.py` 刷新标记写入改为显式 API。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 

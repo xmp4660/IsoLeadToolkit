@@ -81,6 +81,9 @@ class AppStateGateway:
         if name == "adjust_text_in_progress":
             self.set_adjust_text_in_progress(bool(value))
             return
+        if name == "overlay_label_refreshing":
+            self.set_overlay_label_refreshing(bool(value))
+            return
         if name == "render_mode":
             self.set_render_mode(str(value))
             return
@@ -313,6 +316,9 @@ class AppStateGateway:
 
     def set_adjust_text_in_progress(self, in_progress: bool) -> None:
         self._state.adjust_text_in_progress = bool(in_progress)
+
+    def set_overlay_label_refreshing(self, refreshing: bool) -> None:
+        self._state.overlay_label_refreshing = bool(refreshing)
 
     def set_marginal_axes(self, marginal_axes: Any) -> None:
         self._state.marginal_axes = marginal_axes

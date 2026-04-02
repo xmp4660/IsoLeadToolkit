@@ -38,7 +38,7 @@ def refresh_paleoisochron_labels():
     if bool(getattr(app_state, 'overlay_label_refreshing', False)):
         return
 
-    state_gateway.set_attr('overlay_label_refreshing', True)
+    state_gateway.set_overlay_label_refreshing(True)
     try:
         adjusted_labels = []
 
@@ -156,5 +156,5 @@ def refresh_paleoisochron_labels():
 
         apply_adjust_text_to_labels(ax, adjusted_labels)
     finally:
-        state_gateway.set_attr('overlay_label_refreshing', False)
+        state_gateway.set_overlay_label_refreshing(False)
 
