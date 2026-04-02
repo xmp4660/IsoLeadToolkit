@@ -307,10 +307,18 @@ class BasePanel(QWidget):
             style_updates['isochron_line_width'] = float(isochron_width_spin.value())
 
         if hasattr(app_state, 'line_styles'):
-            app_state.line_styles.setdefault('model_curve', {})['linewidth'] = app_state.model_curve_width
-            app_state.line_styles.setdefault('paleoisochron', {})['linewidth'] = app_state.paleoisochron_width
-            app_state.line_styles.setdefault('model_age_line', {})['linewidth'] = app_state.model_age_line_width
-            app_state.line_styles.setdefault('isochron', {})['linewidth'] = app_state.isochron_line_width
+            app_state.line_styles.setdefault('model_curve', {})['linewidth'] = float(
+                style_updates.get('model_curve_width', app_state.model_curve_width)
+            )
+            app_state.line_styles.setdefault('paleoisochron', {})['linewidth'] = float(
+                style_updates.get('paleoisochron_width', app_state.paleoisochron_width)
+            )
+            app_state.line_styles.setdefault('model_age_line', {})['linewidth'] = float(
+                style_updates.get('model_age_line_width', app_state.model_age_line_width)
+            )
+            app_state.line_styles.setdefault('isochron', {})['linewidth'] = float(
+                style_updates.get('isochron_line_width', app_state.isochron_line_width)
+            )
 
         label_color_edit = getattr(self, 'label_color_edit', None)
         if label_color_edit is not None:

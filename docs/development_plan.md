@@ -261,6 +261,10 @@
                                 - 新增 `scripts/check_gateway_generic_mutations_in_tests.py`，限制测试目录中
                                     `state_gateway.set_attr/set_attrs` 仅可出现在兼容性专用测试。
                                 - 新增 `tests/test_gateway_generic_mutation_test_guard.py`，强制该守护规则生效。
+                - 第四十四批迁移清理（线宽同步一致性修复）：
+                                - `ui/panels/base_panel.py` 更新样式面板线宽同步逻辑：
+                                    写回 `line_styles` 时优先使用本次 `style_updates` 新值，
+                                    避免同一轮交互内读取到旧的 `app_state.*_width`。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 
