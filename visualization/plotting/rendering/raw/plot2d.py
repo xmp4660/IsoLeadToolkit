@@ -262,7 +262,7 @@ def plot_2d_data(group_col: str, data_columns: list[str], size: int = 60, show_k
             app_state.ax.set_title(title, pad=getattr(app_state, 'title_pad', 20.0))
         else:
             app_state.ax.set_title('')
-        state_gateway.set_attr('last_2d_cols', list(data_columns))
+        state_gateway.set_last_2d_cols(list(data_columns))
         app_state.ax.set_xlabel(data_columns[0])
         app_state.ax.set_ylabel(data_columns[1])
         _apply_axis_text_style(app_state.ax)

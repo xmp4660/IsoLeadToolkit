@@ -90,6 +90,9 @@ class AppStateGateway:
         if name == "annotation":
             self.set_annotation(value)
             return
+        if name == "last_2d_cols":
+            self.set_last_2d_cols(value)
+            return
         if name == "render_mode":
             self.set_render_mode(str(value))
             return
@@ -331,6 +334,9 @@ class AppStateGateway:
 
     def set_annotation(self, annotation: Any) -> None:
         self._state.annotation = annotation
+
+    def set_last_2d_cols(self, columns: Any) -> None:
+        self._state.last_2d_cols = list(columns or []) if columns is not None else None
 
     def set_marginal_axes(self, marginal_axes: Any) -> None:
         self._state.marginal_axes = marginal_axes
