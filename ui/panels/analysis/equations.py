@@ -310,7 +310,10 @@ class AnalysisPanelEquationMixin:
                 legacy_payload['gridsize'] = style_ref.get('gridsize', 256)
                 legacy_payload['cut'] = style_ref.get('cut', 1.0)
                 legacy_payload['log_transform'] = style_ref.get('log_transform', False)
-            state_gateway.set_attr(legacy_key, legacy_payload)
+            if target == 'kde':
+                state_gateway.set_kde_style(legacy_payload)
+            else:
+                state_gateway.set_marginal_kde_style(legacy_payload)
 
             if swatch is not None:
                 apply_color_swatch(swatch, '#e2e8f0')

@@ -240,6 +240,12 @@ class AppStateGateway:
         if name == "ternary_ranges":
             self.set_ternary_ranges(value)
             return
+        if name == "kde_style":
+            self.set_kde_style(value)
+            return
+        if name == "marginal_kde_style":
+            self.set_marginal_kde_style(value)
+            return
         if name == "render_mode":
             self.set_render_mode(str(value))
             return
@@ -634,6 +640,33 @@ class AppStateGateway:
 
     def set_ternary_ranges(self, ranges: Any) -> None:
         self._state.ternary_ranges = dict(ranges or {})
+
+    def set_kde_style(self, style: Any) -> None:
+        self._state.kde_style = dict(style or {})
+
+    def set_marginal_kde_style(self, style: Any) -> None:
+        self._state.marginal_kde_style = dict(style or {})
+
+    def set_overlay_toggle(self, attr: str, checked: bool) -> None:
+        if attr == "show_model_curves":
+            self.set_show_model_curves(checked)
+            return
+        if attr == "show_plumbotectonics_curves":
+            self.set_show_plumbotectonics_curves(checked)
+            return
+        if attr == "show_paleoisochrons":
+            self.set_show_paleoisochrons(checked)
+            return
+        if attr == "show_model_age_lines":
+            self.set_show_model_age_lines(checked)
+            return
+        if attr == "show_growth_curves":
+            self.set_show_growth_curves(checked)
+            return
+        if attr == "show_isochrons":
+            self.set_show_isochrons(checked)
+            return
+        setattr(self._state, attr, bool(checked))
 
     def set_marginal_axes(self, marginal_axes: Any) -> None:
         self._state.marginal_axes = marginal_axes

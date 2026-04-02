@@ -218,6 +218,11 @@
                 - `ui/dialogs/line_style_dialog.py`、`ui/panels/analysis/mixing.py`、
                     `ui/panels/legend/editors.py`、`ui/main_window_parts/legend_core.py`、
                     `visualization/plotting/rendering/embedding_plot.py` 改为显式 API 调用。
+        - 第三十六批迁移清理（生产代码剩余动态入口）：
+                - `core/state/gateway.py` 新增 `set_kde_style`、`set_marginal_kde_style`、
+                    `set_overlay_toggle`，并在 `set_attr` 添加兼容分发。
+                - `ui/main_window_parts/legend_actions.py` overlay toggle 改为 `set_overlay_toggle`。
+                - `ui/panels/analysis/equations.py` legacy KDE 样式写入改为显式 API。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 

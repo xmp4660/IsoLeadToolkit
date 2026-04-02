@@ -110,7 +110,7 @@ class MainWindowLegendActionsMixin:
             return
         attr = OVERLAY_TOGGLE_MAP.get(style_key)
         if attr:
-            state_gateway.set_attr(attr, checked)
+            state_gateway.set_overlay_toggle(attr, checked)
 
         if style_key == "isochron" and not checked:
             state_gateway.set_selected_isochron_data(None)
