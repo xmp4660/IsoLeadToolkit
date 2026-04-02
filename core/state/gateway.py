@@ -207,6 +207,9 @@ class AppStateGateway:
         if name == "ternary_stretch":
             self.set_ternary_stretch(bool(value))
             return
+        if name == "ternary_factors":
+            self.set_ternary_factors(value)
+            return
         if name == "model_curve_width":
             self.set_model_curve_width(float(value))
             return
@@ -504,6 +507,12 @@ class AppStateGateway:
     def set_recent_files(self, files: Any) -> None:
         self._state.recent_files = list(files or [])
 
+    def set_file_path(self, file_path: str) -> None:
+        self._state.file_path = str(file_path)
+
+    def set_sheet_name(self, sheet_name: Any) -> None:
+        self._state.sheet_name = sheet_name
+
     def set_language_code(self, code: str) -> None:
         self._state.language = str(code)
 
@@ -530,6 +539,11 @@ class AppStateGateway:
 
     def set_legend_offset(self, offset: Any) -> None:
         self._state.legend_offset = tuple(offset) if offset is not None else (0.0, 0.0)
+
+    def set_legend_snapshot(self, title: Any, handles: Any, labels: Any) -> None:
+        self._state.legend_last_title = title
+        self._state.legend_last_handles = handles
+        self._state.legend_last_labels = labels
 
     def set_isochron_results(self, results: Any) -> None:
         self._state.isochron_results = dict(results or {})
@@ -612,6 +626,9 @@ class AppStateGateway:
     def set_ternary_stretch(self, enabled: bool) -> None:
         self._state.ternary_stretch = bool(enabled)
 
+    def set_ternary_factors(self, factors: Any) -> None:
+        self._state.ternary_factors = dict(factors or {})
+
     def set_model_curve_width(self, width: float) -> None:
         self._state.model_curve_width = float(width)
 
@@ -650,6 +667,18 @@ class AppStateGateway:
 
     def set_ternary_ranges(self, ranges: Any) -> None:
         self._state.ternary_ranges = dict(ranges or {})
+
+    def set_isochron_error_columns(self, sx_col: str, sy_col: str, rxy_col: str) -> None:
+        self._state.isochron_error_mode = "columns"
+        self._state.isochron_sx_col = str(sx_col)
+        self._state.isochron_sy_col = str(sy_col)
+        self._state.isochron_rxy_col = str(rxy_col)
+
+    def set_isochron_error_fixed(self, sx_value: float, sy_value: float, rxy_value: float) -> None:
+        self._state.isochron_error_mode = "fixed"
+        self._state.isochron_sx_value = float(sx_value)
+        self._state.isochron_sy_value = float(sy_value)
+        self._state.isochron_rxy_value = float(rxy_value)
 
     def set_kde_style(self, style: Any) -> None:
         self._state.kde_style = dict(style or {})

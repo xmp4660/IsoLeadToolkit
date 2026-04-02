@@ -295,7 +295,8 @@ class DisplayThemeMixin:
         if legend_outside not in {'outside_left', 'outside_right'}:
             legend_outside = None
 
-        state_gateway.set_attrs({'legend_location': legend_outside, 'legend_position': legend_inside})
+        state_gateway.set_legend_location(legend_outside)
+        state_gateway.set_legend_position(legend_inside)
         self._set_legend_position_button(legend_inside, legend_outside)
 
         self._on_style_change()

@@ -29,7 +29,8 @@ class Qt5AppSessionMixin:
     def _restore_session_state(self, session_data):
         """Restore plotting and UI state from persisted session data."""
         if not session_data:
-            state_gateway.set_attrs({"algorithm": "UMAP", "render_mode": "UMAP"})
+            state_gateway.set_algorithm("UMAP")
+            state_gateway.set_render_mode("UMAP")
             logger.info("No session data, using default algorithm: UMAP")
             return
 

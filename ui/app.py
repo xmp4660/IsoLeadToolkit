@@ -106,13 +106,11 @@ class Qt5Application(Qt5AppStyleMixin, Qt5AppSessionMixin, Qt5AppPlottingMixin):
             # 加载会话
             session_data = self._load_session()
             if session_data:
-                state_gateway.set_attrs(
-                    {
-                        'file_path': session_data.get('file_path') or app_state.file_path,
-                        'sheet_name': session_data.get('sheet_name') or app_state.sheet_name,
-                        'group_cols': session_data.get('group_cols') or [],
-                        'data_cols': session_data.get('data_cols') or [],
-                    }
+                state_gateway.set_file_path(session_data.get('file_path') or app_state.file_path)
+                state_gateway.set_sheet_name(session_data.get('sheet_name') or app_state.sheet_name)
+                state_gateway.set_group_data_columns(
+                    session_data.get('group_cols') or [],
+                    session_data.get('data_cols') or [],
                 )
 
             # 加载数据

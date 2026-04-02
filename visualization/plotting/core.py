@@ -248,11 +248,9 @@ def get_robust_pca_embedding(params: dict) -> np.ndarray | None:
                 random_state=params.get('random_state', 42)
             )
             embedding = reducer.fit_transform(X_scaled)
-            state_gateway.set_attrs(
-                {
-                    'last_pca_variance': reducer.explained_variance_ratio_,
-                    'last_pca_components': reducer.components_,
-                }
+            state_gateway.set_pca_diagnostics(
+                last_pca_variance=reducer.explained_variance_ratio_,
+                last_pca_components=reducer.components_,
             )
         else:
             support_fraction = params.get('support_fraction', 0.75)

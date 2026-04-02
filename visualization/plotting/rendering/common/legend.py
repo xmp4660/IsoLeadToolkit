@@ -71,13 +71,7 @@ def _place_inline_legend(
     *, show_marginal_kde=False, scatters=None, is_kde_mode=False,
 ):
     """Place in-plot legend and notify the outside legend panel."""
-    state_gateway.set_attrs(
-        {
-            'legend_last_title': group_col,
-            'legend_last_handles': legend_handles,
-            'legend_last_labels': legend_labels,
-        }
-    )
+    state_gateway.set_legend_snapshot(group_col, legend_handles, legend_labels)
     _notify_legend_panel(group_col, legend_handles, legend_labels)
 
     n_cats = len(legend_labels)

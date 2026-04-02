@@ -229,6 +229,14 @@
                 - `visualization/plotting/core.py`、`rendering/embedding/compute_geochem.py`、
                     `rendering/embedding/compute_ml.py`、`rendering/embedding/compute_ternary.py`
                     将 embedding 快照写入从 `set_attrs` 迁移到显式 API。
+        - 第三十八批迁移清理（会话/图例/三元与等时线设置）：
+                - `core/state/gateway.py` 新增 `set_file_path`、`set_sheet_name`、`set_ternary_factors`、
+                    `set_legend_snapshot`、`set_isochron_error_columns`、`set_isochron_error_fixed`，
+                    并为 `ternary_factors` 添加兼容分发。
+                - `ui/app.py`、`ui/app_parts/session.py`、`ui/panels/data/projection.py`、
+                    `ui/panels/data/geochem.py`、`ui/panels/display/themes.py`、`ui/panels/legend/build.py`、
+                    `visualization/plotting/rendering/common/legend.py` 对应 `set_attrs` 调用迁移到显式 API。
+                - `visualization/plotting/core.py` RobustPCA 分支诊断写入改为 `set_pca_diagnostics`。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 

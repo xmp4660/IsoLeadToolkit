@@ -253,7 +253,8 @@ class DataPanelGeochemMixin:
 
         if getattr(app_state, "show_isochrons", False) or getattr(app_state, "selected_isochron_data", None):
             state_gateway.set_show_isochrons(False)
-            state_gateway.set_attrs({"isochron_results": {}, "selected_isochron_data": None})
+            state_gateway.set_isochron_results({})
+            state_gateway.set_selected_isochron_data(None)
             self._update_isochron_btn_text()
             try:
                 on_slider_change()
@@ -341,22 +342,16 @@ class DataPanelGeochemMixin:
 
         mode = settings.get("mode")
         if mode == "columns":
-            state_gateway.set_attrs(
-                {
-                    "isochron_error_mode": "columns",
-                    "isochron_sx_col": settings.get("sx_col", ""),
-                    "isochron_sy_col": settings.get("sy_col", ""),
-                    "isochron_rxy_col": settings.get("rxy_col", ""),
-                }
+            state_gateway.set_isochron_error_columns(
+                settings.get("sx_col", ""),
+                settings.get("sy_col", ""),
+                settings.get("rxy_col", ""),
             )
         else:
-            state_gateway.set_attrs(
-                {
-                    "isochron_error_mode": "fixed",
-                    "isochron_sx_value": float(settings.get("sx_value", 0.001)),
-                    "isochron_sy_value": float(settings.get("sy_value", 0.001)),
-                    "isochron_rxy_value": float(settings.get("rxy_value", 0.0)),
-                }
+            state_gateway.set_isochron_error_fixed(
+                float(settings.get("sx_value", 0.001)),
+                float(settings.get("sy_value", 0.001)),
+                float(settings.get("rxy_value", 0.0)),
             )
 
         self._on_change()

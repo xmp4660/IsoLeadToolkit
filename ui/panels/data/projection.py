@@ -433,7 +433,8 @@ class DataPanelProjectionMixin:
         result = get_ternary_column_selection()
         if result:
             state_gateway.set_selected_ternary_columns(result["columns"], confirmed=True)
-            state_gateway.set_attrs({"ternary_stretch": result["stretch"], "ternary_factors": result["factors"]})
+            state_gateway.set_ternary_stretch(result["stretch"])
+            state_gateway.set_ternary_factors(result["factors"])
             logger.info("Selected ternary columns: %s", result["columns"])
             logger.info("Ternary stretch: %s, factors: %s", result["stretch"], result["factors"])
             self._on_change()

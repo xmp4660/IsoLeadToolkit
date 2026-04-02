@@ -117,12 +117,8 @@ class LegendBuildMixin:
         if outside_location not in self.legend_outside_buttons:
             outside_location = None
 
-        state_gateway.set_attrs(
-            {
-                'legend_position': inside_location,
-                'legend_location': outside_location,
-            }
-        )
+        state_gateway.set_legend_position(inside_location)
+        state_gateway.set_legend_location(outside_location)
 
         self._set_legend_inside_position_button(inside_location)
         self._set_legend_outside_position_button(outside_location)
