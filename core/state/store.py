@@ -78,6 +78,33 @@ class StateStore:
             "selected_2d_confirmed": bool(getattr(state, "selected_2d_confirmed", False)),
             "selected_3d_confirmed": bool(getattr(state, "selected_3d_confirmed", False)),
             "selected_ternary_confirmed": bool(getattr(state, "selected_ternary_confirmed", False)),
+            "standardize_data": bool(getattr(state, "standardize_data", True)),
+            "pca_component_indices": self._normalize_pca_component_indices(
+                getattr(state, "pca_component_indices", None)
+            ),
+            "ternary_auto_zoom": bool(getattr(state, "ternary_auto_zoom", True)),
+            "ternary_limit_mode": self._normalize_ternary_limit_mode(
+                getattr(state, "ternary_limit_mode", "min")
+            ),
+            "ternary_limit_anchor": self._normalize_ternary_limit_anchor(
+                getattr(state, "ternary_limit_anchor", "min")
+            ),
+            "ternary_boundary_percent": self._normalize_ternary_boundary_percent(
+                getattr(state, "ternary_boundary_percent", 5.0)
+            ),
+            "ternary_manual_limits_enabled": bool(
+                getattr(state, "ternary_manual_limits_enabled", False)
+            ),
+            "ternary_manual_limits": self._normalize_ternary_manual_limits(
+                getattr(state, "ternary_manual_limits", None)
+            ),
+            "ternary_stretch_mode": self._normalize_ternary_stretch_mode(
+                getattr(state, "ternary_stretch_mode", "power")
+            ),
+            "ternary_stretch": bool(getattr(state, "ternary_stretch", False)),
+            "ternary_factors": self._normalize_ternary_factors(
+                getattr(state, "ternary_factors", None)
+            ),
             "export_image_options": self._normalize_export_options(
                 getattr(state, "export_image_options", None)
             ),
@@ -270,6 +297,51 @@ class StateStore:
             self._snapshot["selected_ternary_cols"] = list(action.get("columns") or [])
             self._snapshot["selected_ternary_confirmed"] = bool(action.get("confirmed", False))
 
+        elif action_type == "SET_STANDARDIZE_DATA":
+            self._snapshot["standardize_data"] = bool(action.get("enabled", False))
+
+        elif action_type == "SET_PCA_COMPONENT_INDICES":
+            self._snapshot["pca_component_indices"] = self._normalize_pca_component_indices(
+                action.get("indices")
+            )
+
+        elif action_type == "SET_TERNARY_AUTO_ZOOM":
+            self._snapshot["ternary_auto_zoom"] = bool(action.get("enabled", False))
+
+        elif action_type == "SET_TERNARY_LIMIT_MODE":
+            self._snapshot["ternary_limit_mode"] = self._normalize_ternary_limit_mode(
+                action.get("mode")
+            )
+
+        elif action_type == "SET_TERNARY_LIMIT_ANCHOR":
+            self._snapshot["ternary_limit_anchor"] = self._normalize_ternary_limit_anchor(
+                action.get("anchor")
+            )
+
+        elif action_type == "SET_TERNARY_BOUNDARY_PERCENT":
+            self._snapshot["ternary_boundary_percent"] = self._normalize_ternary_boundary_percent(
+                action.get("percent")
+            )
+
+        elif action_type == "SET_TERNARY_MANUAL_LIMITS_ENABLED":
+            self._snapshot["ternary_manual_limits_enabled"] = bool(action.get("enabled", False))
+
+        elif action_type == "SET_TERNARY_MANUAL_LIMITS":
+            self._snapshot["ternary_manual_limits"] = self._normalize_ternary_manual_limits(
+                action.get("limits")
+            )
+
+        elif action_type == "SET_TERNARY_STRETCH_MODE":
+            self._snapshot["ternary_stretch_mode"] = self._normalize_ternary_stretch_mode(
+                action.get("mode")
+            )
+
+        elif action_type == "SET_TERNARY_STRETCH":
+            self._snapshot["ternary_stretch"] = bool(action.get("enabled", False))
+
+        elif action_type == "SET_TERNARY_FACTORS":
+            self._snapshot["ternary_factors"] = self._normalize_ternary_factors(action.get("factors"))
+
         elif action_type == "RESET_COLUMN_SELECTION":
             self._snapshot["selected_2d_cols"] = []
             self._snapshot["selected_3d_cols"] = []
@@ -360,6 +432,17 @@ class StateStore:
             "selected_2d_confirmed": bool(self._snapshot["selected_2d_confirmed"]),
             "selected_3d_confirmed": bool(self._snapshot["selected_3d_confirmed"]),
             "selected_ternary_confirmed": bool(self._snapshot["selected_ternary_confirmed"]),
+            "standardize_data": bool(self._snapshot["standardize_data"]),
+            "pca_component_indices": list(self._snapshot["pca_component_indices"]),
+            "ternary_auto_zoom": bool(self._snapshot["ternary_auto_zoom"]),
+            "ternary_limit_mode": str(self._snapshot["ternary_limit_mode"]),
+            "ternary_limit_anchor": str(self._snapshot["ternary_limit_anchor"]),
+            "ternary_boundary_percent": float(self._snapshot["ternary_boundary_percent"]),
+            "ternary_manual_limits_enabled": bool(self._snapshot["ternary_manual_limits_enabled"]),
+            "ternary_manual_limits": dict(self._snapshot["ternary_manual_limits"]),
+            "ternary_stretch_mode": str(self._snapshot["ternary_stretch_mode"]),
+            "ternary_stretch": bool(self._snapshot["ternary_stretch"]),
+            "ternary_factors": list(self._snapshot["ternary_factors"]),
             "export_image_options": dict(self._snapshot["export_image_options"]),
         }
 
@@ -425,6 +508,17 @@ class StateStore:
         self._state.selected_2d_confirmed = bool(self._snapshot["selected_2d_confirmed"])
         self._state.selected_3d_confirmed = bool(self._snapshot["selected_3d_confirmed"])
         self._state.selected_ternary_confirmed = bool(self._snapshot["selected_ternary_confirmed"])
+        self._state.standardize_data = bool(self._snapshot["standardize_data"])
+        self._state.pca_component_indices = list(self._snapshot["pca_component_indices"])
+        self._state.ternary_auto_zoom = bool(self._snapshot["ternary_auto_zoom"])
+        self._state.ternary_limit_mode = str(self._snapshot["ternary_limit_mode"])
+        self._state.ternary_limit_anchor = str(self._snapshot["ternary_limit_anchor"])
+        self._state.ternary_boundary_percent = float(self._snapshot["ternary_boundary_percent"])
+        self._state.ternary_manual_limits_enabled = bool(self._snapshot["ternary_manual_limits_enabled"])
+        self._state.ternary_manual_limits = dict(self._snapshot["ternary_manual_limits"])
+        self._state.ternary_stretch_mode = str(self._snapshot["ternary_stretch_mode"])
+        self._state.ternary_stretch = bool(self._snapshot["ternary_stretch"])
+        self._state.ternary_factors = list(self._snapshot["ternary_factors"])
         self._state.export_image_options = dict(self._snapshot["export_image_options"])
 
     @classmethod
@@ -484,3 +578,78 @@ class StateStore:
     @staticmethod
     def _normalize_cut(value: Any) -> float:
         return max(0.0, min(float(value), 5.0))
+
+    @staticmethod
+    def _normalize_pca_component_indices(indices: Any) -> list[int]:
+        if indices is None:
+            return [0, 1]
+        if isinstance(indices, Iterable) and not isinstance(indices, (str, bytes)):
+            values = [int(v) for v in indices]
+        else:
+            values = [int(indices)]
+        if len(values) < 2:
+            values = (values + [1])[:2]
+        return [max(0, values[0]), max(0, values[1])]
+
+    @staticmethod
+    def _normalize_ternary_limit_mode(mode: Any) -> str:
+        text = str(mode or "min").strip().lower()
+        return text if text in ("min", "max", "both") else "min"
+
+    @staticmethod
+    def _normalize_ternary_limit_anchor(anchor: Any) -> str:
+        text = str(anchor or "min").strip().lower()
+        return text if text in ("min", "max") else "min"
+
+    @staticmethod
+    def _normalize_ternary_boundary_percent(percent: Any) -> float:
+        return max(0.0, min(float(percent if percent is not None else 5.0), 30.0))
+
+    @staticmethod
+    def _normalize_ternary_stretch_mode(mode: Any) -> str:
+        text = str(mode or "power").strip().lower()
+        return text if text in ("power", "minmax", "hybrid") else "power"
+
+    @staticmethod
+    def _normalize_ternary_manual_limits(limits: Any) -> dict[str, float]:
+        defaults = {
+            "tmin": 0.0,
+            "tmax": 1.0,
+            "lmin": 0.0,
+            "lmax": 1.0,
+            "rmin": 0.0,
+            "rmax": 1.0,
+        }
+        merged = dict(defaults)
+        if isinstance(limits, dict):
+            for key, value in limits.items():
+                if key in merged and value is not None:
+                    merged[key] = max(0.0, min(float(value), 1.0))
+        return merged
+
+    @staticmethod
+    def _normalize_ternary_factors(factors: Any) -> list[float]:
+        values: list[Any]
+        if isinstance(factors, dict):
+            if all(k in factors for k in ("top", "left", "right")):
+                values = [factors.get("top"), factors.get("left"), factors.get("right")]
+            elif all(k in factors for k in ("t", "l", "r")):
+                values = [factors.get("t"), factors.get("l"), factors.get("r")]
+            else:
+                values = list(factors.values())
+        elif factors is None:
+            values = [1.0, 1.0, 1.0]
+        elif isinstance(factors, Iterable) and not isinstance(factors, (str, bytes)):
+            values = list(factors)
+        else:
+            values = [factors]
+
+        out: list[float] = []
+        for value in values[:3]:
+            try:
+                out.append(float(value))
+            except Exception:
+                out.append(1.0)
+        while len(out) < 3:
+            out.append(1.0)
+        return out

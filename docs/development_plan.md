@@ -363,6 +363,20 @@
                                                                     StateStore action 分发。
                                                                 - 扩展状态与兼容测试，覆盖显式 setter 与 `set_attr`
                                                                     在上述四域上的快照一致性。
+                                - 第五十八批迁移清理（投影与三元配置纳入 StateStore）：
+                                                                - `core/state/store.py` 新增状态域：
+                                                                    `standardize_data`、`pca_component_indices`、
+                                                                    `ternary_auto_zoom`、`ternary_limit_mode`、
+                                                                    `ternary_limit_anchor`、`ternary_boundary_percent`、
+                                                                    `ternary_manual_limits_enabled`、`ternary_manual_limits`、
+                                                                    `ternary_stretch_mode`、`ternary_stretch`、`ternary_factors`。
+                                                                - `core/state/gateway.py` 对应显式 API
+                                                                    `set_standardize_data`、`set_pca_component_indices`、
+                                                                    `set_ternary_*` 系列改为 action dispatch。
+                                                                - `StateStore` 为上述字段新增归一化规则，
+                                                                    统一三元参数范围与 `ternary_factors` 列表语义。
+                                                                - 扩展状态与兼容测试，覆盖显式 setter 与 `set_attr`
+                                                                    在上述域上的快照一致性。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 

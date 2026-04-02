@@ -498,40 +498,37 @@ class AppStateGateway:
         self._state.plumbotectonics_isoage_label_data = list(data or [])
 
     def set_standardize_data(self, enabled: bool) -> None:
-        self._state.standardize_data = bool(enabled)
+        self._dispatch("SET_STANDARDIZE_DATA", enabled=bool(enabled))
 
     def set_pca_component_indices(self, indices: Any) -> None:
-        if indices is None:
-            self._state.pca_component_indices = []
-            return
-        self._state.pca_component_indices = list(indices)
+        self._dispatch("SET_PCA_COMPONENT_INDICES", indices=indices)
 
     def set_ternary_auto_zoom(self, enabled: bool) -> None:
-        self._state.ternary_auto_zoom = bool(enabled)
+        self._dispatch("SET_TERNARY_AUTO_ZOOM", enabled=bool(enabled))
 
     def set_ternary_limit_mode(self, mode: str) -> None:
-        self._state.ternary_limit_mode = str(mode)
+        self._dispatch("SET_TERNARY_LIMIT_MODE", mode=mode)
 
     def set_ternary_limit_anchor(self, anchor: str) -> None:
-        self._state.ternary_limit_anchor = str(anchor)
+        self._dispatch("SET_TERNARY_LIMIT_ANCHOR", anchor=anchor)
 
     def set_ternary_boundary_percent(self, percent: float) -> None:
-        self._state.ternary_boundary_percent = float(percent)
+        self._dispatch("SET_TERNARY_BOUNDARY_PERCENT", percent=percent)
 
     def set_ternary_manual_limits_enabled(self, enabled: bool) -> None:
-        self._state.ternary_manual_limits_enabled = bool(enabled)
+        self._dispatch("SET_TERNARY_MANUAL_LIMITS_ENABLED", enabled=bool(enabled))
 
     def set_ternary_manual_limits(self, limits: Any) -> None:
-        self._state.ternary_manual_limits = dict(limits or {})
+        self._dispatch("SET_TERNARY_MANUAL_LIMITS", limits=dict(limits or {}))
 
     def set_ternary_stretch_mode(self, mode: str) -> None:
-        self._state.ternary_stretch_mode = str(mode)
+        self._dispatch("SET_TERNARY_STRETCH_MODE", mode=mode)
 
     def set_ternary_stretch(self, enabled: bool) -> None:
-        self._state.ternary_stretch = bool(enabled)
+        self._dispatch("SET_TERNARY_STRETCH", enabled=bool(enabled))
 
     def set_ternary_factors(self, factors: Any) -> None:
-        self._state.ternary_factors = dict(factors or {})
+        self._dispatch("SET_TERNARY_FACTORS", factors=factors)
 
     def set_model_curve_width(self, width: float) -> None:
         self._state.model_curve_width = float(width)

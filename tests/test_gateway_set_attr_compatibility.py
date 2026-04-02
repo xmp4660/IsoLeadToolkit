@@ -340,6 +340,70 @@ def test_ml_last_model_meta_set_attr_compatibility() -> None:
         state_gateway.set_ml_last_model_meta(original_ml_last_model_meta)
 
 
+def test_projection_and_ternary_config_set_attr_compatibility() -> None:
+    original_standardize_data = bool(getattr(app_state, "standardize_data", True))
+    original_pca_component_indices = list(getattr(app_state, "pca_component_indices", [0, 1]) or [0, 1])
+    original_ternary_auto_zoom = bool(getattr(app_state, "ternary_auto_zoom", True))
+    original_ternary_limit_mode = str(getattr(app_state, "ternary_limit_mode", "min"))
+    original_ternary_limit_anchor = str(getattr(app_state, "ternary_limit_anchor", "min"))
+    original_ternary_boundary_percent = float(getattr(app_state, "ternary_boundary_percent", 5.0))
+    original_ternary_manual_limits_enabled = bool(getattr(app_state, "ternary_manual_limits_enabled", False))
+    original_ternary_manual_limits = dict(getattr(app_state, "ternary_manual_limits", {}) or {})
+    original_ternary_stretch_mode = str(getattr(app_state, "ternary_stretch_mode", "power"))
+    original_ternary_stretch = bool(getattr(app_state, "ternary_stretch", False))
+    original_ternary_factors = list(getattr(app_state, "ternary_factors", [1.0, 1.0, 1.0]) or [1.0, 1.0, 1.0])
+
+    try:
+        state_gateway.set_attr("standardize_data", False)
+        state_gateway.set_attr("pca_component_indices", [3, 5])
+        state_gateway.set_attr("ternary_auto_zoom", False)
+        state_gateway.set_attr("ternary_limit_mode", "both")
+        state_gateway.set_attr("ternary_limit_anchor", "max")
+        state_gateway.set_attr("ternary_boundary_percent", "12.5")
+        state_gateway.set_attr("ternary_manual_limits_enabled", True)
+        state_gateway.set_attr("ternary_manual_limits", {"tmin": 0.2, "tmax": 0.8, "lmin": 0.1, "lmax": 0.9})
+        state_gateway.set_attr("ternary_stretch_mode", "hybrid")
+        state_gateway.set_attr("ternary_stretch", True)
+        state_gateway.set_attr("ternary_factors", [1.1, 1.2, 0.9])
+
+        assert app_state.standardize_data is False
+        assert app_state.pca_component_indices == [3, 5]
+        assert app_state.ternary_auto_zoom is False
+        assert app_state.ternary_limit_mode == "both"
+        assert app_state.ternary_limit_anchor == "max"
+        assert app_state.ternary_boundary_percent == 12.5
+        assert app_state.ternary_manual_limits_enabled is True
+        assert app_state.ternary_manual_limits["tmin"] == 0.2
+        assert app_state.ternary_stretch_mode == "hybrid"
+        assert app_state.ternary_stretch is True
+        assert app_state.ternary_factors == [1.1, 1.2, 0.9]
+
+        snapshot = app_state.state_store.snapshot()
+        assert snapshot["standardize_data"] is False
+        assert snapshot["pca_component_indices"] == [3, 5]
+        assert snapshot["ternary_auto_zoom"] is False
+        assert snapshot["ternary_limit_mode"] == "both"
+        assert snapshot["ternary_limit_anchor"] == "max"
+        assert snapshot["ternary_boundary_percent"] == 12.5
+        assert snapshot["ternary_manual_limits_enabled"] is True
+        assert snapshot["ternary_manual_limits"]["tmin"] == 0.2
+        assert snapshot["ternary_stretch_mode"] == "hybrid"
+        assert snapshot["ternary_stretch"] is True
+        assert snapshot["ternary_factors"] == [1.1, 1.2, 0.9]
+    finally:
+        state_gateway.set_standardize_data(original_standardize_data)
+        state_gateway.set_pca_component_indices(original_pca_component_indices)
+        state_gateway.set_ternary_auto_zoom(original_ternary_auto_zoom)
+        state_gateway.set_ternary_limit_mode(original_ternary_limit_mode)
+        state_gateway.set_ternary_limit_anchor(original_ternary_limit_anchor)
+        state_gateway.set_ternary_boundary_percent(original_ternary_boundary_percent)
+        state_gateway.set_ternary_manual_limits_enabled(original_ternary_manual_limits_enabled)
+        state_gateway.set_ternary_manual_limits(original_ternary_manual_limits)
+        state_gateway.set_ternary_stretch_mode(original_ternary_stretch_mode)
+        state_gateway.set_ternary_stretch(original_ternary_stretch)
+        state_gateway.set_ternary_factors(original_ternary_factors)
+
+
 def test_confidence_level_set_attr_conversion() -> None:
     original_level = float(getattr(app_state, "confidence_level", 0.95))
 

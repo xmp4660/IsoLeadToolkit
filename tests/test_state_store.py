@@ -64,6 +64,17 @@ def _snapshot_state() -> dict[str, Any]:
         "selected_2d_confirmed": bool(getattr(app_state, "selected_2d_confirmed", False)),
         "selected_3d_confirmed": bool(getattr(app_state, "selected_3d_confirmed", False)),
         "selected_ternary_confirmed": bool(getattr(app_state, "selected_ternary_confirmed", False)),
+        "standardize_data": bool(getattr(app_state, "standardize_data", True)),
+        "pca_component_indices": list(getattr(app_state, "pca_component_indices", [0, 1]) or [0, 1]),
+        "ternary_auto_zoom": bool(getattr(app_state, "ternary_auto_zoom", True)),
+        "ternary_limit_mode": str(getattr(app_state, "ternary_limit_mode", "min")),
+        "ternary_limit_anchor": str(getattr(app_state, "ternary_limit_anchor", "min")),
+        "ternary_boundary_percent": float(getattr(app_state, "ternary_boundary_percent", 5.0)),
+        "ternary_manual_limits_enabled": bool(getattr(app_state, "ternary_manual_limits_enabled", False)),
+        "ternary_manual_limits": dict(getattr(app_state, "ternary_manual_limits", {}) or {}),
+        "ternary_stretch_mode": str(getattr(app_state, "ternary_stretch_mode", "power")),
+        "ternary_stretch": bool(getattr(app_state, "ternary_stretch", False)),
+        "ternary_factors": list(getattr(app_state, "ternary_factors", [1.0, 1.0, 1.0]) or [1.0, 1.0, 1.0]),
         "export_image_options": dict(getattr(app_state, "export_image_options", {}) or {}),
     }
 
@@ -125,6 +136,17 @@ def _restore_state(snapshot: dict[str, Any]) -> None:
     state_gateway.set_selected_2d_columns(snapshot["selected_2d_cols"], confirmed=snapshot["selected_2d_confirmed"])
     state_gateway.set_selected_3d_columns(snapshot["selected_3d_cols"], confirmed=snapshot["selected_3d_confirmed"])
     state_gateway.set_selected_ternary_columns(snapshot["selected_ternary_cols"], confirmed=snapshot["selected_ternary_confirmed"])
+    state_gateway.set_standardize_data(snapshot["standardize_data"])
+    state_gateway.set_pca_component_indices(snapshot["pca_component_indices"])
+    state_gateway.set_ternary_auto_zoom(snapshot["ternary_auto_zoom"])
+    state_gateway.set_ternary_limit_mode(snapshot["ternary_limit_mode"])
+    state_gateway.set_ternary_limit_anchor(snapshot["ternary_limit_anchor"])
+    state_gateway.set_ternary_boundary_percent(snapshot["ternary_boundary_percent"])
+    state_gateway.set_ternary_manual_limits_enabled(snapshot["ternary_manual_limits_enabled"])
+    state_gateway.set_ternary_manual_limits(snapshot["ternary_manual_limits"])
+    state_gateway.set_ternary_stretch_mode(snapshot["ternary_stretch_mode"])
+    state_gateway.set_ternary_stretch(snapshot["ternary_stretch"])
+    state_gateway.set_ternary_factors(snapshot["ternary_factors"])
     state_gateway.sync_available_and_visible_groups(snapshot["available_groups"])
     state_gateway.set_visible_groups(snapshot["visible_groups"])
     state_gateway.set_export_image_options(**snapshot["export_image_options"])
@@ -181,6 +203,17 @@ def test_state_store_session_preference_domains() -> None:
         )
         state_gateway.set_ml_last_result({"status": "ok", "score": 0.93})
         state_gateway.set_ml_last_model_meta({"model": "xgb", "classes": 4})
+        state_gateway.set_standardize_data(False)
+        state_gateway.set_pca_component_indices([2, 4])
+        state_gateway.set_ternary_auto_zoom(False)
+        state_gateway.set_ternary_limit_mode("both")
+        state_gateway.set_ternary_limit_anchor("max")
+        state_gateway.set_ternary_boundary_percent(12.5)
+        state_gateway.set_ternary_manual_limits_enabled(True)
+        state_gateway.set_ternary_manual_limits({"tmin": 0.2, "tmax": 0.8, "lmin": 0.1, "lmax": 0.9})
+        state_gateway.set_ternary_stretch_mode("hybrid")
+        state_gateway.set_ternary_stretch(True)
+        state_gateway.set_ternary_factors([1.1, 1.2, 0.9])
         state_gateway.set_preserve_import_render_mode(True)
 
         assert app_state.algorithm == "RobustPCA"
@@ -207,6 +240,17 @@ def test_state_store_session_preference_domains() -> None:
         assert app_state.marginal_kde_style["gridsize"] == 320
         assert app_state.ml_last_result == {"status": "ok", "score": 0.93}
         assert app_state.ml_last_model_meta == {"model": "xgb", "classes": 4}
+        assert app_state.standardize_data is False
+        assert app_state.pca_component_indices == [2, 4]
+        assert app_state.ternary_auto_zoom is False
+        assert app_state.ternary_limit_mode == "both"
+        assert app_state.ternary_limit_anchor == "max"
+        assert app_state.ternary_boundary_percent == 12.5
+        assert app_state.ternary_manual_limits_enabled is True
+        assert app_state.ternary_manual_limits["tmin"] == 0.2
+        assert app_state.ternary_stretch_mode == "hybrid"
+        assert app_state.ternary_stretch is True
+        assert app_state.ternary_factors == [1.1, 1.2, 0.9]
         assert app_state.preserve_import_render_mode is True
 
         store_snapshot = app_state.state_store.snapshot()
@@ -234,6 +278,17 @@ def test_state_store_session_preference_domains() -> None:
         assert store_snapshot["marginal_kde_style"]["gridsize"] == 320
         assert store_snapshot["ml_last_result"] == {"status": "ok", "score": 0.93}
         assert store_snapshot["ml_last_model_meta"] == {"model": "xgb", "classes": 4}
+        assert store_snapshot["standardize_data"] is False
+        assert store_snapshot["pca_component_indices"] == [2, 4]
+        assert store_snapshot["ternary_auto_zoom"] is False
+        assert store_snapshot["ternary_limit_mode"] == "both"
+        assert store_snapshot["ternary_limit_anchor"] == "max"
+        assert store_snapshot["ternary_boundary_percent"] == 12.5
+        assert store_snapshot["ternary_manual_limits_enabled"] is True
+        assert store_snapshot["ternary_manual_limits"]["tmin"] == 0.2
+        assert store_snapshot["ternary_stretch_mode"] == "hybrid"
+        assert store_snapshot["ternary_stretch"] is True
+        assert store_snapshot["ternary_factors"] == [1.1, 1.2, 0.9]
         assert store_snapshot["preserve_import_render_mode"] is True
     finally:
         _restore_state(snapshot)
