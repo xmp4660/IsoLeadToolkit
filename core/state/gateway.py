@@ -26,6 +26,20 @@ class AppStateGateway:
     def _dispatch(self, action_type: str, **payload: Any) -> dict[str, Any]:
         return self._store.dispatch({"type": action_type, **payload})
 
+    def _set_group_cols_compat(self, value: Any) -> None:
+        group_cols = [] if value is None else list(value)
+        self.set_group_data_columns(group_cols, list(getattr(self._state, "data_cols", []) or []))
+
+    def _set_data_cols_compat(self, value: Any) -> None:
+        data_cols = [] if value is None else list(value)
+        self.set_group_data_columns(list(getattr(self._state, "group_cols", []) or []), data_cols)
+
+    def _set_export_image_options_compat(self, value: Any) -> None:
+        if isinstance(value, dict):
+            self.set_export_image_options(**value)
+            return
+        self._state.export_image_options = value
+
     def _build_compat_attr_handlers(self) -> dict[str, Callable[[Any], None]]:
         """Build compatibility dispatch table for legacy set_attr callers."""
         return {
@@ -132,6 +146,9 @@ class AppStateGateway:
             "selection_tool": self.set_selection_tool,
             "data_version": lambda v: self.set_data_version(int(v)),
             "visible_groups": self.set_visible_groups,
+            "group_cols": self._set_group_cols_compat,
+            "data_cols": self._set_data_cols_compat,
+            "export_image_options": self._set_export_image_options_compat,
         }
 
     def set_attr(self, name: str, value: Any) -> None:
@@ -139,17 +156,6 @@ class AppStateGateway:
         handler = self._compat_attr_handlers.get(name)
         if handler is not None:
             handler(value)
-            return
-        if name == "group_cols":
-            group_cols = [] if value is None else list(value)
-            self.set_group_data_columns(group_cols, list(getattr(self._state, "data_cols", []) or []))
-            return
-        if name == "data_cols":
-            data_cols = [] if value is None else list(value)
-            self.set_group_data_columns(list(getattr(self._state, "group_cols", []) or []), data_cols)
-            return
-        if name == "export_image_options" and isinstance(value, dict):
-            self.set_export_image_options(**value)
             return
         setattr(self._state, name, value)
 

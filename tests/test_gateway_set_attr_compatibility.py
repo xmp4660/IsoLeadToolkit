@@ -40,3 +40,34 @@ def test_tooltip_set_attr_compatibility() -> None:
         assert app_state.state_store.snapshot()["show_tooltip"] is False
     finally:
         state_gateway.set_show_tooltip(original_show_tooltip)
+
+
+def test_export_image_options_set_attr_compatibility() -> None:
+    original_options = dict(getattr(app_state, "export_image_options", {}) or {})
+
+    try:
+        state_gateway.set_attr(
+            "export_image_options",
+            {
+                "preset_key": "ieee_single",
+                "image_ext": "SVG",
+                "dpi": 50,
+                "bbox_tight": False,
+                "pad_inches": -1.0,
+                "transparent": True,
+                "point_size": 13,
+                "legend_size": 8,
+            },
+        )
+
+        options = state_gateway.get_export_image_options()
+        assert options["preset_key"] == "ieee_single"
+        assert options["image_ext"] == "svg"
+        assert options["dpi"] == 72
+        assert options["bbox_tight"] is False
+        assert options["pad_inches"] == 0.0
+        assert options["transparent"] is True
+        assert options["point_size"] == 13
+        assert options["legend_size"] == 8
+    finally:
+        state_gateway.set_export_image_options(**original_options)

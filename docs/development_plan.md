@@ -271,6 +271,13 @@
                                                                     保持行为不变并降低后续维护成本。
                                                                 - `tests/test_gateway_set_attr_compatibility.py` 增加
                                                                     `show_tooltip` 兼容分发回归用例，覆盖 dispatch table 路径。
+                                - 第四十六批迁移清理（兼容分发彻底收口）：
+                                                                - `core/state/gateway.py` 新增 `_set_group_cols_compat`、
+                                                                    `_set_data_cols_compat`、`_set_export_image_options_compat`，
+                                                                    并将 `group_cols/data_cols/export_image_options` 纳入统一 dispatch table。
+                                                                - `set_attr` 只保留“映射分发 + 默认 setattr”两段逻辑。
+                                                                - `tests/test_gateway_set_attr_compatibility.py` 新增
+                                                                    `export_image_options` 兼容路径回归测试。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 
