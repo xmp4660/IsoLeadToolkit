@@ -44,7 +44,7 @@ def compute_ternary_embedding() -> np.ndarray | None:
         right_vals = pd.to_numeric(df_subset[c_right], errors='coerce').fillna(0).values
 
         embedding = np.column_stack((top_vals, left_vals, right_vals))
-        state_gateway.set_attrs({'last_embedding': embedding, 'last_embedding_type': 'TERNARY'})
+        state_gateway.set_last_embedding(embedding, 'TERNARY')
 
         if hasattr(app_state, 'ternary_manual_ranges'):
             del app_state.ternary_manual_ranges

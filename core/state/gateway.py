@@ -66,6 +66,12 @@ class AppStateGateway:
         if name == "legend_ax":
             self.set_legend_ax(value)
             return
+        if name == "last_embedding":
+            self.set_last_embedding(value, str(getattr(self._state, "last_embedding_type", "")))
+            return
+        if name == "last_embedding_type":
+            self.set_last_embedding(getattr(self._state, "last_embedding", None), str(value))
+            return
         if name == "last_pca_variance":
             self.set_pca_diagnostics(last_pca_variance=value)
             return
@@ -431,6 +437,10 @@ class AppStateGateway:
 
     def set_legend_ax(self, legend_ax: Any) -> None:
         self._state.legend_ax = legend_ax
+
+    def set_last_embedding(self, embedding: Any, embedding_type: str) -> None:
+        self._state.last_embedding = embedding
+        self._state.last_embedding_type = str(embedding_type)
 
     def set_pca_diagnostics(
         self,

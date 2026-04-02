@@ -23,7 +23,7 @@ def apply_precomputed_embedding(
 
     embedding = np.asarray(precomputed_embedding)
     last_type = 'tSNE' if actual_algorithm == 'TSNE' else actual_algorithm
-    state_gateway.set_attrs({'last_embedding': embedding, 'last_embedding_type': last_type})
+    state_gateway.set_last_embedding(embedding, last_type)
 
     if isinstance(precomputed_meta, dict):
         state_gateway.set_pca_diagnostics(

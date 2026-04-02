@@ -59,7 +59,7 @@ def compute_v1v2_embedding() -> np.ndarray | None:
             scale=v1v2_params.get('scale', 1.0),
         )
         embedding = np.column_stack((results['V1'], results['V2']))
-        state_gateway.set_attrs({'last_embedding': embedding, 'last_embedding_type': 'V1V2'})
+        state_gateway.set_last_embedding(embedding, 'V1V2')
         return embedding
     except Exception as err:
         logger.error('V1V2 calculation failed: %s', err)
@@ -136,5 +136,5 @@ def compute_geochem_embedding(actual_algorithm: str) -> np.ndarray | None:
         else:
             embedding = np.column_stack((pb206, pb208))
 
-    state_gateway.set_attrs({'last_embedding': embedding, 'last_embedding_type': actual_algorithm})
+    state_gateway.set_last_embedding(embedding, actual_algorithm)
     return embedding

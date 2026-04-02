@@ -121,7 +121,7 @@ def get_umap_embedding(params: dict) -> np.ndarray | None:
         reducer = umap.UMAP(**params)
         embedding = reducer.fit_transform(X)
         app_state.embedding_cache.set(key, embedding)
-        state_gateway.set_attrs({'last_embedding': embedding, 'last_embedding_type': 'UMAP'})
+        state_gateway.set_last_embedding(embedding, 'UMAP')
         return embedding
 
     except Exception as e:
@@ -166,7 +166,7 @@ def get_tsne_embedding(params: dict) -> np.ndarray | None:
 
         embedding = reducer.fit_transform(X)
         app_state.embedding_cache.set(key, embedding)
-        state_gateway.set_attrs({'last_embedding': embedding, 'last_embedding_type': 'tSNE'})
+        state_gateway.set_last_embedding(embedding, 'tSNE')
         return embedding
 
     except Exception as e:
@@ -210,7 +210,7 @@ def get_pca_embedding(params: dict) -> np.ndarray | None:
         )
 
         app_state.embedding_cache.set(key, embedding)
-        state_gateway.set_attrs({'last_embedding': embedding, 'last_embedding_type': 'PCA'})
+        state_gateway.set_last_embedding(embedding, 'PCA')
         return embedding
 
     except Exception as e:
@@ -273,7 +273,7 @@ def get_robust_pca_embedding(params: dict) -> np.ndarray | None:
 
         state_gateway.set_pca_diagnostics(current_feature_names=_data_cols())
         app_state.embedding_cache.set(key, embedding)
-        state_gateway.set_attrs({'last_embedding': embedding, 'last_embedding_type': 'RobustPCA'})
+        state_gateway.set_last_embedding(embedding, 'RobustPCA')
         return embedding
 
     except Exception as e:

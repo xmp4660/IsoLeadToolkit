@@ -223,6 +223,12 @@
                     `set_overlay_toggle`，并在 `set_attr` 添加兼容分发。
                 - `ui/main_window_parts/legend_actions.py` overlay toggle 改为 `set_overlay_toggle`。
                 - `ui/panels/analysis/equations.py` legacy KDE 样式写入改为显式 API。
+        - 第三十七批迁移清理（embedding 快照写入）：
+                - `core/state/gateway.py` 新增 `set_last_embedding(embedding, embedding_type)`，
+                    并为 `last_embedding`/`last_embedding_type` 添加兼容分发。
+                - `visualization/plotting/core.py`、`rendering/embedding/compute_geochem.py`、
+                    `rendering/embedding/compute_ml.py`、`rendering/embedding/compute_ternary.py`
+                    将 embedding 快照写入从 `set_attrs` 迁移到显式 API。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 
