@@ -91,6 +91,11 @@
     - 面板构建时读取 `export_image_options` 作为初始值
     - 解析保存参数时同步回写到 StateStore
 - 新增测试 `tests/test_state_store.py` 覆盖首批状态域行为与归一化规则。
+- 第二批状态域继续迁移（列选择与可见组）：
+    - `selected_2d_cols/selected_3d_cols/selected_ternary_cols`
+    - `selected_2d_confirmed/selected_3d_confirmed/selected_ternary_confirmed`
+    - `available_groups/visible_groups`
+    - `AppStateGateway` 的 `reset_column_selection`、`set_selected_*_columns`、`sync_available_and_visible_groups`、`set_visible_groups` 已改为通过 StateStore action 分发。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 

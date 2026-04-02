@@ -33,6 +33,9 @@ class AppStateGateway:
         if name == "selected_indices":
             self.set_selected_indices(value)
             return
+        if name == "visible_groups":
+            self.set_visible_groups(value)
+            return
         if name == "export_image_options" and isinstance(value, dict):
             self.set_export_image_options(**value)
             return
@@ -117,31 +120,19 @@ class AppStateGateway:
         self._state.last_group_col = group_col
 
     def reset_column_selection(self) -> None:
-        self._state.selected_2d_cols = []
-        self._state.selected_3d_cols = []
-        self._state.selected_2d_confirmed = False
-        self._state.selected_3d_confirmed = False
-        self._state.available_groups = []
-        self._state.visible_groups = None
+        self._dispatch("RESET_COLUMN_SELECTION")
 
     def set_selected_2d_columns(self, columns: list[str], *, confirmed: bool = False) -> None:
-        self._state.selected_2d_cols = list(columns)
-        self._state.selected_2d_confirmed = confirmed
+        self._dispatch("SET_SELECTED_2D_COLUMNS", columns=list(columns), confirmed=bool(confirmed))
 
     def set_selected_3d_columns(self, columns: list[str], *, confirmed: bool = False) -> None:
-        self._state.selected_3d_cols = list(columns)
-        self._state.selected_3d_confirmed = confirmed
+        self._dispatch("SET_SELECTED_3D_COLUMNS", columns=list(columns), confirmed=bool(confirmed))
 
     def set_selected_ternary_columns(self, columns: list[str], *, confirmed: bool = False) -> None:
-        self._state.selected_ternary_cols = list(columns)
-        self._state.selected_ternary_confirmed = confirmed
+        self._dispatch("SET_SELECTED_TERNARY_COLUMNS", columns=list(columns), confirmed=bool(confirmed))
 
     def sync_available_and_visible_groups(self, all_groups: list[str]) -> None:
-        self._state.available_groups = list(all_groups)
-        visible_groups = getattr(self._state, "visible_groups", None)
-        if visible_groups:
-            filtered = [group for group in visible_groups if group in all_groups]
-            self._state.visible_groups = filtered if filtered else None
+        self._dispatch("SYNC_AVAILABLE_VISIBLE_GROUPS", all_groups=list(all_groups))
 
     def set_dataframe_and_source(
         self,
@@ -207,7 +198,7 @@ class AppStateGateway:
         self._state.selection_mode = tool is not None
 
     def set_visible_groups(self, groups: list[str] | None) -> None:
-        self._state.visible_groups = list(groups) if groups is not None else None
+        self._dispatch("SET_VISIBLE_GROUPS", groups=groups)
 
     def clear_selected_indices(self) -> None:
         self._dispatch("CLEAR_SELECTED_INDICES")
