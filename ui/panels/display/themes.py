@@ -16,16 +16,16 @@ class DisplayThemeMixin:
     def _refresh_theme_list(self):
         """从磁盘加载主题并刷新下拉列表"""
         if not hasattr(app_state, 'saved_themes'):
-            state_gateway.set_attr('saved_themes', {})
+            state_gateway.set_saved_themes({})
 
         theme_file = CONFIG['temp_dir'] / 'user_themes.json'
         if theme_file.exists():
             try:
                 with open(theme_file, 'r', encoding='utf-8') as handle:
-                    state_gateway.set_attr('saved_themes', json.load(handle))
+                    state_gateway.set_saved_themes(json.load(handle))
             except Exception as exc:
                 logger.warning("Failed to load themes: %s", exc)
-                state_gateway.set_attr('saved_themes', {})
+                state_gateway.set_saved_themes({})
 
         if self.theme_load_combo is None:
             return
@@ -43,7 +43,7 @@ class DisplayThemeMixin:
             return
 
         if not hasattr(app_state, 'saved_themes'):
-            state_gateway.set_attr('saved_themes', {})
+            state_gateway.set_saved_themes({})
 
         theme_data = {
             'grid': bool(self.grid_check.isChecked()) if self.grid_check else False,

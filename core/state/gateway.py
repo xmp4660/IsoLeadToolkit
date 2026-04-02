@@ -102,6 +102,9 @@ class AppStateGateway:
         if name == "line_styles":
             self.set_line_styles(value)
             return
+        if name == "saved_themes":
+            self.set_saved_themes(value)
+            return
         if name == "render_mode":
             self.set_render_mode(str(value))
             return
@@ -355,6 +358,9 @@ class AppStateGateway:
 
     def set_line_styles(self, line_styles: Any) -> None:
         self._state.line_styles = dict(line_styles or {})
+
+    def set_saved_themes(self, themes: Any) -> None:
+        self._state.saved_themes = dict(themes or {})
 
     def set_marginal_axes(self, marginal_axes: Any) -> None:
         self._state.marginal_axes = marginal_axes
