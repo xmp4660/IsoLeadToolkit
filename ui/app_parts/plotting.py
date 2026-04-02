@@ -47,16 +47,16 @@ class Qt5AppPlottingMixin:
             def _on_draw(event):
                 try:
                     if getattr(app_state, "paleo_label_refreshing", False):
-                        state_gateway.set_attr("paleo_label_refreshing", False)
+                        state_gateway.set_paleo_label_refreshing(False)
                         return
                     from visualization.plotting import refresh_paleoisochron_labels
 
                     refresh_paleoisochron_labels()
                     if app_state.fig is not None and app_state.fig.canvas is not None:
-                        state_gateway.set_attr("paleo_label_refreshing", True)
+                        state_gateway.set_paleo_label_refreshing(True)
                         app_state.fig.canvas.draw_idle()
                 except Exception:
-                    state_gateway.set_attr("paleo_label_refreshing", False)
+                    state_gateway.set_paleo_label_refreshing(False)
 
             app_state.fig.canvas.mpl_connect("draw_event", _on_draw)
 
@@ -85,7 +85,7 @@ class Qt5AppPlottingMixin:
         import core.state as state
 
         state.control_panel = None
-        state_gateway.set_attr("control_panel_ref", None)
+        state_gateway.set_control_panel_ref(None)
 
     def _connect_event_handlers(self):
         """Connect interactive matplotlib handlers."""

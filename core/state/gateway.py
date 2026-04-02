@@ -39,6 +39,12 @@ class AppStateGateway:
         if name == "show_equation_overlays":
             self.set_show_equation_overlays(bool(value))
             return
+        if name == "paleo_label_refreshing":
+            self.set_paleo_label_refreshing(bool(value))
+            return
+        if name == "control_panel_ref":
+            self.set_control_panel_ref(value)
+            return
         if name == "render_mode":
             self.set_render_mode(str(value))
             return
@@ -210,6 +216,12 @@ class AppStateGateway:
     def set_overlay_label_flags(self, *, refreshing: bool, adjust_in_progress: bool) -> None:
         self._state.overlay_label_refreshing = bool(refreshing)
         self._state.adjust_text_in_progress = bool(adjust_in_progress)
+
+    def set_paleo_label_refreshing(self, refreshing: bool) -> None:
+        self._state.paleo_label_refreshing = bool(refreshing)
+
+    def set_control_panel_ref(self, panel: Any) -> None:
+        self._state.control_panel_ref = panel
 
     def set_overlay_label_state(self, label_state: dict[str, Any]) -> None:
         for key, value in label_state.items():

@@ -133,6 +133,10 @@
     - 第十批迁移清理（Tooltip 列配置写入路径）：
         - `ui/panels/analysis/selection.py` 与 `ui/panels/data/grouping.py` 的 tooltip 列配置从 `set_attr("tooltip_columns")` 改为显式 `set_tooltip_columns`。
         - 进一步减少 UI 层对通用 `set_attr` 的依赖，统一走已托管域显式 API。
+    - 第十一批迁移清理（运行期 UI 引用与标记写入）：
+        - `core/state/gateway.py` 新增显式 API：`set_paleo_label_refreshing`、`set_control_panel_ref`。
+        - `ui/app_parts/plotting.py` 与 `ui/control_panel.py` 对应写入改为显式 API，不再通过 `set_attr` 间接写入。
+        - `set_attr` 为上述字段保留兼容转发，确保旧调用路径行为一致。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 
