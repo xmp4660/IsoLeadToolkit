@@ -136,7 +136,7 @@ def plot_3d_data(group_col: str, data_columns: list[str], size: int = 60) -> boo
         app_state.ax.set_zlabel(data_columns[2])
         _apply_axis_text_style(app_state.ax)
 
-        state_gateway.set_attr('annotation', None)
+        state_gateway.set_annotation(None)
         return True
 
     except Exception as err:

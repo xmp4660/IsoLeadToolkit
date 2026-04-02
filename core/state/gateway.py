@@ -87,6 +87,9 @@ class AppStateGateway:
         if name == "current_plot_title":
             self.set_current_plot_title(str(value))
             return
+        if name == "annotation":
+            self.set_annotation(value)
+            return
         if name == "render_mode":
             self.set_render_mode(str(value))
             return
@@ -325,6 +328,9 @@ class AppStateGateway:
 
     def set_current_plot_title(self, title: str) -> None:
         self._state.current_plot_title = str(title)
+
+    def set_annotation(self, annotation: Any) -> None:
+        self._state.annotation = annotation
 
     def set_marginal_axes(self, marginal_axes: Any) -> None:
         self._state.marginal_axes = marginal_axes

@@ -273,8 +273,7 @@ def plot_2d_data(group_col: str, data_columns: list[str], size: int = 60, show_k
 
         _draw_equation_overlays(app_state.ax)
 
-        state_gateway.set_attr(
-            'annotation',
+        state_gateway.set_annotation(
             app_state.ax.annotate(
                 '',
                 xy=(0, 0),
@@ -283,7 +282,7 @@ def plot_2d_data(group_col: str, data_columns: list[str], size: int = 60, show_k
                 bbox=dict(boxstyle='round,pad=0.5', fc='white', ec='#cbd5e1', alpha=0.95),
                 arrowprops=dict(arrowstyle='->', color='#475569'),
                 zorder=15,
-            ),
+            )
         )
         app_state.annotation.set_visible(False)
         try:
