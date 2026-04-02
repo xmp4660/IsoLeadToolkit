@@ -154,6 +154,11 @@ class AnalysisPanelEquationMixin:
         }
         if target == 'kde':
             fallback_style['levels'] = int(legacy_style.get('levels', 10))
+        else:
+            fallback_style['bw_adjust'] = float(legacy_style.get('bw_adjust', 1.0))
+            fallback_style['gridsize'] = int(legacy_style.get('gridsize', 256))
+            fallback_style['cut'] = float(legacy_style.get('cut', 1.0))
+            fallback_style['log_transform'] = bool(legacy_style.get('log_transform', False))
         style = ensure_line_style(app_state, style_key, fallback_style)
 
         alpha_row = QHBoxLayout()
@@ -197,6 +202,10 @@ class AnalysisPanelEquationMixin:
 
         top_size_spin = None
         right_size_spin = None
+        max_points_spin = None
+        bw_adjust_spin = None
+        cut_spin = None
+        log_transform_check = None
         if target == 'marginal_kde':
             top_row = QHBoxLayout()
             top_row.addWidget(QLabel(translate("Top KDE Height (%)")))
@@ -218,6 +227,45 @@ class AnalysisPanelEquationMixin:
             right_row.addStretch()
             layout.addLayout(right_row)
 
+            max_points_row = QHBoxLayout()
+            max_points_row.addWidget(QLabel(translate("Marginal KDE Max Points")))
+            max_points_spin = QSpinBox()
+            max_points_spin.setRange(200, 50000)
+            max_points_spin.setSingleStep(100)
+            max_points_spin.setValue(int(getattr(app_state, 'marginal_kde_max_points', 5000)))
+            max_points_row.addWidget(max_points_spin)
+            max_points_row.addStretch()
+            layout.addLayout(max_points_row)
+
+            bw_row = QHBoxLayout()
+            bw_row.addWidget(QLabel(translate("Bandwidth Adjust")))
+            bw_adjust_spin = QDoubleSpinBox()
+            bw_adjust_spin.setRange(0.05, 5.0)
+            bw_adjust_spin.setSingleStep(0.05)
+            bw_adjust_spin.setValue(float(getattr(app_state, 'marginal_kde_bw_adjust', style.get('bw_adjust', 1.0))))
+            bw_row.addWidget(bw_adjust_spin)
+            bw_row.addStretch()
+            layout.addLayout(bw_row)
+
+            cut_row = QHBoxLayout()
+            cut_row.addWidget(QLabel(translate("KDE Cut")))
+            cut_spin = QDoubleSpinBox()
+            cut_spin.setRange(0.0, 5.0)
+            cut_spin.setSingleStep(0.1)
+            cut_spin.setValue(float(getattr(app_state, 'marginal_kde_cut', style.get('cut', 1.0))))
+            cut_row.addWidget(cut_spin)
+            cut_row.addStretch()
+            layout.addLayout(cut_row)
+
+            log_row = QHBoxLayout()
+            log_transform_check = QCheckBox(translate("Log Transform Density"))
+            log_transform_check.setChecked(
+                bool(getattr(app_state, 'marginal_kde_log_transform', style.get('log_transform', False)))
+            )
+            log_row.addWidget(log_transform_check)
+            log_row.addStretch()
+            layout.addLayout(log_row)
+
         buttons_row = QHBoxLayout()
         buttons_row.addStretch()
         cancel_button = QPushButton(translate("Cancel"))
@@ -237,6 +285,17 @@ class AnalysisPanelEquationMixin:
                     state_gateway.set_attr('marginal_kde_top_size', float(top_size_spin.value()))
                 if right_size_spin is not None:
                     state_gateway.set_attr('marginal_kde_right_size', float(right_size_spin.value()))
+                if max_points_spin is not None:
+                    state_gateway.set_attr('marginal_kde_max_points', int(max_points_spin.value()))
+                if bw_adjust_spin is not None:
+                    style_ref['bw_adjust'] = float(bw_adjust_spin.value())
+                    state_gateway.set_attr('marginal_kde_bw_adjust', float(bw_adjust_spin.value()))
+                if cut_spin is not None:
+                    style_ref['cut'] = float(cut_spin.value())
+                    state_gateway.set_attr('marginal_kde_cut', float(cut_spin.value()))
+                if log_transform_check is not None:
+                    style_ref['log_transform'] = bool(log_transform_check.isChecked())
+                    state_gateway.set_attr('marginal_kde_log_transform', bool(log_transform_check.isChecked()))
             legacy_payload = {
                 'alpha': style_ref.get('alpha', 0.6 if target == 'kde' else 0.25),
                 'linewidth': style_ref.get('linewidth', 1.0),
@@ -244,6 +303,11 @@ class AnalysisPanelEquationMixin:
             }
             if target == 'kde':
                 legacy_payload['levels'] = style_ref.get('levels', 10)
+            else:
+                legacy_payload['bw_adjust'] = style_ref.get('bw_adjust', 1.0)
+                legacy_payload['gridsize'] = style_ref.get('gridsize', 256)
+                legacy_payload['cut'] = style_ref.get('cut', 1.0)
+                legacy_payload['log_transform'] = style_ref.get('log_transform', False)
             state_gateway.set_attr(legacy_key, legacy_payload)
 
             if swatch is not None:
