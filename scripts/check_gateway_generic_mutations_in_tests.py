@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import argparse
-import re
 from pathlib import Path
 
-PATTERN = re.compile(r"\bstate_gateway\.set_attrs?\s*\(")
+from gateway_mutation_guard import print_scan_result, scan_generic_gateway_calls
+
 EXCLUDED_PARTS = {".venv", "reference", ".git", "__pycache__"}
 ALLOWED = {
     "tests/test_gateway_set_attr_compatibility.py",
@@ -33,31 +33,9 @@ def main() -> int:
     args = parser.parse_args()
 
     root = Path.cwd()
-    counts: dict[str, int] = {}
-
-    for file_path in root.rglob("*.py"):
-        if not should_scan(file_path, root):
-            continue
-        try:
-            text = file_path.read_text(encoding="utf-8")
-        except Exception:
-            continue
-
-        hits = len(PATTERN.findall(text))
-        if hits <= 0:
-            continue
-
-        rel = file_path.relative_to(root).as_posix()
-        if rel in ALLOWED:
-            continue
-        counts[rel] = hits
-
+    counts = scan_generic_gateway_calls(root, include_file=should_scan, allowlist=ALLOWED)
     total = sum(counts.values())
-    print(f"TOTAL={total}")
-
-    if total > 0:
-        for rel, count in sorted(counts.items(), key=lambda item: item[1], reverse=True):
-            print(f"{count}\t{rel}")
+    print_scan_result(counts)
 
     if args.fail_on_hits and total > 0:
         return 1

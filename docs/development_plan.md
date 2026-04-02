@@ -278,6 +278,12 @@
                                                                 - `set_attr` 只保留“映射分发 + 默认 setattr”两段逻辑。
                                                                 - `tests/test_gateway_set_attr_compatibility.py` 新增
                                                                     `export_image_options` 兼容路径回归测试。
+                                - 第四十七批迁移清理（守护脚本去重）：
+                                                                - 新增共享扫描模块 `scripts/gateway_mutation_guard.py`，
+                                                                    收敛 generic gateway 调用扫描与结果输出逻辑。
+                                                                - `scripts/check_gateway_generic_mutations.py` 与
+                                                                    `scripts/check_gateway_generic_mutations_in_tests.py`
+                                                                    改为复用共享模块，去除重复扫描实现。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 
