@@ -60,6 +60,12 @@ class AppStateGateway:
         if name == "canvas":
             self.set_canvas(value)
             return
+        if name == "ax":
+            self.set_axis(value)
+            return
+        if name == "legend_ax":
+            self.set_legend_ax(value)
+            return
         if name == "render_mode":
             self.set_render_mode(str(value))
             return
@@ -239,6 +245,12 @@ class AppStateGateway:
 
     def set_canvas(self, canvas: Any) -> None:
         self._state.canvas = canvas
+
+    def set_axis(self, ax: Any) -> None:
+        self._state.ax = ax
+
+    def set_legend_ax(self, legend_ax: Any) -> None:
+        self._state.legend_ax = legend_ax
 
     def set_overlay_label_flags(self, *, refreshing: bool, adjust_in_progress: bool) -> None:
         self._state.overlay_label_refreshing = bool(refreshing)

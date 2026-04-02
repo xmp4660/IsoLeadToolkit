@@ -82,7 +82,7 @@ def _ensure_axes(dimensions=2):
                 app_state.fig.clf()
             except Exception:
                 pass
-            state_gateway.set_attr('ax', app_state.fig.add_subplot(111, projection='3d'))
+            state_gateway.set_axis(app_state.fig.add_subplot(111, projection='3d'))
     elif dimensions == 'ternary':
         _lazy_import_mpltern()
         if app_state.ax is None or current_name != 'ternary':
@@ -90,15 +90,15 @@ def _ensure_axes(dimensions=2):
                 app_state.fig.clf()
             except Exception:
                 pass
-            state_gateway.set_attr('ax', app_state.fig.add_subplot(111, projection='ternary'))
+            state_gateway.set_axis(app_state.fig.add_subplot(111, projection='ternary'))
     else:
         if app_state.ax is None or current_name in ('3d', 'ternary'):
             try:
                 app_state.fig.clf()
             except Exception:
                 pass
-            state_gateway.set_attr('ax', app_state.fig.add_subplot(111))
-    state_gateway.set_attr('legend_ax', None)
+            state_gateway.set_axis(app_state.fig.add_subplot(111))
+    state_gateway.set_legend_ax(None)
 
     return app_state.ax
 def get_umap_embedding(params: dict) -> np.ndarray | None:
