@@ -80,8 +80,9 @@ PRESET_MODELS = {
         'age_model': 'single_stage',
         'T1': 4430e6,      # Age01
         'T2': 4570e6,      # Age02
+
         'Tsec': 3700e6,    # Age1
-        'a0': A0, 'b0': A0, 'c0': A0,
+        'a0': A0, 'b0': B0, 'c0': C0,
         'a1': A1_SK, 'b1': B1_SK, 'c1': C1_SK,
         'mu_M': 7.8,
         'omega_M': 4.04 * 7.8,

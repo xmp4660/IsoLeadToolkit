@@ -202,12 +202,21 @@ def calculate_all_parameters(
             Pb206, Pb207, Pb208, t_model, params=params_calc, use_two_stage=True, E1=E1_val, E2=E2_val
         )
     else:
-        # 默认 V1V2 逻辑: 使用 T1=4.43Ga 计算出的单阶段年龄作为基准
+        # 单阶段逻辑: Geokit 用 T1 计算年龄，但 Delta 地幔参考采用 T2 口径
         t_calc = tCDT if is_geokit else calculate_single_stage_age(Pb206, Pb207, params=params_calc, initial_age=params_calc.get('T2'))
         if is_geokit or params_calc.get('v1v2_formula') == 'zhu1993':
             t_calc = np.maximum(t_calc, 0)
+        t_mantle = params_calc.get('T2') if is_geokit else None
         d_alpha, d_beta, d_gamma = calculate_deltas(
-            Pb206, Pb207, Pb208, t_calc, params=params_calc, use_two_stage=False, E1=E1_val, E2=E2_val
+            Pb206,
+            Pb207,
+            Pb208,
+            t_calc,
+            params=params_calc,
+            T_mantle=t_mantle,
+            use_two_stage=False,
+            E1=E1_val,
+            E2=E2_val,
         )
         
     results.update({

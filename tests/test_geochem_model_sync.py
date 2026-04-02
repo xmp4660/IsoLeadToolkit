@@ -77,7 +77,7 @@ def test_zhu1993_uses_same_regression_plane_projection_as_default() -> None:
 
 def test_geokit_clamps_negative_single_stage_age_for_delta(monkeypatch) -> None:
     previous_model = getattr(engine, "current_model_name", "")
-    captured: dict[str, np.ndarray] = {}
+    captured: dict[str, np.ndarray | float | None] = {}
 
     class _StopAfterDeltas(Exception):
         pass
@@ -88,8 +88,9 @@ def test_geokit_clamps_negative_single_stage_age_for_delta(monkeypatch) -> None:
     def fake_two_stage_age(*_args, **_kwargs):
         return np.array([100.0, 200.0], dtype=float)
 
-    def fake_calculate_deltas(_pb206, _pb207, _pb208, t_ma, **_kwargs):
+    def fake_calculate_deltas(_pb206, _pb207, _pb208, t_ma, **kwargs):
         captured["t_ma"] = np.asarray(t_ma, dtype=float)
+        captured["t_mantle"] = kwargs.get("T_mantle")
         raise _StopAfterDeltas()
 
     try:
@@ -108,6 +109,7 @@ def test_geokit_clamps_negative_single_stage_age_for_delta(monkeypatch) -> None:
             )
 
         np.testing.assert_allclose(captured["t_ma"], np.array([0.0, 3.0], dtype=float), rtol=0.0, atol=1e-12)
+        assert float(captured["t_mantle"]) == engine.get_parameters().get("T2")
     finally:
         _restore_model(previous_model)
 
