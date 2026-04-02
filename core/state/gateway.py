@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Callable
 
 from .app_state import app_state
 from .store import StateStore
@@ -21,302 +21,124 @@ class AppStateGateway:
             store = StateStore(state)
             setattr(state, "state_store", store)
         self._store = store
+        self._compat_attr_handlers = self._build_compat_attr_handlers()
 
     def _dispatch(self, action_type: str, **payload: Any) -> dict[str, Any]:
         return self._store.dispatch({"type": action_type, **payload})
 
+    def _build_compat_attr_handlers(self) -> dict[str, Callable[[Any], None]]:
+        """Build compatibility dispatch table for legacy set_attr callers."""
+        return {
+            "algorithm": lambda v: self.set_algorithm(str(v)),
+            "show_kde": lambda v: self.set_show_kde(bool(v)),
+            "show_marginal_kde": lambda v: self.set_show_marginal_kde(bool(v)),
+            "show_equation_overlays": lambda v: self.set_show_equation_overlays(bool(v)),
+            "geo_model_name": lambda v: self.set_geo_model_name(str(v)),
+            "paleo_label_refreshing": lambda v: self.set_paleo_label_refreshing(bool(v)),
+            "control_panel_ref": self.set_control_panel_ref,
+            "confidence_level": lambda v: self.set_confidence_level(float(v)),
+            "legend_update_callback": self.set_legend_update_callback,
+            "fig": self.set_figure,
+            "canvas": self.set_canvas,
+            "ax": self.set_axis,
+            "legend_ax": self.set_legend_ax,
+            "last_embedding": lambda v: self.set_last_embedding(
+                v,
+                str(getattr(self._state, "last_embedding_type", "")),
+            ),
+            "last_embedding_type": lambda v: self.set_last_embedding(
+                getattr(self._state, "last_embedding", None),
+                str(v),
+            ),
+            "last_pca_variance": lambda v: self.set_pca_diagnostics(last_pca_variance=v),
+            "last_pca_components": lambda v: self.set_pca_diagnostics(last_pca_components=v),
+            "current_feature_names": lambda v: self.set_pca_diagnostics(current_feature_names=v),
+            "current_palette": self.set_current_palette,
+            "adjust_text_in_progress": lambda v: self.set_adjust_text_in_progress(bool(v)),
+            "overlay_label_refreshing": lambda v: self.set_overlay_label_refreshing(bool(v)),
+            "current_plot_title": lambda v: self.set_current_plot_title(str(v)),
+            "annotation": self.set_annotation,
+            "last_2d_cols": self.set_last_2d_cols,
+            "recent_files": self.set_recent_files,
+            "language": lambda v: self.set_language_code(str(v)),
+            "line_styles": self.set_line_styles,
+            "saved_themes": self.set_saved_themes,
+            "color_scheme": lambda v: self.set_color_scheme(str(v)),
+            "legend_position": self.set_legend_position,
+            "legend_location": self.set_legend_location,
+            "legend_columns": lambda v: self.set_legend_columns(int(v)),
+            "legend_nudge_step": lambda v: self.set_legend_nudge_step(float(v)),
+            "legend_offset": self.set_legend_offset,
+            "isochron_results": self.set_isochron_results,
+            "plumbotectonics_group_visibility": self.set_plumbotectonics_group_visibility,
+            "show_model_curves": lambda v: self.set_show_model_curves(bool(v)),
+            "show_plumbotectonics_curves": lambda v: self.set_show_plumbotectonics_curves(bool(v)),
+            "show_paleoisochrons": lambda v: self.set_show_paleoisochrons(bool(v)),
+            "show_model_age_lines": lambda v: self.set_show_model_age_lines(bool(v)),
+            "show_growth_curves": lambda v: self.set_show_growth_curves(bool(v)),
+            "use_real_age_for_mu_kappa": lambda v: self.set_use_real_age_for_mu_kappa(bool(v)),
+            "mu_kappa_age_col": self.set_mu_kappa_age_col,
+            "plumbotectonics_variant": lambda v: self.set_plumbotectonics_variant(str(v)),
+            "paleoisochron_step": lambda v: self.set_paleoisochron_step(int(v)),
+            "paleoisochron_ages": self.set_paleoisochron_ages,
+            "overlay_artists": self.set_overlay_artists,
+            "overlay_curve_label_data": self.set_overlay_curve_label_data,
+            "paleoisochron_label_data": self.set_paleoisochron_label_data,
+            "plumbotectonics_isoage_label_data": self.set_plumbotectonics_isoage_label_data,
+            "standardize_data": lambda v: self.set_standardize_data(bool(v)),
+            "pca_component_indices": self.set_pca_component_indices,
+            "ternary_auto_zoom": lambda v: self.set_ternary_auto_zoom(bool(v)),
+            "ternary_limit_mode": lambda v: self.set_ternary_limit_mode(str(v)),
+            "ternary_limit_anchor": lambda v: self.set_ternary_limit_anchor(str(v)),
+            "ternary_boundary_percent": lambda v: self.set_ternary_boundary_percent(float(v)),
+            "ternary_manual_limits_enabled": lambda v: self.set_ternary_manual_limits_enabled(bool(v)),
+            "ternary_manual_limits": self.set_ternary_manual_limits,
+            "ternary_stretch_mode": lambda v: self.set_ternary_stretch_mode(str(v)),
+            "ternary_stretch": lambda v: self.set_ternary_stretch(bool(v)),
+            "ternary_factors": self.set_ternary_factors,
+            "model_curve_width": lambda v: self.set_model_curve_width(float(v)),
+            "plumbotectonics_curve_width": lambda v: self.set_plumbotectonics_curve_width(float(v)),
+            "paleoisochron_width": lambda v: self.set_paleoisochron_width(float(v)),
+            "model_age_line_width": lambda v: self.set_model_age_line_width(float(v)),
+            "isochron_line_width": lambda v: self.set_isochron_line_width(float(v)),
+            "selected_isochron_line_width": lambda v: self.set_selected_isochron_line_width(float(v)),
+            "isochron_label_options": self.set_isochron_label_options,
+            "mixing_endmembers": self.set_mixing_endmembers,
+            "mixing_mixtures": self.set_mixing_mixtures,
+            "custom_palettes": self.set_custom_palettes,
+            "custom_shape_sets": self.set_custom_shape_sets,
+            "legend_item_order": self.set_legend_item_order,
+            "ternary_ranges": self.set_ternary_ranges,
+            "kde_style": self.set_kde_style,
+            "marginal_kde_style": self.set_marginal_kde_style,
+            "ml_last_result": self.set_ml_last_result,
+            "ml_last_model_meta": self.set_ml_last_model_meta,
+            "equation_overlays": self.set_equation_overlays,
+            "render_mode": lambda v: self.set_render_mode(str(v)),
+            "marginal_kde_top_size": lambda v: self.set_marginal_kde_layout(top_size=float(v)),
+            "marginal_kde_right_size": lambda v: self.set_marginal_kde_layout(right_size=float(v)),
+            "marginal_kde_max_points": lambda v: self.set_marginal_kde_compute_options(max_points=int(v)),
+            "marginal_kde_bw_adjust": lambda v: self.set_marginal_kde_compute_options(bw_adjust=float(v)),
+            "marginal_kde_gridsize": lambda v: self.set_marginal_kde_compute_options(gridsize=int(v)),
+            "marginal_kde_cut": lambda v: self.set_marginal_kde_compute_options(cut=float(v)),
+            "marginal_kde_log_transform": lambda v: self.set_marginal_kde_compute_options(log_transform=bool(v)),
+            "point_size": lambda v: self.set_point_size(int(v)),
+            "show_tooltip": lambda v: self.set_show_tooltip(bool(v)),
+            "tooltip_columns": self.set_tooltip_columns,
+            "ui_theme": lambda v: self.set_ui_theme(str(v)),
+            "preserve_import_render_mode": lambda v: self.set_preserve_import_render_mode(bool(v)),
+            "selected_indices": self.set_selected_indices,
+            "selection_mode": lambda v: self.set_selection_mode(bool(v)),
+            "selection_tool": self.set_selection_tool,
+            "data_version": lambda v: self.set_data_version(int(v)),
+            "visible_groups": self.set_visible_groups,
+        }
+
     def set_attr(self, name: str, value: Any) -> None:
         """Set a single app_state attribute via gateway."""
-        if name == "algorithm":
-            self.set_algorithm(str(value))
-            return
-        if name == "show_kde":
-            self.set_show_kde(bool(value))
-            return
-        if name == "show_marginal_kde":
-            self.set_show_marginal_kde(bool(value))
-            return
-        if name == "show_equation_overlays":
-            self.set_show_equation_overlays(bool(value))
-            return
-        if name == "geo_model_name":
-            self.set_geo_model_name(str(value))
-            return
-        if name == "paleo_label_refreshing":
-            self.set_paleo_label_refreshing(bool(value))
-            return
-        if name == "control_panel_ref":
-            self.set_control_panel_ref(value)
-            return
-        if name == "confidence_level":
-            self.set_confidence_level(float(value))
-            return
-        if name == "legend_update_callback":
-            self.set_legend_update_callback(value)
-            return
-        if name == "fig":
-            self.set_figure(value)
-            return
-        if name == "canvas":
-            self.set_canvas(value)
-            return
-        if name == "ax":
-            self.set_axis(value)
-            return
-        if name == "legend_ax":
-            self.set_legend_ax(value)
-            return
-        if name == "last_embedding":
-            self.set_last_embedding(value, str(getattr(self._state, "last_embedding_type", "")))
-            return
-        if name == "last_embedding_type":
-            self.set_last_embedding(getattr(self._state, "last_embedding", None), str(value))
-            return
-        if name == "last_pca_variance":
-            self.set_pca_diagnostics(last_pca_variance=value)
-            return
-        if name == "last_pca_components":
-            self.set_pca_diagnostics(last_pca_components=value)
-            return
-        if name == "current_feature_names":
-            self.set_pca_diagnostics(current_feature_names=value)
-            return
-        if name == "current_palette":
-            self.set_current_palette(value)
-            return
-        if name == "adjust_text_in_progress":
-            self.set_adjust_text_in_progress(bool(value))
-            return
-        if name == "overlay_label_refreshing":
-            self.set_overlay_label_refreshing(bool(value))
-            return
-        if name == "current_plot_title":
-            self.set_current_plot_title(str(value))
-            return
-        if name == "annotation":
-            self.set_annotation(value)
-            return
-        if name == "last_2d_cols":
-            self.set_last_2d_cols(value)
-            return
-        if name == "recent_files":
-            self.set_recent_files(value)
-            return
-        if name == "language":
-            self.set_language_code(str(value))
-            return
-        if name == "line_styles":
-            self.set_line_styles(value)
-            return
-        if name == "saved_themes":
-            self.set_saved_themes(value)
-            return
-        if name == "color_scheme":
-            self.set_color_scheme(str(value))
-            return
-        if name == "legend_position":
-            self.set_legend_position(value)
-            return
-        if name == "legend_location":
-            self.set_legend_location(value)
-            return
-        if name == "legend_columns":
-            self.set_legend_columns(int(value))
-            return
-        if name == "legend_nudge_step":
-            self.set_legend_nudge_step(float(value))
-            return
-        if name == "legend_offset":
-            self.set_legend_offset(value)
-            return
-        if name == "isochron_results":
-            self.set_isochron_results(value)
-            return
-        if name == "plumbotectonics_group_visibility":
-            self.set_plumbotectonics_group_visibility(value)
-            return
-        if name == "show_model_curves":
-            self.set_show_model_curves(bool(value))
-            return
-        if name == "show_plumbotectonics_curves":
-            self.set_show_plumbotectonics_curves(bool(value))
-            return
-        if name == "show_paleoisochrons":
-            self.set_show_paleoisochrons(bool(value))
-            return
-        if name == "show_model_age_lines":
-            self.set_show_model_age_lines(bool(value))
-            return
-        if name == "show_growth_curves":
-            self.set_show_growth_curves(bool(value))
-            return
-        if name == "use_real_age_for_mu_kappa":
-            self.set_use_real_age_for_mu_kappa(bool(value))
-            return
-        if name == "mu_kappa_age_col":
-            self.set_mu_kappa_age_col(value)
-            return
-        if name == "plumbotectonics_variant":
-            self.set_plumbotectonics_variant(str(value))
-            return
-        if name == "paleoisochron_step":
-            self.set_paleoisochron_step(int(value))
-            return
-        if name == "paleoisochron_ages":
-            self.set_paleoisochron_ages(value)
-            return
-        if name == "overlay_artists":
-            self.set_overlay_artists(value)
-            return
-        if name == "overlay_curve_label_data":
-            self.set_overlay_curve_label_data(value)
-            return
-        if name == "paleoisochron_label_data":
-            self.set_paleoisochron_label_data(value)
-            return
-        if name == "plumbotectonics_isoage_label_data":
-            self.set_plumbotectonics_isoage_label_data(value)
-            return
-        if name == "standardize_data":
-            self.set_standardize_data(bool(value))
-            return
-        if name == "pca_component_indices":
-            self.set_pca_component_indices(value)
-            return
-        if name == "ternary_auto_zoom":
-            self.set_ternary_auto_zoom(bool(value))
-            return
-        if name == "ternary_limit_mode":
-            self.set_ternary_limit_mode(str(value))
-            return
-        if name == "ternary_limit_anchor":
-            self.set_ternary_limit_anchor(str(value))
-            return
-        if name == "ternary_boundary_percent":
-            self.set_ternary_boundary_percent(float(value))
-            return
-        if name == "ternary_manual_limits_enabled":
-            self.set_ternary_manual_limits_enabled(bool(value))
-            return
-        if name == "ternary_manual_limits":
-            self.set_ternary_manual_limits(value)
-            return
-        if name == "ternary_stretch_mode":
-            self.set_ternary_stretch_mode(str(value))
-            return
-        if name == "ternary_stretch":
-            self.set_ternary_stretch(bool(value))
-            return
-        if name == "ternary_factors":
-            self.set_ternary_factors(value)
-            return
-        if name == "model_curve_width":
-            self.set_model_curve_width(float(value))
-            return
-        if name == "plumbotectonics_curve_width":
-            self.set_plumbotectonics_curve_width(float(value))
-            return
-        if name == "paleoisochron_width":
-            self.set_paleoisochron_width(float(value))
-            return
-        if name == "model_age_line_width":
-            self.set_model_age_line_width(float(value))
-            return
-        if name == "isochron_line_width":
-            self.set_isochron_line_width(float(value))
-            return
-        if name == "selected_isochron_line_width":
-            self.set_selected_isochron_line_width(float(value))
-            return
-        if name == "isochron_label_options":
-            self.set_isochron_label_options(value)
-            return
-        if name == "mixing_endmembers":
-            self.set_mixing_endmembers(value)
-            return
-        if name == "mixing_mixtures":
-            self.set_mixing_mixtures(value)
-            return
-        if name == "custom_palettes":
-            self.set_custom_palettes(value)
-            return
-        if name == "custom_shape_sets":
-            self.set_custom_shape_sets(value)
-            return
-        if name == "legend_item_order":
-            self.set_legend_item_order(value)
-            return
-        if name == "ternary_ranges":
-            self.set_ternary_ranges(value)
-            return
-        if name == "kde_style":
-            self.set_kde_style(value)
-            return
-        if name == "marginal_kde_style":
-            self.set_marginal_kde_style(value)
-            return
-        if name == "ml_last_result":
-            self.set_ml_last_result(value)
-            return
-        if name == "ml_last_model_meta":
-            self.set_ml_last_model_meta(value)
-            return
-        if name == "equation_overlays":
-            self.set_equation_overlays(value)
-            return
-        if name == "render_mode":
-            self.set_render_mode(str(value))
-            return
-        if name == "marginal_kde_top_size":
-            self.set_marginal_kde_layout(top_size=float(value))
-            return
-        if name == "marginal_kde_right_size":
-            self.set_marginal_kde_layout(right_size=float(value))
-            return
-        if name == "marginal_kde_max_points":
-            self.set_marginal_kde_compute_options(max_points=int(value))
-            return
-        if name == "marginal_kde_bw_adjust":
-            self.set_marginal_kde_compute_options(bw_adjust=float(value))
-            return
-        if name == "marginal_kde_gridsize":
-            self.set_marginal_kde_compute_options(gridsize=int(value))
-            return
-        if name == "marginal_kde_cut":
-            self.set_marginal_kde_compute_options(cut=float(value))
-            return
-        if name == "marginal_kde_log_transform":
-            self.set_marginal_kde_compute_options(log_transform=bool(value))
-            return
-        if name == "point_size":
-            self.set_point_size(int(value))
-            return
-        if name == "show_tooltip":
-            self.set_show_tooltip(bool(value))
-            return
-        if name == "tooltip_columns":
-            self.set_tooltip_columns(value)
-            return
-        if name == "ui_theme":
-            self.set_ui_theme(str(value))
-            return
-        if name == "preserve_import_render_mode":
-            self.set_preserve_import_render_mode(bool(value))
-            return
-        if name == "selected_indices":
-            self.set_selected_indices(value)
-            return
-        if name == "selection_mode":
-            self.set_selection_mode(bool(value))
-            return
-        if name == "selection_tool":
-            self.set_selection_tool(value)
-            return
-        if name == "data_version":
-            self.set_data_version(int(value))
-            return
-        if name == "visible_groups":
-            self.set_visible_groups(value)
+        handler = self._compat_attr_handlers.get(name)
+        if handler is not None:
+            handler(value)
             return
         if name == "group_cols":
             group_cols = [] if value is None else list(value)

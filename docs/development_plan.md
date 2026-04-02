@@ -265,6 +265,12 @@
                                 - `ui/panels/base_panel.py` 更新样式面板线宽同步逻辑：
                                     写回 `line_styles` 时优先使用本次 `style_updates` 新值，
                                     避免同一轮交互内读取到旧的 `app_state.*_width`。
+                                - 第四十五批迁移清理（网关兼容分发结构化）：
+                                                                - `core/state/gateway.py` 的 `set_attr` 兼容桥接从长 if 链
+                                                                    重构为集中式 dispatch table（`_build_compat_attr_handlers`），
+                                                                    保持行为不变并降低后续维护成本。
+                                                                - `tests/test_gateway_set_attr_compatibility.py` 增加
+                                                                    `show_tooltip` 兼容分发回归用例，覆盖 dispatch table 路径。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 
