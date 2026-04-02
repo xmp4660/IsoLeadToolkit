@@ -162,7 +162,7 @@ class DataImportWorkflowMixin:
         recent_files = [path for path in recent_files if path and path != file_path]
         recent_files.insert(0, file_path)
         recent_files = recent_files[:8]
-        state_gateway.set_attr('recent_files', recent_files)
+        state_gateway.set_recent_files(recent_files)
         self._refresh_recent_files()
 
     def _on_recent_file_selected(self, item):
