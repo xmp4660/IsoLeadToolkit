@@ -297,6 +297,11 @@
                                                                     统一扫描与输出流程。
                                                                 - 新增参数化守护测试 `tests/test_guard_scripts.py`，
                                                                     合并原 3 个独立守护测试文件并移除重复实现。
+                                - 第五十批迁移清理（overlay toggle 路由结构化）：
+                                                                - `core/state/gateway.py` 为 `set_overlay_toggle` 新增
+                                                                    `_overlay_toggle_handlers` 分发表，替换 if 链路由实现。
+                                                                - `tests/test_gateway_set_attr_compatibility.py` 新增参数化回归，
+                                                                    覆盖已知 overlay 开关路由与未知字段兜底赋值路径。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 

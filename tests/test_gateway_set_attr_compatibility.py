@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from core import app_state, state_gateway
 
 
@@ -71,3 +73,42 @@ def test_export_image_options_set_attr_compatibility() -> None:
         assert options["legend_size"] == 8
     finally:
         state_gateway.set_export_image_options(**original_options)
+
+
+@pytest.mark.parametrize(
+    "attr",
+    [
+        "show_model_curves",
+        "show_plumbotectonics_curves",
+        "show_paleoisochrons",
+        "show_model_age_lines",
+        "show_growth_curves",
+        "show_isochrons",
+    ],
+)
+def test_overlay_toggle_known_attr_compatibility(attr: str) -> None:
+    original_value = bool(getattr(app_state, attr, False))
+
+    try:
+        state_gateway.set_overlay_toggle(attr, not original_value)
+        assert bool(getattr(app_state, attr)) is (not original_value)
+    finally:
+        state_gateway.set_overlay_toggle(attr, original_value)
+
+
+def test_overlay_toggle_fallback_attr_assignment() -> None:
+    fallback_attr = "_test_overlay_toggle_fallback"
+    existed = hasattr(app_state, fallback_attr)
+    original_value = bool(getattr(app_state, fallback_attr, False)) if existed else False
+
+    try:
+        state_gateway.set_overlay_toggle(fallback_attr, True)
+        assert getattr(app_state, fallback_attr) is True
+
+        state_gateway.set_overlay_toggle(fallback_attr, False)
+        assert getattr(app_state, fallback_attr) is False
+    finally:
+        if existed:
+            setattr(app_state, fallback_attr, original_value)
+        elif hasattr(app_state, fallback_attr):
+            delattr(app_state, fallback_attr)

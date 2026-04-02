@@ -22,6 +22,7 @@ class AppStateGateway:
             setattr(state, "state_store", store)
         self._store = store
         self._compat_attr_handlers = self._build_compat_attr_handlers()
+        self._overlay_toggle_handlers = self._build_overlay_toggle_handlers()
 
     def _dispatch(self, action_type: str, **payload: Any) -> dict[str, Any]:
         return self._store.dispatch({"type": action_type, **payload})
@@ -149,6 +150,17 @@ class AppStateGateway:
             "group_cols": self._set_group_cols_compat,
             "data_cols": self._set_data_cols_compat,
             "export_image_options": self._set_export_image_options_compat,
+        }
+
+    def _build_overlay_toggle_handlers(self) -> dict[str, Callable[[bool], None]]:
+        """Build dispatch table for overlay visibility toggle handlers."""
+        return {
+            "show_model_curves": self.set_show_model_curves,
+            "show_plumbotectonics_curves": self.set_show_plumbotectonics_curves,
+            "show_paleoisochrons": self.set_show_paleoisochrons,
+            "show_model_age_lines": self.set_show_model_age_lines,
+            "show_growth_curves": self.set_show_growth_curves,
+            "show_isochrons": self.set_show_isochrons,
         }
 
     def set_attr(self, name: str, value: Any) -> None:
@@ -538,23 +550,9 @@ class AppStateGateway:
         self._state.equation_overlays = list(overlays or [])
 
     def set_overlay_toggle(self, attr: str, checked: bool) -> None:
-        if attr == "show_model_curves":
-            self.set_show_model_curves(checked)
-            return
-        if attr == "show_plumbotectonics_curves":
-            self.set_show_plumbotectonics_curves(checked)
-            return
-        if attr == "show_paleoisochrons":
-            self.set_show_paleoisochrons(checked)
-            return
-        if attr == "show_model_age_lines":
-            self.set_show_model_age_lines(checked)
-            return
-        if attr == "show_growth_curves":
-            self.set_show_growth_curves(checked)
-            return
-        if attr == "show_isochrons":
-            self.set_show_isochrons(checked)
+        handler = self._overlay_toggle_handlers.get(attr)
+        if handler is not None:
+            handler(bool(checked))
             return
         setattr(self._state, attr, bool(checked))
 
