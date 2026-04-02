@@ -126,7 +126,7 @@ def plot_3d_data(group_col: str, data_columns: list[str], size: int = 60) -> boo
             f'3D Scatter Plot{subset_info} ({data_columns[0]}, {data_columns[1]}, {data_columns[2]})\n'
             f'Colored by {group_col}'
         )
-        state_gateway.set_attr('current_plot_title', title)
+        state_gateway.set_current_plot_title(title)
         if getattr(app_state, 'show_plot_title', True):
             app_state.ax.set_title(title, pad=getattr(app_state, 'title_pad', 20.0))
         else:

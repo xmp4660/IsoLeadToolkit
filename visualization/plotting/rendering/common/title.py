@@ -64,7 +64,7 @@ def _render_title_labels(actual_algorithm, group_col, umap_params, tsne_params, 
             except Exception:
                 pass
 
-    state_gateway.set_attr('current_plot_title', title)
+    state_gateway.set_current_plot_title(title)
     if getattr(app_state, 'show_plot_title', True):
         app_state.ax.set_title(title, pad=getattr(app_state, 'title_pad', 20.0), **title_font_dict)
     else:

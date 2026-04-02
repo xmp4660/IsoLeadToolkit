@@ -257,7 +257,7 @@ def plot_2d_data(group_col: str, data_columns: list[str], size: int = 60, show_k
             except Exception:
                 pass
 
-        state_gateway.set_attr('current_plot_title', title)
+        state_gateway.set_current_plot_title(title)
         if getattr(app_state, 'show_plot_title', True):
             app_state.ax.set_title(title, pad=getattr(app_state, 'title_pad', 20.0))
         else:
