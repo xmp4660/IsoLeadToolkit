@@ -30,8 +30,35 @@ class AppStateGateway:
         if name == "algorithm":
             self.set_algorithm(str(value))
             return
+        if name == "show_kde":
+            self.set_show_kde(bool(value))
+            return
+        if name == "show_marginal_kde":
+            self.set_show_marginal_kde(bool(value))
+            return
         if name == "render_mode":
             self.set_render_mode(str(value))
+            return
+        if name == "marginal_kde_top_size":
+            self.set_marginal_kde_layout(top_size=float(value))
+            return
+        if name == "marginal_kde_right_size":
+            self.set_marginal_kde_layout(right_size=float(value))
+            return
+        if name == "marginal_kde_max_points":
+            self.set_marginal_kde_compute_options(max_points=int(value))
+            return
+        if name == "marginal_kde_bw_adjust":
+            self.set_marginal_kde_compute_options(bw_adjust=float(value))
+            return
+        if name == "marginal_kde_gridsize":
+            self.set_marginal_kde_compute_options(gridsize=int(value))
+            return
+        if name == "marginal_kde_cut":
+            self.set_marginal_kde_compute_options(cut=float(value))
+            return
+        if name == "marginal_kde_log_transform":
+            self.set_marginal_kde_compute_options(log_transform=bool(value))
             return
         if name == "point_size":
             self.set_point_size(int(value))
@@ -72,6 +99,42 @@ class AppStateGateway:
 
     def set_algorithm(self, algorithm: str) -> None:
         self._dispatch("SET_ALGORITHM", algorithm=algorithm)
+
+    def set_show_kde(self, show: bool) -> None:
+        self._dispatch("SET_SHOW_KDE", show=bool(show))
+
+    def set_show_marginal_kde(self, show: bool) -> None:
+        self._dispatch("SET_SHOW_MARGINAL_KDE", show=bool(show))
+
+    def set_marginal_kde_layout(
+        self,
+        *,
+        top_size: float | None = None,
+        right_size: float | None = None,
+    ) -> None:
+        self._dispatch(
+            "SET_MARGINAL_KDE_LAYOUT",
+            top_size=top_size,
+            right_size=right_size,
+        )
+
+    def set_marginal_kde_compute_options(
+        self,
+        *,
+        max_points: int | None = None,
+        bw_adjust: float | None = None,
+        gridsize: int | None = None,
+        cut: float | None = None,
+        log_transform: bool | None = None,
+    ) -> None:
+        self._dispatch(
+            "SET_MARGINAL_KDE_COMPUTE_OPTIONS",
+            max_points=max_points,
+            bw_adjust=bw_adjust,
+            gridsize=gridsize,
+            cut=cut,
+            log_transform=log_transform,
+        )
 
     def set_point_size(self, point_size: int) -> None:
         self._dispatch("SET_POINT_SIZE", point_size=int(point_size))
@@ -138,9 +201,6 @@ class AppStateGateway:
     def set_palette_and_marker_map(self, palette: dict[str, Any], marker_map: dict[str, Any]) -> None:
         self._state.current_palette = dict(palette)
         self._state.group_marker_map = dict(marker_map)
-
-    def set_show_marginal_kde(self, show: bool) -> None:
-        self._state.show_marginal_kde = bool(show)
 
     def set_marginal_axes(self, marginal_axes: Any) -> None:
         self._state.marginal_axes = marginal_axes

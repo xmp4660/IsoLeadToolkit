@@ -25,6 +25,15 @@ class StateStore:
         self._snapshot: dict[str, Any] = {
             "render_mode": str(getattr(state, "render_mode", "UMAP")),
             "algorithm": str(getattr(state, "algorithm", "UMAP")),
+            "show_kde": bool(getattr(state, "show_kde", False)),
+            "show_marginal_kde": bool(getattr(state, "show_marginal_kde", True)),
+            "marginal_kde_top_size": float(getattr(state, "marginal_kde_top_size", 15.0)),
+            "marginal_kde_right_size": float(getattr(state, "marginal_kde_right_size", 15.0)),
+            "marginal_kde_max_points": int(getattr(state, "marginal_kde_max_points", 5000)),
+            "marginal_kde_bw_adjust": float(getattr(state, "marginal_kde_bw_adjust", 1.0)),
+            "marginal_kde_gridsize": int(getattr(state, "marginal_kde_gridsize", 256)),
+            "marginal_kde_cut": float(getattr(state, "marginal_kde_cut", 1.0)),
+            "marginal_kde_log_transform": bool(getattr(state, "marginal_kde_log_transform", False)),
             "selected_indices": set(getattr(state, "selected_indices", set()) or set()),
             "df_global": getattr(state, "df_global", None),
             "file_path": getattr(state, "file_path", None),
@@ -65,6 +74,38 @@ class StateStore:
 
         elif action_type == "SET_ALGORITHM":
             self._snapshot["algorithm"] = str(action.get("algorithm", "UMAP") or "UMAP")
+
+        elif action_type == "SET_SHOW_KDE":
+            self._snapshot["show_kde"] = bool(action.get("show", False))
+
+        elif action_type == "SET_SHOW_MARGINAL_KDE":
+            self._snapshot["show_marginal_kde"] = bool(action.get("show", False))
+
+        elif action_type == "SET_MARGINAL_KDE_LAYOUT":
+            top_size = action.get("top_size")
+            right_size = action.get("right_size")
+            if top_size is not None:
+                self._snapshot["marginal_kde_top_size"] = self._normalize_marginal_size(top_size)
+            if right_size is not None:
+                self._snapshot["marginal_kde_right_size"] = self._normalize_marginal_size(right_size)
+
+        elif action_type == "SET_MARGINAL_KDE_COMPUTE_OPTIONS":
+            max_points = action.get("max_points")
+            bw_adjust = action.get("bw_adjust")
+            gridsize = action.get("gridsize")
+            cut = action.get("cut")
+            log_transform = action.get("log_transform")
+
+            if max_points is not None:
+                self._snapshot["marginal_kde_max_points"] = self._normalize_max_points(max_points)
+            if bw_adjust is not None:
+                self._snapshot["marginal_kde_bw_adjust"] = self._normalize_bw_adjust(bw_adjust)
+            if gridsize is not None:
+                self._snapshot["marginal_kde_gridsize"] = self._normalize_gridsize(gridsize)
+            if cut is not None:
+                self._snapshot["marginal_kde_cut"] = self._normalize_cut(cut)
+            if log_transform is not None:
+                self._snapshot["marginal_kde_log_transform"] = bool(log_transform)
 
         elif action_type == "SET_POINT_SIZE":
             self._snapshot["point_size"] = max(1, int(action.get("point_size", 60)))
@@ -177,6 +218,15 @@ class StateStore:
         return {
             "render_mode": str(self._snapshot["render_mode"]),
             "algorithm": str(self._snapshot["algorithm"]),
+            "show_kde": bool(self._snapshot["show_kde"]),
+            "show_marginal_kde": bool(self._snapshot["show_marginal_kde"]),
+            "marginal_kde_top_size": float(self._snapshot["marginal_kde_top_size"]),
+            "marginal_kde_right_size": float(self._snapshot["marginal_kde_right_size"]),
+            "marginal_kde_max_points": int(self._snapshot["marginal_kde_max_points"]),
+            "marginal_kde_bw_adjust": float(self._snapshot["marginal_kde_bw_adjust"]),
+            "marginal_kde_gridsize": int(self._snapshot["marginal_kde_gridsize"]),
+            "marginal_kde_cut": float(self._snapshot["marginal_kde_cut"]),
+            "marginal_kde_log_transform": bool(self._snapshot["marginal_kde_log_transform"]),
             "selected_indices": set(self._snapshot["selected_indices"]),
             "df_global": self._snapshot["df_global"],
             "file_path": self._snapshot["file_path"],
@@ -210,6 +260,15 @@ class StateStore:
             algorithm = render_mode
             self._snapshot["algorithm"] = algorithm
         self._state.algorithm = algorithm
+        self._state.show_kde = bool(self._snapshot["show_kde"])
+        self._state.show_marginal_kde = bool(self._snapshot["show_marginal_kde"])
+        self._state.marginal_kde_top_size = float(self._snapshot["marginal_kde_top_size"])
+        self._state.marginal_kde_right_size = float(self._snapshot["marginal_kde_right_size"])
+        self._state.marginal_kde_max_points = int(self._snapshot["marginal_kde_max_points"])
+        self._state.marginal_kde_bw_adjust = float(self._snapshot["marginal_kde_bw_adjust"])
+        self._state.marginal_kde_gridsize = int(self._snapshot["marginal_kde_gridsize"])
+        self._state.marginal_kde_cut = float(self._snapshot["marginal_kde_cut"])
+        self._state.marginal_kde_log_transform = bool(self._snapshot["marginal_kde_log_transform"])
 
         self._state.selected_indices = set(self._snapshot["selected_indices"])
         self._state.df_global = self._snapshot["df_global"]
@@ -272,3 +331,23 @@ class StateStore:
             out = [str(group) for group in groups]
             return out if out else None
         return [str(groups)]
+
+    @staticmethod
+    def _normalize_marginal_size(value: Any) -> float:
+        return max(5.0, min(float(value), 40.0))
+
+    @staticmethod
+    def _normalize_max_points(value: Any) -> int:
+        return max(200, min(int(value), 50000))
+
+    @staticmethod
+    def _normalize_bw_adjust(value: Any) -> float:
+        return max(0.05, min(float(value), 5.0))
+
+    @staticmethod
+    def _normalize_gridsize(value: Any) -> int:
+        return max(32, min(int(value), 1024))
+
+    @staticmethod
+    def _normalize_cut(value: Any) -> float:
+        return max(0.0, min(float(value), 5.0))

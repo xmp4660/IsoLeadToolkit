@@ -120,6 +120,10 @@ class OverlayState:
                 'linestyle': '-',
                 'alpha': 0.25,
                 'fill': True,
+                'bw_adjust': 1.0,
+                'gridsize': 256,
+                'cut': 1.0,
+                'log_transform': False,
             }
         }
 

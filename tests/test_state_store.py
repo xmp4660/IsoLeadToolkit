@@ -11,6 +11,15 @@ def _snapshot_state() -> dict[str, Any]:
     return {
         "render_mode": getattr(app_state, "render_mode", "UMAP"),
         "algorithm": getattr(app_state, "algorithm", "UMAP"),
+        "show_kde": bool(getattr(app_state, "show_kde", False)),
+        "show_marginal_kde": bool(getattr(app_state, "show_marginal_kde", True)),
+        "marginal_kde_top_size": float(getattr(app_state, "marginal_kde_top_size", 15.0)),
+        "marginal_kde_right_size": float(getattr(app_state, "marginal_kde_right_size", 15.0)),
+        "marginal_kde_max_points": int(getattr(app_state, "marginal_kde_max_points", 5000)),
+        "marginal_kde_bw_adjust": float(getattr(app_state, "marginal_kde_bw_adjust", 1.0)),
+        "marginal_kde_gridsize": int(getattr(app_state, "marginal_kde_gridsize", 256)),
+        "marginal_kde_cut": float(getattr(app_state, "marginal_kde_cut", 1.0)),
+        "marginal_kde_log_transform": bool(getattr(app_state, "marginal_kde_log_transform", False)),
         "selected_indices": set(getattr(app_state, "selected_indices", set()) or set()),
         "selection_mode": bool(getattr(app_state, "selection_mode", False)),
         "df_global": getattr(app_state, "df_global", None),
@@ -47,6 +56,19 @@ def _restore_state(snapshot: dict[str, Any]) -> None:
     state_gateway.set_render_mode(str(snapshot["render_mode"]))
     state_gateway.set_algorithm(str(snapshot["algorithm"]))
     state_gateway.set_point_size(int(snapshot["point_size"]))
+    state_gateway.set_show_kde(bool(snapshot["show_kde"]))
+    state_gateway.set_show_marginal_kde(bool(snapshot["show_marginal_kde"]))
+    state_gateway.set_marginal_kde_layout(
+        top_size=float(snapshot["marginal_kde_top_size"]),
+        right_size=float(snapshot["marginal_kde_right_size"]),
+    )
+    state_gateway.set_marginal_kde_compute_options(
+        max_points=int(snapshot["marginal_kde_max_points"]),
+        bw_adjust=float(snapshot["marginal_kde_bw_adjust"]),
+        gridsize=int(snapshot["marginal_kde_gridsize"]),
+        cut=float(snapshot["marginal_kde_cut"]),
+        log_transform=bool(snapshot["marginal_kde_log_transform"]),
+    )
     state_gateway.set_tooltip_columns(snapshot["tooltip_columns"])
     state_gateway.set_ui_theme(str(snapshot["ui_theme"]))
     state_gateway.set_preserve_import_render_mode(bool(snapshot["preserve_import_render_mode"]))
@@ -104,6 +126,44 @@ def test_state_store_session_preference_domains() -> None:
         assert store_snapshot["tooltip_columns"] == ["Lab No.", "Period"]
         assert store_snapshot["ui_theme"] == "Modern Light"
         assert store_snapshot["preserve_import_render_mode"] is True
+    finally:
+        _restore_state(snapshot)
+
+
+def test_state_store_kde_domains() -> None:
+    snapshot = _snapshot_state()
+    try:
+        state_gateway.set_show_kde(True)
+        state_gateway.set_show_marginal_kde(False)
+        state_gateway.set_marginal_kde_layout(top_size=99.0, right_size=2.0)
+        state_gateway.set_marginal_kde_compute_options(
+            max_points=100000,
+            bw_adjust=0.001,
+            gridsize=2000,
+            cut=-1.0,
+            log_transform=True,
+        )
+
+        assert app_state.show_kde is True
+        assert app_state.show_marginal_kde is False
+        assert app_state.marginal_kde_top_size == 40.0
+        assert app_state.marginal_kde_right_size == 5.0
+        assert app_state.marginal_kde_max_points == 50000
+        assert app_state.marginal_kde_bw_adjust == 0.05
+        assert app_state.marginal_kde_gridsize == 1024
+        assert app_state.marginal_kde_cut == 0.0
+        assert app_state.marginal_kde_log_transform is True
+
+        store_snapshot = app_state.state_store.snapshot()
+        assert store_snapshot["show_kde"] is True
+        assert store_snapshot["show_marginal_kde"] is False
+        assert store_snapshot["marginal_kde_top_size"] == 40.0
+        assert store_snapshot["marginal_kde_right_size"] == 5.0
+        assert store_snapshot["marginal_kde_max_points"] == 50000
+        assert store_snapshot["marginal_kde_bw_adjust"] == 0.05
+        assert store_snapshot["marginal_kde_gridsize"] == 1024
+        assert store_snapshot["marginal_kde_cut"] == 0.0
+        assert store_snapshot["marginal_kde_log_transform"] is True
     finally:
         _restore_state(snapshot)
 

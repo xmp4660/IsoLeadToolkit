@@ -109,6 +109,14 @@
     - `algorithm/point_size/tooltip_columns/ui_theme/preserve_import_render_mode`
     - `AppStateGateway` 新增显式写入入口：`set_algorithm`、`set_point_size`、`set_tooltip_columns`、`set_ui_theme`。
     - `ui/app_parts/session.py` 会话恢复链路已改为优先调用显式 gateway 方法，减少 `set_attr` 隐式写入路径。
+- 第六批状态域继续迁移（KDE 分析链路）：
+        - `show_kde/show_marginal_kde`
+        - `marginal_kde_top_size/marginal_kde_right_size`
+        - `marginal_kde_max_points/marginal_kde_bw_adjust/marginal_kde_gridsize/marginal_kde_cut/marginal_kde_log_transform`
+        - `StateStore` 新增 KDE 相关 action 归一化与同步回写，`AppStateGateway` 新增显式 API：
+            `set_show_kde`、`set_show_marginal_kde`、`set_marginal_kde_layout`、`set_marginal_kde_compute_options`。
+        - `ui/panels/analysis/equations.py` KDE 参数保存链路改为显式 gateway API，减少散落 `set_attr` 写入。
+        - `tests/test_state_store.py` 新增 KDE 状态域回归测试。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 

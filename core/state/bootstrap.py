@@ -15,7 +15,11 @@ def sync_overlay_kde_styles(state: Any) -> None:
     state.marginal_kde_style = {
         'alpha': 0.25,
         'linewidth': 1.0,
-        'fill': True
+        'fill': True,
+        'bw_adjust': 1.0,
+        'gridsize': 256,
+        'cut': 1.0,
+        'log_transform': False,
     }
     state.overlay.line_styles.setdefault('kde_curve', {}).update({
         'linewidth': state.kde_style.get('linewidth', 1.0),
@@ -27,6 +31,10 @@ def sync_overlay_kde_styles(state: Any) -> None:
         'linewidth': state.marginal_kde_style.get('linewidth', 1.0),
         'alpha': state.marginal_kde_style.get('alpha', 0.25),
         'fill': state.marginal_kde_style.get('fill', True),
+        'bw_adjust': state.marginal_kde_style.get('bw_adjust', 1.0),
+        'gridsize': state.marginal_kde_style.get('gridsize', 256),
+        'cut': state.marginal_kde_style.get('cut', 1.0),
+        'log_transform': state.marginal_kde_style.get('log_transform', False),
     })
     state.overlay._init_equation_styles()
 
@@ -47,6 +55,10 @@ def init_runtime_defaults(state: Any, config: dict[str, Any]) -> None:
     state.marginal_kde_top_size = 15.0
     state.marginal_kde_right_size = 15.0
     state.marginal_kde_max_points = 5000
+    state.marginal_kde_bw_adjust = 1.0
+    state.marginal_kde_gridsize = 256
+    state.marginal_kde_cut = 1.0
+    state.marginal_kde_log_transform = False
     state.ellipse_confidence = config.get('ellipse_confidence', 0.95)
     state.point_size = config['point_size']
     state.last_group_col = None

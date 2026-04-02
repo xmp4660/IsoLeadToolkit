@@ -31,7 +31,7 @@ class AnalysisPanelEquationMixin:
 
     def _on_kde_change(self, state):
         """Handle KDE visibility change."""
-        state_gateway.set_attr('show_kde', state == Qt.Checked)
+        state_gateway.set_show_kde(state == Qt.Checked)
         self._sync_toggle_widgets(
             app_state.show_kde,
             getattr(self, 'kde_check', None),
@@ -282,20 +282,22 @@ class AnalysisPanelEquationMixin:
                 style_ref['levels'] = int(levels_spin.value())
             if target == 'marginal_kde':
                 if top_size_spin is not None:
-                    state_gateway.set_attr('marginal_kde_top_size', float(top_size_spin.value()))
+                    state_gateway.set_marginal_kde_layout(top_size=float(top_size_spin.value()))
                 if right_size_spin is not None:
-                    state_gateway.set_attr('marginal_kde_right_size', float(right_size_spin.value()))
+                    state_gateway.set_marginal_kde_layout(right_size=float(right_size_spin.value()))
                 if max_points_spin is not None:
-                    state_gateway.set_attr('marginal_kde_max_points', int(max_points_spin.value()))
+                    state_gateway.set_marginal_kde_compute_options(max_points=int(max_points_spin.value()))
                 if bw_adjust_spin is not None:
                     style_ref['bw_adjust'] = float(bw_adjust_spin.value())
-                    state_gateway.set_attr('marginal_kde_bw_adjust', float(bw_adjust_spin.value()))
+                    state_gateway.set_marginal_kde_compute_options(bw_adjust=float(bw_adjust_spin.value()))
                 if cut_spin is not None:
                     style_ref['cut'] = float(cut_spin.value())
-                    state_gateway.set_attr('marginal_kde_cut', float(cut_spin.value()))
+                    state_gateway.set_marginal_kde_compute_options(cut=float(cut_spin.value()))
                 if log_transform_check is not None:
                     style_ref['log_transform'] = bool(log_transform_check.isChecked())
-                    state_gateway.set_attr('marginal_kde_log_transform', bool(log_transform_check.isChecked()))
+                    state_gateway.set_marginal_kde_compute_options(
+                        log_transform=bool(log_transform_check.isChecked())
+                    )
             legacy_payload = {
                 'alpha': style_ref.get('alpha', 0.6 if target == 'kde' else 0.25),
                 'linewidth': style_ref.get('linewidth', 1.0),
