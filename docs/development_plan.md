@@ -255,6 +255,12 @@
                   `_restore_state` 从 `set_attrs` 改为显式 `set_algorithm`/`set_selection_mode`，
                   tooltip/equation 覆盖测试改为显式 setter；
                   仅保留 `group_cols/data_cols` 兼容性专用测试使用 `set_attr`。
+                - 第四十三批迁移清理（测试通用入口白名单守护）：
+                                - 将 `group_cols/data_cols` 的 `set_attr` 兼容性校验拆分到
+                                    `tests/test_gateway_set_attr_compatibility.py`。
+                                - 新增 `scripts/check_gateway_generic_mutations_in_tests.py`，限制测试目录中
+                                    `state_gateway.set_attr/set_attrs` 仅可出现在兼容性专用测试。
+                                - 新增 `tests/test_gateway_generic_mutation_test_guard.py`，强制该守护规则生效。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 
