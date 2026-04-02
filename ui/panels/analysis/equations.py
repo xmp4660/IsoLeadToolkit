@@ -52,7 +52,7 @@ class AnalysisPanelEquationMixin:
 
     def _on_equation_overlays_change(self, state):
         """Handle equation overlays visibility change."""
-        state_gateway.set_attr('show_equation_overlays', state == Qt.Checked)
+        state_gateway.set_show_equation_overlays(state == Qt.Checked)
         self._on_change()
 
     def _on_equation_overlay_toggle(self, overlay, state):

@@ -13,6 +13,7 @@ def _snapshot_state() -> dict[str, Any]:
         "algorithm": getattr(app_state, "algorithm", "UMAP"),
         "show_kde": bool(getattr(app_state, "show_kde", False)),
         "show_marginal_kde": bool(getattr(app_state, "show_marginal_kde", True)),
+        "show_equation_overlays": bool(getattr(app_state, "show_equation_overlays", False)),
         "marginal_kde_top_size": float(getattr(app_state, "marginal_kde_top_size", 15.0)),
         "marginal_kde_right_size": float(getattr(app_state, "marginal_kde_right_size", 15.0)),
         "marginal_kde_max_points": int(getattr(app_state, "marginal_kde_max_points", 5000)),
@@ -58,6 +59,7 @@ def _restore_state(snapshot: dict[str, Any]) -> None:
     state_gateway.set_point_size(int(snapshot["point_size"]))
     state_gateway.set_show_kde(bool(snapshot["show_kde"]))
     state_gateway.set_show_marginal_kde(bool(snapshot["show_marginal_kde"]))
+    state_gateway.set_show_equation_overlays(bool(snapshot["show_equation_overlays"]))
     state_gateway.set_marginal_kde_layout(
         top_size=float(snapshot["marginal_kde_top_size"]),
         right_size=float(snapshot["marginal_kde_right_size"]),
@@ -164,6 +166,20 @@ def test_state_store_kde_domains() -> None:
         assert store_snapshot["marginal_kde_gridsize"] == 1024
         assert store_snapshot["marginal_kde_cut"] == 0.0
         assert store_snapshot["marginal_kde_log_transform"] is True
+    finally:
+        _restore_state(snapshot)
+
+
+def test_state_store_equation_overlay_domain() -> None:
+    snapshot = _snapshot_state()
+    try:
+        state_gateway.set_show_equation_overlays(True)
+        assert app_state.show_equation_overlays is True
+        assert app_state.state_store.snapshot()["show_equation_overlays"] is True
+
+        state_gateway.set_attr("show_equation_overlays", False)
+        assert app_state.show_equation_overlays is False
+        assert app_state.state_store.snapshot()["show_equation_overlays"] is False
     finally:
         _restore_state(snapshot)
 

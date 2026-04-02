@@ -36,6 +36,9 @@ class AppStateGateway:
         if name == "show_marginal_kde":
             self.set_show_marginal_kde(bool(value))
             return
+        if name == "show_equation_overlays":
+            self.set_show_equation_overlays(bool(value))
+            return
         if name == "render_mode":
             self.set_render_mode(str(value))
             return
@@ -105,6 +108,9 @@ class AppStateGateway:
 
     def set_show_marginal_kde(self, show: bool) -> None:
         self._dispatch("SET_SHOW_MARGINAL_KDE", show=bool(show))
+
+    def set_show_equation_overlays(self, show: bool) -> None:
+        self._dispatch("SET_SHOW_EQUATION_OVERLAYS", show=bool(show))
 
     def set_marginal_kde_layout(
         self,

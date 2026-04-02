@@ -117,6 +117,10 @@
             `set_show_kde`、`set_show_marginal_kde`、`set_marginal_kde_layout`、`set_marginal_kde_compute_options`。
         - `ui/panels/analysis/equations.py` KDE 参数保存链路改为显式 gateway API，减少散落 `set_attr` 写入。
         - `tests/test_state_store.py` 新增 KDE 状态域回归测试。
+    - 第七批状态域继续迁移（方程叠加开关）：
+        - `show_equation_overlays`
+        - `StateStore` 新增方程叠加开关 action，`AppStateGateway` 新增 `set_show_equation_overlays`。
+        - 分析面板方程开关改为显式 gateway API；新增状态回归测试覆盖显式 API 与兼容 `set_attr` 桥接。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 

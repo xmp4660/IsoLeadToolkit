@@ -27,6 +27,7 @@ class StateStore:
             "algorithm": str(getattr(state, "algorithm", "UMAP")),
             "show_kde": bool(getattr(state, "show_kde", False)),
             "show_marginal_kde": bool(getattr(state, "show_marginal_kde", True)),
+            "show_equation_overlays": bool(getattr(state, "show_equation_overlays", False)),
             "marginal_kde_top_size": float(getattr(state, "marginal_kde_top_size", 15.0)),
             "marginal_kde_right_size": float(getattr(state, "marginal_kde_right_size", 15.0)),
             "marginal_kde_max_points": int(getattr(state, "marginal_kde_max_points", 5000)),
@@ -80,6 +81,9 @@ class StateStore:
 
         elif action_type == "SET_SHOW_MARGINAL_KDE":
             self._snapshot["show_marginal_kde"] = bool(action.get("show", False))
+
+        elif action_type == "SET_SHOW_EQUATION_OVERLAYS":
+            self._snapshot["show_equation_overlays"] = bool(action.get("show", False))
 
         elif action_type == "SET_MARGINAL_KDE_LAYOUT":
             top_size = action.get("top_size")
@@ -220,6 +224,7 @@ class StateStore:
             "algorithm": str(self._snapshot["algorithm"]),
             "show_kde": bool(self._snapshot["show_kde"]),
             "show_marginal_kde": bool(self._snapshot["show_marginal_kde"]),
+            "show_equation_overlays": bool(self._snapshot["show_equation_overlays"]),
             "marginal_kde_top_size": float(self._snapshot["marginal_kde_top_size"]),
             "marginal_kde_right_size": float(self._snapshot["marginal_kde_right_size"]),
             "marginal_kde_max_points": int(self._snapshot["marginal_kde_max_points"]),
@@ -262,6 +267,7 @@ class StateStore:
         self._state.algorithm = algorithm
         self._state.show_kde = bool(self._snapshot["show_kde"])
         self._state.show_marginal_kde = bool(self._snapshot["show_marginal_kde"])
+        self._state.show_equation_overlays = bool(self._snapshot["show_equation_overlays"])
         self._state.marginal_kde_top_size = float(self._snapshot["marginal_kde_top_size"])
         self._state.marginal_kde_right_size = float(self._snapshot["marginal_kde_right_size"])
         self._state.marginal_kde_max_points = int(self._snapshot["marginal_kde_max_points"])
