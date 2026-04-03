@@ -204,6 +204,10 @@ def test_set_attr_unknown_key_ignored() -> None:
 
 def test_panel_style_updates_known_key_and_unknown_key() -> None:
     original_plot_style_grid = bool(getattr(app_state, "plot_style_grid", False))
+    original_plot_marker_size = int(getattr(app_state, "plot_marker_size", 60))
+    original_plot_marker_alpha = float(getattr(app_state, "plot_marker_alpha", 0.8))
+    original_show_plot_title = bool(getattr(app_state, "show_plot_title", False))
+    original_plot_dpi = int(getattr(app_state, "plot_dpi", 130))
     fallback_attr = "_test_panel_style_unknown"
     existed = hasattr(app_state, fallback_attr)
     original_value = getattr(app_state, fallback_attr, None) if existed else None
@@ -213,25 +217,66 @@ def test_panel_style_updates_known_key_and_unknown_key() -> None:
         state_gateway.set_panel_style_updates(
             {
                 "plot_style_grid": (not original_plot_style_grid),
+                "plot_marker_size": 93,
+                "plot_marker_alpha": 0.62,
+                "show_plot_title": (not original_show_plot_title),
+                "plot_dpi": 170,
                 fallback_attr: "ignored",
                 "selection_mode": (not original_selection_mode),
             }
         )
 
         assert bool(getattr(app_state, "plot_style_grid", False)) is (not original_plot_style_grid)
+        assert int(getattr(app_state, "plot_marker_size", 0)) == 93
+        assert float(getattr(app_state, "plot_marker_alpha", 0.0)) == 0.62
+        assert bool(getattr(app_state, "show_plot_title", False)) is (not original_show_plot_title)
+        assert int(getattr(app_state, "plot_dpi", 0)) == 170
         assert bool(getattr(app_state, "selection_mode", False)) is original_selection_mode
+
+        snapshot = app_state.state_store.snapshot()
+        assert snapshot["plot_style_grid"] is (not original_plot_style_grid)
+        assert snapshot["plot_marker_size"] == 93
+        assert snapshot["plot_marker_alpha"] == 0.62
+        assert snapshot["show_plot_title"] is (not original_show_plot_title)
+        assert snapshot["plot_dpi"] == 170
+
         if existed:
             assert getattr(app_state, fallback_attr) == original_value
         else:
             assert not hasattr(app_state, fallback_attr)
     finally:
-        if hasattr(app_state, "plot_style_grid"):
-            setattr(app_state, "plot_style_grid", original_plot_style_grid)
+        state_gateway.set_plot_style_grid(original_plot_style_grid)
+        state_gateway.set_plot_marker_size(original_plot_marker_size)
+        state_gateway.set_plot_marker_alpha(original_plot_marker_alpha)
+        state_gateway.set_show_plot_title(original_show_plot_title)
+        state_gateway.set_plot_dpi(original_plot_dpi)
         state_gateway.set_selection_mode(original_selection_mode)
         if existed:
             setattr(app_state, fallback_attr, original_value)
         elif hasattr(app_state, fallback_attr):
             delattr(app_state, fallback_attr)
+
+
+@pytest.mark.parametrize(
+    "attr,payload",
+    [
+        ("plot_style_grid", True),
+        ("plot_marker_size", 87),
+        ("plot_marker_alpha", 0.45),
+        ("show_plot_title", True),
+        ("plot_dpi", 160),
+    ],
+)
+def test_style_fields_set_attr_compatibility(attr: str, payload: object) -> None:
+    original = getattr(app_state, attr, None)
+
+    try:
+        state_gateway.set_attr(attr, payload)
+
+        assert getattr(app_state, attr) == payload
+        assert app_state.state_store.snapshot()[attr] == payload
+    finally:
+        state_gateway.set_attr(attr, original)
 
 
 def test_overlay_label_state_only_updates_known_keys() -> None:

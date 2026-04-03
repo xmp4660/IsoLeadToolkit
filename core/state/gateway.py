@@ -31,6 +31,11 @@ class AppStateGateway:
         """All accepted keys for panel style updates."""
         return self._build_panel_style_fallback_keys().union(
             {
+                "plot_style_grid",
+                "plot_marker_size",
+                "plot_marker_alpha",
+                "show_plot_title",
+                "plot_dpi",
                 "color_scheme",
                 "model_curve_width",
                 "paleoisochron_width",
@@ -42,14 +47,9 @@ class AppStateGateway:
     def _build_panel_style_fallback_keys(self) -> set[str]:
         """Keys allowed for direct panel style fallback updates."""
         return {
-            "plot_style_grid",
             "custom_primary_font",
             "custom_cjk_font",
             "plot_font_sizes",
-            "plot_marker_size",
-            "plot_marker_alpha",
-            "show_plot_title",
-            "plot_dpi",
             "plot_facecolor",
             "axes_facecolor",
             "grid_color",
@@ -248,6 +248,8 @@ class AppStateGateway:
             "isochron_rxy_value": "_set_isochron_rxy_value_compat",
         }
         bool_map = {
+            "plot_style_grid": "set_plot_style_grid",
+            "show_plot_title": "set_show_plot_title",
             "show_kde": "set_show_kde",
             "show_marginal_kde": "set_show_marginal_kde",
             "show_equation_overlays": "set_show_equation_overlays",
@@ -274,6 +276,8 @@ class AppStateGateway:
             "embedding_task_running": "set_embedding_task_running",
         }
         int_map = {
+            "plot_marker_size": "set_plot_marker_size",
+            "plot_dpi": "set_plot_dpi",
             "legend_columns": "set_legend_columns",
             "paleoisochron_step": "set_paleoisochron_step",
             "marginal_kde_max_points": "set_marginal_kde_compute_options",
@@ -283,6 +287,7 @@ class AppStateGateway:
             "embedding_task_token": "set_embedding_task_token",
         }
         float_map = {
+            "plot_marker_alpha": "set_plot_marker_alpha",
             "confidence_level": "set_confidence_level",
             "legend_nudge_step": "set_legend_nudge_step",
             "ternary_boundary_percent": "set_ternary_boundary_percent",
@@ -421,6 +426,21 @@ class AppStateGateway:
 
     def get_v1v2_params(self) -> dict[str, Any]:
         return dict(self._store.snapshot().get("v1v2_params", {}))
+
+    def set_plot_style_grid(self, enabled: bool) -> None:
+        self._dispatch("SET_PLOT_STYLE_GRID", enabled=bool(enabled))
+
+    def set_plot_marker_size(self, size: int) -> None:
+        self._dispatch("SET_PLOT_MARKER_SIZE", size=int(size))
+
+    def set_plot_marker_alpha(self, alpha: float) -> None:
+        self._dispatch("SET_PLOT_MARKER_ALPHA", alpha=float(alpha))
+
+    def set_show_plot_title(self, show: bool) -> None:
+        self._dispatch("SET_SHOW_PLOT_TITLE", show=bool(show))
+
+    def set_plot_dpi(self, dpi: int) -> None:
+        self._dispatch("SET_PLOT_DPI", dpi=int(dpi))
 
     def set_show_kde(self, show: bool) -> None:
         self._dispatch("SET_SHOW_KDE", show=bool(show))

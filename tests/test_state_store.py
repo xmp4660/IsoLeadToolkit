@@ -95,6 +95,11 @@ def _snapshot_state() -> dict[str, Any]:
         "data_cols": list(getattr(app_state, "data_cols", []) or []),
         "last_group_col": getattr(app_state, "last_group_col", None),
         "selection_tool": getattr(app_state, "selection_tool", None),
+        "plot_style_grid": bool(getattr(app_state, "plot_style_grid", False)),
+        "plot_marker_size": int(getattr(app_state, "plot_marker_size", 60)),
+        "plot_marker_alpha": float(getattr(app_state, "plot_marker_alpha", 0.8)),
+        "show_plot_title": bool(getattr(app_state, "show_plot_title", False)),
+        "plot_dpi": int(getattr(app_state, "plot_dpi", 130)),
         "point_size": int(getattr(app_state, "point_size", 60)),
         "show_tooltip": bool(getattr(app_state, "show_tooltip", False)),
         "tooltip_columns": list(getattr(app_state, "tooltip_columns", []) or []),
@@ -165,6 +170,11 @@ def _restore_state(snapshot: dict[str, Any]) -> None:
     state_gateway.set_v1v2_params(snapshot["v1v2_params"])
     state_gateway.set_selection_mode(bool(snapshot["selection_mode"]))
     state_gateway.set_render_mode(str(snapshot["render_mode"]))
+    state_gateway.set_plot_style_grid(bool(snapshot["plot_style_grid"]))
+    state_gateway.set_plot_marker_size(int(snapshot["plot_marker_size"]))
+    state_gateway.set_plot_marker_alpha(float(snapshot["plot_marker_alpha"]))
+    state_gateway.set_show_plot_title(bool(snapshot["show_plot_title"]))
+    state_gateway.set_plot_dpi(int(snapshot["plot_dpi"]))
     state_gateway.set_point_size(int(snapshot["point_size"]))
     state_gateway.set_show_tooltip(bool(snapshot["show_tooltip"]))
     state_gateway.set_show_kde(bool(snapshot["show_kde"]))
@@ -318,6 +328,31 @@ def test_state_store_set_render_mode_syncs_algorithm() -> None:
         assert app_state.algorithm == "PCA"
         store_snapshot = app_state.state_store.snapshot()
         assert store_snapshot["render_mode"] == "PCA"
+    finally:
+        _restore_state(snapshot)
+
+
+def test_state_store_plot_style_domains() -> None:
+    snapshot = _snapshot_state()
+    try:
+        state_gateway.set_plot_style_grid(True)
+        state_gateway.set_plot_marker_size(88)
+        state_gateway.set_plot_marker_alpha(0.57)
+        state_gateway.set_show_plot_title(True)
+        state_gateway.set_plot_dpi(180)
+
+        assert app_state.plot_style_grid is True
+        assert app_state.plot_marker_size == 88
+        assert app_state.plot_marker_alpha == 0.57
+        assert app_state.show_plot_title is True
+        assert app_state.plot_dpi == 180
+
+        store_snapshot = app_state.state_store.snapshot()
+        assert store_snapshot["plot_style_grid"] is True
+        assert store_snapshot["plot_marker_size"] == 88
+        assert store_snapshot["plot_marker_alpha"] == 0.57
+        assert store_snapshot["show_plot_title"] is True
+        assert store_snapshot["plot_dpi"] == 180
     finally:
         _restore_state(snapshot)
 

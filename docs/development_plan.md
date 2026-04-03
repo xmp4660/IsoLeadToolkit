@@ -2,6 +2,26 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-03 · StateStore 第八十四批）
+
+- 样式参数域纳入 StateStore 托管：
+    - `plot_style_grid`
+    - `plot_marker_size`
+    - `plot_marker_alpha`
+    - `show_plot_title`
+    - `plot_dpi`
+- `core/state/store.py` 新增对应 action、快照输出与 `_sync_state` 回写，并补充数值归一化（size/alpha/dpi）。
+- `core/state/gateway.py` 新增显式 API：
+    - `set_plot_style_grid`
+    - `set_plot_marker_size`
+    - `set_plot_marker_alpha`
+    - `set_show_plot_title`
+    - `set_plot_dpi`
+- `set_panel_style_updates` 的允许键中新增上述托管字段，同时从 fallback 直写集合移除，避免再走 `_state` 旁路。
+- 回归测试更新：
+    - `tests/test_state_store.py` 新增样式参数域托管测试并接入 snapshot/restore。
+    - `tests/test_gateway_set_attr_compatibility.py` 扩展面板样式批量更新断言与 `set_attr` 兼容性用例。
+
 ## 阶段进展（2026-04-03 · StateStore 第八十三批）
 
 - 参数域纳入 StateStore 托管：

@@ -43,6 +43,15 @@ class StateStore:
             "v1v2_params": self._normalize_algorithm_params(
                 getattr(state, "v1v2_params", None)
             ),
+            "plot_style_grid": bool(getattr(state, "plot_style_grid", False)),
+            "plot_marker_size": self._normalize_plot_marker_size(
+                getattr(state, "plot_marker_size", 60)
+            ),
+            "plot_marker_alpha": self._normalize_plot_marker_alpha(
+                getattr(state, "plot_marker_alpha", 0.8)
+            ),
+            "show_plot_title": bool(getattr(state, "show_plot_title", False)),
+            "plot_dpi": self._normalize_plot_dpi(getattr(state, "plot_dpi", 130)),
             "show_kde": bool(getattr(state, "show_kde", False)),
             "show_marginal_kde": bool(getattr(state, "show_marginal_kde", True)),
             "show_equation_overlays": bool(getattr(state, "show_equation_overlays", False)),
@@ -237,6 +246,25 @@ class StateStore:
 
         elif action_type == "SET_V1V2_PARAMS":
             self._snapshot["v1v2_params"] = self._normalize_algorithm_params(action.get("params"))
+
+        elif action_type == "SET_PLOT_STYLE_GRID":
+            self._snapshot["plot_style_grid"] = bool(action.get("enabled", False))
+
+        elif action_type == "SET_PLOT_MARKER_SIZE":
+            self._snapshot["plot_marker_size"] = self._normalize_plot_marker_size(
+                action.get("size", 60)
+            )
+
+        elif action_type == "SET_PLOT_MARKER_ALPHA":
+            self._snapshot["plot_marker_alpha"] = self._normalize_plot_marker_alpha(
+                action.get("alpha", 0.8)
+            )
+
+        elif action_type == "SET_SHOW_PLOT_TITLE":
+            self._snapshot["show_plot_title"] = bool(action.get("show", False))
+
+        elif action_type == "SET_PLOT_DPI":
+            self._snapshot["plot_dpi"] = self._normalize_plot_dpi(action.get("dpi", 130))
 
         elif action_type == "SET_SHOW_KDE":
             self._snapshot["show_kde"] = bool(action.get("show", False))
@@ -670,6 +698,11 @@ class StateStore:
             "robust_pca_params": dict(self._snapshot["robust_pca_params"]),
             "ml_params": dict(self._snapshot["ml_params"]),
             "v1v2_params": dict(self._snapshot["v1v2_params"]),
+            "plot_style_grid": bool(self._snapshot["plot_style_grid"]),
+            "plot_marker_size": int(self._snapshot["plot_marker_size"]),
+            "plot_marker_alpha": float(self._snapshot["plot_marker_alpha"]),
+            "show_plot_title": bool(self._snapshot["show_plot_title"]),
+            "plot_dpi": int(self._snapshot["plot_dpi"]),
             "show_kde": bool(self._snapshot["show_kde"]),
             "show_marginal_kde": bool(self._snapshot["show_marginal_kde"]),
             "show_equation_overlays": bool(self._snapshot["show_equation_overlays"]),
@@ -818,6 +851,11 @@ class StateStore:
         self._state.robust_pca_params = dict(self._snapshot["robust_pca_params"])
         self._state.ml_params = dict(self._snapshot["ml_params"])
         self._state.v1v2_params = dict(self._snapshot["v1v2_params"])
+        self._state.plot_style_grid = bool(self._snapshot["plot_style_grid"])
+        self._state.plot_marker_size = int(self._snapshot["plot_marker_size"])
+        self._state.plot_marker_alpha = float(self._snapshot["plot_marker_alpha"])
+        self._state.show_plot_title = bool(self._snapshot["show_plot_title"])
+        self._state.plot_dpi = int(self._snapshot["plot_dpi"])
         self._state.show_kde = bool(self._snapshot["show_kde"])
         self._state.show_marginal_kde = bool(self._snapshot["show_marginal_kde"])
         self._state.show_equation_overlays = bool(self._snapshot["show_equation_overlays"])
@@ -1009,6 +1047,18 @@ class StateStore:
             return dict(params)
         except Exception:
             return {}
+
+    @staticmethod
+    def _normalize_plot_marker_size(value: Any) -> int:
+        return max(1, min(int(value), 2000))
+
+    @staticmethod
+    def _normalize_plot_marker_alpha(value: Any) -> float:
+        return max(0.0, min(float(value), 1.0))
+
+    @staticmethod
+    def _normalize_plot_dpi(value: Any) -> int:
+        return max(72, min(int(value), 1200))
 
     @staticmethod
     def _normalize_marginal_size(value: Any) -> float:
