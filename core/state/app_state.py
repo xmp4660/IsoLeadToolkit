@@ -27,6 +27,17 @@ class DataState:
 
     @df_global.setter
     def df_global(self, value: Any) -> None:
+        state_store = getattr(self.app_state, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch(
+                {
+                    'type': 'SET_DATAFRAME_SOURCE',
+                    'df': value,
+                    'file_path': getattr(self.app_state, 'file_path', None),
+                    'sheet_name': getattr(self.app_state, 'sheet_name', None),
+                }
+            )
+            return
         setattr(self.app_state, 'df_global', value)
 
     @property
@@ -35,6 +46,16 @@ class DataState:
 
     @data_cols.setter
     def data_cols(self, value: Any) -> None:
+        state_store = getattr(self.app_state, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch(
+                {
+                    'type': 'SET_GROUP_DATA_COLUMNS',
+                    'group_cols': list(getattr(self.app_state, 'group_cols', []) or []),
+                    'data_cols': list(value or []),
+                }
+            )
+            return
         setattr(self.app_state, 'data_cols', value)
 
     @property
@@ -43,6 +64,16 @@ class DataState:
 
     @group_cols.setter
     def group_cols(self, value: Any) -> None:
+        state_store = getattr(self.app_state, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch(
+                {
+                    'type': 'SET_GROUP_DATA_COLUMNS',
+                    'group_cols': list(value or []),
+                    'data_cols': list(getattr(self.app_state, 'data_cols', []) or []),
+                }
+            )
+            return
         setattr(self.app_state, 'group_cols', value)
 
     @property
@@ -51,6 +82,10 @@ class DataState:
 
     @active_subset_indices.setter
     def active_subset_indices(self, value: Any) -> None:
+        state_store = getattr(self.app_state, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_ACTIVE_SUBSET_INDICES', 'indices': value})
+            return
         setattr(self.app_state, 'active_subset_indices', value)
 
 
@@ -66,6 +101,10 @@ class AlgorithmState:
 
     @algorithm.setter
     def algorithm(self, value: Any) -> None:
+        state_store = getattr(self.app_state, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_ALGORITHM', 'algorithm': value})
+            return
         setattr(self.app_state, 'algorithm', value)
 
     @property
@@ -159,6 +198,10 @@ class StyleState:
 
     @current_palette.setter
     def current_palette(self, value: Any) -> None:
+        state_store = getattr(self.app_state, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_CURRENT_PALETTE', 'palette': dict(value or {})})
+            return
         setattr(self.app_state, 'current_palette', value)
 
     @property
@@ -167,6 +210,10 @@ class StyleState:
 
     @color_scheme.setter
     def color_scheme(self, value: Any) -> None:
+        state_store = getattr(self.app_state, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_COLOR_SCHEME', 'color_scheme': value})
+            return
         setattr(self.app_state, 'color_scheme', value)
 
     @property
@@ -190,6 +237,10 @@ class InteractionState:
 
     @selection_tool.setter
     def selection_tool(self, value: Any) -> None:
+        state_store = getattr(self.app_state, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_SELECTION_TOOL', 'tool': value})
+            return
         setattr(self.app_state, 'selection_tool', value)
 
     @property
@@ -198,6 +249,10 @@ class InteractionState:
 
     @selected_indices.setter
     def selected_indices(self, value: Any) -> None:
+        state_store = getattr(self.app_state, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_SELECTED_INDICES', 'indices': value})
+            return
         setattr(self.app_state, 'selected_indices', value)
 
     @property

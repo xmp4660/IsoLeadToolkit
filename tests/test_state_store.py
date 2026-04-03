@@ -327,6 +327,41 @@ def test_state_store_active_subset_indices_domain() -> None:
         _restore_state(snapshot)
 
 
+def test_compatibility_views_dispatch_to_state_store() -> None:
+    snapshot = _snapshot_state()
+    original_df_global = getattr(app_state, "df_global", None)
+    try:
+        state_gateway.set_render_mode("2D")
+        app_state.data_state.active_subset_indices = [9, 7, 7]
+        app_state.data_state.group_cols = ["G1"]
+        app_state.data_state.data_cols = ["X", "Y"]
+        app_state.data_state.df_global = original_df_global
+        app_state.algorithm_state.algorithm = "PCA"
+        app_state.style_state.current_palette = {"G1": "#112233"}
+        app_state.style_state.color_scheme = "vibrant"
+        app_state.interaction_state.selection_tool = "lasso"
+        app_state.interaction_state.selected_indices = {1, 4}
+
+        assert app_state.active_subset_indices == {7, 9}
+        assert app_state.group_cols == ["G1"]
+        assert app_state.data_cols == ["X", "Y"]
+        assert app_state.algorithm == "PCA"
+        assert app_state.current_palette == {"G1": "#112233"}
+        assert app_state.selection_tool == "lasso"
+        assert app_state.selected_indices == {1, 4}
+
+        store_snapshot = app_state.state_store.snapshot()
+        assert store_snapshot["active_subset_indices"] == {7, 9}
+        assert store_snapshot["group_cols"] == ["G1"]
+        assert store_snapshot["data_cols"] == ["X", "Y"]
+        assert store_snapshot["algorithm"] == "PCA"
+        assert store_snapshot["current_palette"] == {"G1": "#112233"}
+        assert store_snapshot["selection_tool"] == "lasso"
+        assert store_snapshot["selected_indices"] == {1, 4}
+    finally:
+        _restore_state(snapshot)
+
+
 def test_build_group_palette_syncs_state_store_snapshot() -> None:
     snapshot = _snapshot_state()
     try:

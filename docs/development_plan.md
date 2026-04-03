@@ -676,6 +676,20 @@
                                                                     `tests/test_gateway_set_attr_compatibility.py`，
                                                                     覆盖显式 setter 与兼容路径的
                                                                     Store 快照一致性。
+                                - 第八十一批迁移清理（兼容视图 setter 去旁路）：
+                                                                - `core/state/app_state.py` 中
+                                                                    `DataState`、`AlgorithmState`、
+                                                                    `StyleState`、`InteractionState`
+                                                                    的托管字段 setter 改为优先
+                                                                    通过 `state_store.dispatch` 更新，
+                                                                    避免兼容视图直接 `setattr`
+                                                                    绕过 StateStore。
+                                                                - 保留安全回退：
+                                                                    若 `state_store` 尚未初始化，
+                                                                    则退回原有 `setattr` 行为。
+                                                                - 新增 `tests/test_state_store.py`
+                                                                    回归用例，覆盖兼容视图写入路径
+                                                                    的 Store 快照一致性。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 
