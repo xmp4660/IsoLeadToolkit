@@ -29,6 +29,23 @@ def test_group_and_data_columns_set_attr_compatibility() -> None:
         state_gateway.set_group_data_columns(original_group_cols, original_data_cols)
 
 
+def test_active_subset_indices_set_attr_compatibility() -> None:
+    original_subset = getattr(app_state, "active_subset_indices", None)
+    normalized_original = set(original_subset) if original_subset is not None else None
+
+    try:
+        state_gateway.set_attr("active_subset_indices", [5, 3, 3])
+
+        assert app_state.active_subset_indices == {3, 5}
+        assert app_state.state_store.snapshot()["active_subset_indices"] == {3, 5}
+
+        state_gateway.set_attr("active_subset_indices", None)
+        assert app_state.active_subset_indices is None
+        assert app_state.state_store.snapshot()["active_subset_indices"] is None
+    finally:
+        state_gateway.set_active_subset_indices(normalized_original)
+
+
 def test_tooltip_set_attr_compatibility() -> None:
     original_show_tooltip = bool(getattr(app_state, "show_tooltip", False))
 

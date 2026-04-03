@@ -97,6 +97,9 @@ class StateStore:
             "marginal_kde_cut": float(getattr(state, "marginal_kde_cut", 1.0)),
             "marginal_kde_log_transform": bool(getattr(state, "marginal_kde_log_transform", False)),
             "selected_indices": set(getattr(state, "selected_indices", set()) or set()),
+            "active_subset_indices": self._normalize_active_subset_indices(
+                getattr(state, "active_subset_indices", None)
+            ),
             "df_global": getattr(state, "df_global", None),
             "file_path": getattr(state, "file_path", None),
             "sheet_name": getattr(state, "sheet_name", None),
@@ -442,6 +445,11 @@ class StateStore:
             indices = self._to_index_set(action.get("indices", []))
             self._snapshot["selected_indices"] = indices
 
+        elif action_type == "SET_ACTIVE_SUBSET_INDICES":
+            self._snapshot["active_subset_indices"] = self._normalize_active_subset_indices(
+                action.get("indices")
+            )
+
         elif action_type == "ADD_SELECTED_INDICES":
             indices = self._to_index_set(action.get("indices", []))
             self._snapshot["selected_indices"].update(indices)
@@ -681,6 +689,9 @@ class StateStore:
             "marginal_kde_cut": float(self._snapshot["marginal_kde_cut"]),
             "marginal_kde_log_transform": bool(self._snapshot["marginal_kde_log_transform"]),
             "selected_indices": set(self._snapshot["selected_indices"]),
+            "active_subset_indices": self._normalize_active_subset_indices(
+                self._snapshot["active_subset_indices"]
+            ),
             "df_global": self._snapshot["df_global"],
             "file_path": self._snapshot["file_path"],
             "sheet_name": self._snapshot["sheet_name"],
@@ -821,6 +832,9 @@ class StateStore:
         self._state.marginal_kde_log_transform = bool(self._snapshot["marginal_kde_log_transform"])
 
         self._state.selected_indices = set(self._snapshot["selected_indices"])
+        self._state.active_subset_indices = self._normalize_active_subset_indices(
+            self._snapshot["active_subset_indices"]
+        )
         self._state.df_global = self._snapshot["df_global"]
         self._state.file_path = self._snapshot["file_path"]
         self._state.sheet_name = self._snapshot["sheet_name"]
@@ -925,6 +939,15 @@ class StateStore:
             out = [str(group) for group in groups]
             return out if out else None
         return [str(groups)]
+
+    @staticmethod
+    def _normalize_active_subset_indices(indices: Any) -> set[int] | None:
+        if indices is None:
+            return None
+        if isinstance(indices, Iterable) and not isinstance(indices, (str, bytes)):
+            normalized = {int(v) for v in indices}
+            return normalized if normalized else set()
+        return {int(indices)}
 
     @staticmethod
     def _normalize_marginal_size(value: Any) -> float:

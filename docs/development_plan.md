@@ -661,6 +661,21 @@
                                                                 - `scripts/check_gateway_direct_state_assignments.py`
                                                                     白名单移除上述 2 个字段，
                                                                     持续防止直写回退。
+                                - 第八十批迁移清理（活动子集索引纳入 StateStore）：
+                                                                - `core/state/store.py` 新增状态域：
+                                                                    `active_subset_indices`，
+                                                                    并接入 dispatch/snapshot/sync。
+                                                                - 增加子集索引归一化：
+                                                                    统一为 `set[int] | None`，
+                                                                    防止重复值与类型漂移。
+                                                                - `core/state/gateway.py` 新增
+                                                                    `set_active_subset_indices`，
+                                                                    并将 `set_attr("active_subset_indices")`
+                                                                    路由到显式 setter。
+                                                                - 扩展 `tests/test_state_store.py` 与
+                                                                    `tests/test_gateway_set_attr_compatibility.py`，
+                                                                    覆盖显式 setter 与兼容路径的
+                                                                    Store 快照一致性。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 

@@ -75,6 +75,11 @@ def _snapshot_state() -> dict[str, Any]:
         "marginal_kde_cut": float(getattr(app_state, "marginal_kde_cut", 1.0)),
         "marginal_kde_log_transform": bool(getattr(app_state, "marginal_kde_log_transform", False)),
         "selected_indices": set(getattr(app_state, "selected_indices", set()) or set()),
+        "active_subset_indices": (
+            set(getattr(app_state, "active_subset_indices", set()) or set())
+            if getattr(app_state, "active_subset_indices", None) is not None
+            else None
+        ),
         "selection_mode": bool(getattr(app_state, "selection_mode", False)),
         "df_global": getattr(app_state, "df_global", None),
         "file_path": getattr(app_state, "file_path", None),
@@ -263,6 +268,7 @@ def _restore_state(snapshot: dict[str, Any]) -> None:
     state_gateway.set_group_data_columns(snapshot["group_cols"], snapshot["data_cols"])
     state_gateway.set_last_group_col(snapshot["last_group_col"])
     state_gateway.set_selected_indices(snapshot["selected_indices"])
+    state_gateway.set_active_subset_indices(snapshot["active_subset_indices"])
     state_gateway.set_selected_2d_columns(snapshot["selected_2d_cols"], confirmed=snapshot["selected_2d_confirmed"])
     state_gateway.set_selected_3d_columns(snapshot["selected_3d_cols"], confirmed=snapshot["selected_3d_confirmed"])
     state_gateway.set_selected_ternary_columns(snapshot["selected_ternary_cols"], confirmed=snapshot["selected_ternary_confirmed"])
@@ -300,6 +306,23 @@ def test_state_store_set_render_mode_syncs_algorithm() -> None:
         assert app_state.algorithm == "PCA"
         store_snapshot = app_state.state_store.snapshot()
         assert store_snapshot["render_mode"] == "PCA"
+    finally:
+        _restore_state(snapshot)
+
+
+def test_state_store_active_subset_indices_domain() -> None:
+    snapshot = _snapshot_state()
+    try:
+        state_gateway.set_active_subset_indices([3, 1, 1, 2])
+
+        assert app_state.active_subset_indices == {1, 2, 3}
+        store_snapshot = app_state.state_store.snapshot()
+        assert store_snapshot["active_subset_indices"] == {1, 2, 3}
+
+        state_gateway.set_active_subset_indices(None)
+        assert app_state.active_subset_indices is None
+        store_snapshot = app_state.state_store.snapshot()
+        assert store_snapshot["active_subset_indices"] is None
     finally:
         _restore_state(snapshot)
 

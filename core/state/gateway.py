@@ -227,6 +227,7 @@ class AppStateGateway:
             "selected_isochron_data": "set_selected_isochron_data",
             "tooltip_columns": "set_tooltip_columns",
             "selected_indices": "set_selected_indices",
+            "active_subset_indices": "set_active_subset_indices",
             "selection_tool": "set_selection_tool",
             "visible_groups": "set_visible_groups",
             "group_cols": "_set_group_cols_compat",
@@ -890,6 +891,9 @@ class AppStateGateway:
 
     def set_visible_groups(self, groups: list[str] | None) -> None:
         self._dispatch("SET_VISIBLE_GROUPS", groups=groups)
+
+    def set_active_subset_indices(self, indices: Any) -> None:
+        self._dispatch("SET_ACTIVE_SUBSET_INDICES", indices=indices)
 
     def clear_selected_indices(self) -> None:
         self._dispatch("CLEAR_SELECTED_INDICES")
