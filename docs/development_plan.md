@@ -624,6 +624,26 @@
                                                                 - `scripts/check_gateway_direct_state_assignments.py`
                                                                     白名单移除上述 3 个字段，
                                                                     持续防止 gateway 直写回退。
+                                - 第七十八批迁移清理（异步嵌入任务状态纳入 StateStore）：
+                                                                - `core/state/store.py` 新增状态域：
+                                                                    `embedding_task_token`、
+                                                                    `embedding_task_running`，
+                                                                    并接入 dispatch/snapshot/sync。
+                                                                - `core/state/gateway.py` 新增
+                                                                    `set_embedding_task_token`、
+                                                                    `set_embedding_task_running`，
+                                                                    `set_embedding_worker` 内部改为
+                                                                    复用上述显式 setter，移除业务域直写。
+                                                                - `set_attr` 兼容映射新增
+                                                                    `embedding_task_token`、
+                                                                    `embedding_task_running` 路由。
+                                                                - 扩展 `tests/test_state_store.py` 与
+                                                                    `tests/test_gateway_set_attr_compatibility.py`，
+                                                                    覆盖显式 setter 与兼容路径的
+                                                                    Store 快照一致性。
+                                                                - `scripts/check_gateway_direct_state_assignments.py`
+                                                                    白名单移除上述 2 个字段，
+                                                                    持续防止直写回退。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 

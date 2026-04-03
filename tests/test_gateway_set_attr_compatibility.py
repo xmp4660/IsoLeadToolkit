@@ -333,6 +333,25 @@ def test_last_embedding_and_selected_isochron_set_attr_compatibility() -> None:
         state_gateway.set_selected_isochron_data(original_selected_isochron_data)
 
 
+def test_embedding_task_state_set_attr_compatibility() -> None:
+    original_token = int(getattr(app_state, "embedding_task_token", 0))
+    original_running = bool(getattr(app_state, "embedding_task_running", False))
+
+    try:
+        state_gateway.set_attr("embedding_task_token", 9)
+        state_gateway.set_attr("embedding_task_running", True)
+
+        assert app_state.embedding_task_token == 9
+        assert app_state.embedding_task_running is True
+
+        snapshot = app_state.state_store.snapshot()
+        assert snapshot["embedding_task_token"] == 9
+        assert snapshot["embedding_task_running"] is True
+    finally:
+        state_gateway.set_embedding_task_token(original_token)
+        state_gateway.set_embedding_task_running(original_running)
+
+
 def test_ui_theme_set_attr_conversion() -> None:
     original_theme = str(getattr(app_state, "ui_theme", "Modern Light"))
 

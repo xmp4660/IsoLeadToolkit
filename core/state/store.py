@@ -42,6 +42,8 @@ class StateStore:
             "last_embedding": getattr(state, "last_embedding", None),
             "last_embedding_type": str(getattr(state, "last_embedding_type", "") or ""),
             "selected_isochron_data": getattr(state, "selected_isochron_data", None),
+            "embedding_task_token": int(getattr(state, "embedding_task_token", 0)),
+            "embedding_task_running": bool(getattr(state, "embedding_task_running", False)),
             "last_pca_variance": getattr(state, "last_pca_variance", None),
             "last_pca_components": getattr(state, "last_pca_components", None),
             "current_feature_names": getattr(state, "current_feature_names", []),
@@ -231,6 +233,12 @@ class StateStore:
 
         elif action_type == "SET_SELECTED_ISOCHRON_DATA":
             self._snapshot["selected_isochron_data"] = action.get("data")
+
+        elif action_type == "SET_EMBEDDING_TASK_TOKEN":
+            self._snapshot["embedding_task_token"] = int(action.get("task_token", 0))
+
+        elif action_type == "SET_EMBEDDING_TASK_RUNNING":
+            self._snapshot["embedding_task_running"] = bool(action.get("running", False))
 
         elif action_type == "SET_PCA_DIAGNOSTICS":
             if "last_pca_variance" in action:
@@ -617,6 +625,8 @@ class StateStore:
             "last_embedding": self._snapshot["last_embedding"],
             "last_embedding_type": str(self._snapshot["last_embedding_type"]),
             "selected_isochron_data": self._snapshot["selected_isochron_data"],
+            "embedding_task_token": int(self._snapshot["embedding_task_token"]),
+            "embedding_task_running": bool(self._snapshot["embedding_task_running"]),
             "last_pca_variance": self._snapshot["last_pca_variance"],
             "last_pca_components": self._snapshot["last_pca_components"],
             "current_feature_names": self._snapshot["current_feature_names"],
@@ -752,6 +762,8 @@ class StateStore:
         self._state.last_embedding = self._snapshot["last_embedding"]
         self._state.last_embedding_type = str(self._snapshot["last_embedding_type"])
         self._state.selected_isochron_data = self._snapshot["selected_isochron_data"]
+        self._state.embedding_task_token = int(self._snapshot["embedding_task_token"])
+        self._state.embedding_task_running = bool(self._snapshot["embedding_task_running"])
         self._state.last_pca_variance = self._snapshot["last_pca_variance"]
         self._state.last_pca_components = self._snapshot["last_pca_components"]
         self._state.current_feature_names = self._snapshot["current_feature_names"]

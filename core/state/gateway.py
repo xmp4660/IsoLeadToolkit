@@ -263,6 +263,7 @@ class AppStateGateway:
             "selection_mode": "set_selection_mode",
             "draw_selection_ellipse": "set_draw_selection_ellipse",
             "initial_render_done": "set_initial_render_done",
+            "embedding_task_running": "set_embedding_task_running",
         }
         int_map = {
             "legend_columns": "set_legend_columns",
@@ -271,6 +272,7 @@ class AppStateGateway:
             "marginal_kde_gridsize": "set_marginal_kde_compute_options",
             "point_size": "set_point_size",
             "data_version": "set_data_version",
+            "embedding_task_token": "set_embedding_task_token",
         }
         float_map = {
             "confidence_level": "set_confidence_level",
@@ -854,9 +856,15 @@ class AppStateGateway:
         task_token: int | None = None,
     ) -> None:
         if task_token is not None:
-            self._state.embedding_task_token = task_token
+            self.set_embedding_task_token(int(task_token))
         self._state.embedding_worker = worker
-        self._state.embedding_task_running = running
+        self.set_embedding_task_running(bool(running))
+
+    def set_embedding_task_token(self, task_token: int) -> None:
+        self._dispatch("SET_EMBEDDING_TASK_TOKEN", task_token=int(task_token))
+
+    def set_embedding_task_running(self, running: bool) -> None:
+        self._dispatch("SET_EMBEDDING_TASK_RUNNING", running=bool(running))
 
     def set_rectangle_selector(self, selector: Any) -> None:
         self._state.rectangle_selector = selector
