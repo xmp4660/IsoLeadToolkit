@@ -352,6 +352,25 @@ def test_embedding_task_state_set_attr_compatibility() -> None:
         state_gateway.set_embedding_task_running(original_running)
 
 
+def test_overlay_artists_and_marginal_axes_set_attr_compatibility() -> None:
+    original_overlay_artists = dict(getattr(app_state, "overlay_artists", {}) or {})
+    original_marginal_axes = getattr(app_state, "marginal_axes", None)
+
+    try:
+        state_gateway.set_attr("overlay_artists", {"bands": ["l1"]})
+        state_gateway.set_attr("marginal_axes", ("top", "right"))
+
+        assert app_state.overlay_artists == {"bands": ["l1"]}
+        assert app_state.marginal_axes == ("top", "right")
+
+        snapshot = app_state.state_store.snapshot()
+        assert snapshot["overlay_artists"] == {"bands": ["l1"]}
+        assert snapshot["marginal_axes"] == ("top", "right")
+    finally:
+        state_gateway.set_overlay_artists(original_overlay_artists)
+        state_gateway.set_marginal_axes(original_marginal_axes)
+
+
 def test_ui_theme_set_attr_conversion() -> None:
     original_theme = str(getattr(app_state, "ui_theme", "Modern Light"))
 

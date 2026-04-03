@@ -204,6 +204,7 @@ class AppStateGateway:
             "mu_kappa_age_col": "set_mu_kappa_age_col",
             "paleoisochron_ages": "set_paleoisochron_ages",
             "overlay_artists": "set_overlay_artists",
+            "marginal_axes": "set_marginal_axes",
             "overlay_curve_label_data": "set_overlay_curve_label_data",
             "paleoisochron_label_data": "set_paleoisochron_label_data",
             "plumbotectonics_label_data": "set_plumbotectonics_label_data",
@@ -661,7 +662,7 @@ class AppStateGateway:
         self._dispatch("SET_PALEOISOCHRON_AGES", ages=list(ages or []))
 
     def set_overlay_artists(self, artists: Any) -> None:
-        self._state.overlay_artists = dict(artists or {})
+        self._dispatch("SET_OVERLAY_ARTISTS", artists=dict(artists or {}))
 
     def set_overlay_curve_label_data(self, data: Any) -> None:
         self._dispatch("SET_OVERLAY_CURVE_LABEL_DATA", data=list(data or []))
@@ -786,7 +787,7 @@ class AppStateGateway:
         logger.warning("Ignored unknown overlay toggle attr: %s", attr)
 
     def set_marginal_axes(self, marginal_axes: Any) -> None:
-        self._state.marginal_axes = marginal_axes
+        self._dispatch("SET_MARGINAL_AXES", marginal_axes=marginal_axes)
 
     def set_draw_selection_ellipse(self, enabled: bool) -> None:
         self._dispatch("SET_DRAW_SELECTION_ELLIPSE", enabled=bool(enabled))

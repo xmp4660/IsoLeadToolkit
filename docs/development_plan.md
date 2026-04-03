@@ -644,6 +644,23 @@
                                                                 - `scripts/check_gateway_direct_state_assignments.py`
                                                                     白名单移除上述 2 个字段，
                                                                     持续防止直写回退。
+                                - 第七十九批迁移清理（叠加图元容器与边缘 KDE 轴状态纳入 StateStore）：
+                                                                - `core/state/store.py` 新增状态域：
+                                                                    `overlay_artists`、`marginal_axes`，
+                                                                    并接入 dispatch/snapshot/sync。
+                                                                - `core/state/gateway.py` 的
+                                                                    `set_overlay_artists`、`set_marginal_axes`
+                                                                    改为 action dispatch，移除业务域直写。
+                                                                - `set_attr` 兼容映射新增
+                                                                    `marginal_axes` 路由，
+                                                                    与 `overlay_artists` 一并走显式 setter。
+                                                                - 扩展 `tests/test_state_store.py` 与
+                                                                    `tests/test_gateway_set_attr_compatibility.py`，
+                                                                    覆盖显式 setter 与兼容路径的
+                                                                    Store 快照一致性。
+                                                                - `scripts/check_gateway_direct_state_assignments.py`
+                                                                    白名单移除上述 2 个字段，
+                                                                    持续防止直写回退。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 

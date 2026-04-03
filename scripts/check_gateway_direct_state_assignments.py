@@ -19,8 +19,6 @@ ALLOWED_DIRECT_FIELDS = {
     "legend_update_callback",
     "group_marker_map",
     "annotation",
-    "overlay_artists",
-    "marginal_axes",
     "embedding_worker",
     "rectangle_selector",
     "lasso_selector",

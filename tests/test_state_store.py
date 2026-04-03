@@ -24,11 +24,13 @@ def _snapshot_state() -> dict[str, Any]:
         "plumbotectonics_isoage_label_data": list(
             getattr(app_state, "plumbotectonics_isoage_label_data", []) or []
         ),
+        "overlay_artists": dict(getattr(app_state, "overlay_artists", {}) or {}),
         "last_embedding": getattr(app_state, "last_embedding", None),
         "last_embedding_type": str(getattr(app_state, "last_embedding_type", "") or ""),
         "selected_isochron_data": getattr(app_state, "selected_isochron_data", None),
         "embedding_task_token": int(getattr(app_state, "embedding_task_token", 0)),
         "embedding_task_running": bool(getattr(app_state, "embedding_task_running", False)),
+        "marginal_axes": getattr(app_state, "marginal_axes", None),
         "last_pca_variance": getattr(app_state, "last_pca_variance", None),
         "last_pca_components": getattr(app_state, "last_pca_components", None),
         "current_feature_names": getattr(app_state, "current_feature_names", []),
@@ -158,10 +160,12 @@ def _restore_state(snapshot: dict[str, Any]) -> None:
     state_gateway.set_paleoisochron_label_data(snapshot["paleoisochron_label_data"])
     state_gateway.set_plumbotectonics_label_data(snapshot["plumbotectonics_label_data"])
     state_gateway.set_plumbotectonics_isoage_label_data(snapshot["plumbotectonics_isoage_label_data"])
+    state_gateway.set_overlay_artists(snapshot["overlay_artists"])
     state_gateway.set_last_embedding(snapshot["last_embedding"], snapshot["last_embedding_type"])
     state_gateway.set_selected_isochron_data(snapshot["selected_isochron_data"])
     state_gateway.set_embedding_task_token(snapshot["embedding_task_token"])
     state_gateway.set_embedding_task_running(snapshot["embedding_task_running"])
+    state_gateway.set_marginal_axes(snapshot["marginal_axes"])
     state_gateway.set_pca_diagnostics(
         last_pca_variance=snapshot["last_pca_variance"],
         last_pca_components=snapshot["last_pca_components"],
@@ -337,6 +341,22 @@ def test_state_store_overlay_label_domains() -> None:
         assert store_snapshot["paleoisochron_label_data"] == [{"text": "B"}]
         assert store_snapshot["plumbotectonics_label_data"] == [{"text": "C"}]
         assert store_snapshot["plumbotectonics_isoage_label_data"] == [{"text": "D"}]
+    finally:
+        _restore_state(snapshot)
+
+
+def test_state_store_overlay_artists_and_marginal_axes_domains() -> None:
+    snapshot = _snapshot_state()
+    try:
+        state_gateway.set_overlay_artists({"curves": ["a1", "a2"]})
+        state_gateway.set_marginal_axes(("ax_top", "ax_right"))
+
+        assert app_state.overlay_artists == {"curves": ["a1", "a2"]}
+        assert app_state.marginal_axes == ("ax_top", "ax_right")
+
+        store_snapshot = app_state.state_store.snapshot()
+        assert store_snapshot["overlay_artists"] == {"curves": ["a1", "a2"]}
+        assert store_snapshot["marginal_axes"] == ("ax_top", "ax_right")
     finally:
         _restore_state(snapshot)
 
