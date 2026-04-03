@@ -14,6 +14,12 @@ def _snapshot_state() -> dict[str, Any]:
         "show_kde": bool(getattr(app_state, "show_kde", False)),
         "show_marginal_kde": bool(getattr(app_state, "show_marginal_kde", True)),
         "show_equation_overlays": bool(getattr(app_state, "show_equation_overlays", False)),
+        "show_model_curves": bool(getattr(app_state, "show_model_curves", True)),
+        "show_plumbotectonics_curves": bool(getattr(app_state, "show_plumbotectonics_curves", True)),
+        "show_paleoisochrons": bool(getattr(app_state, "show_paleoisochrons", True)),
+        "show_model_age_lines": bool(getattr(app_state, "show_model_age_lines", True)),
+        "show_growth_curves": bool(getattr(app_state, "show_growth_curves", True)),
+        "show_isochrons": bool(getattr(app_state, "show_isochrons", False)),
         "marginal_kde_top_size": float(getattr(app_state, "marginal_kde_top_size", 15.0)),
         "marginal_kde_right_size": float(getattr(app_state, "marginal_kde_right_size", 15.0)),
         "marginal_kde_max_points": int(getattr(app_state, "marginal_kde_max_points", 5000)),
@@ -96,6 +102,12 @@ def _restore_state(snapshot: dict[str, Any]) -> None:
     state_gateway.set_show_kde(bool(snapshot["show_kde"]))
     state_gateway.set_show_marginal_kde(bool(snapshot["show_marginal_kde"]))
     state_gateway.set_show_equation_overlays(bool(snapshot["show_equation_overlays"]))
+    state_gateway.set_show_model_curves(bool(snapshot["show_model_curves"]))
+    state_gateway.set_show_plumbotectonics_curves(bool(snapshot["show_plumbotectonics_curves"]))
+    state_gateway.set_show_paleoisochrons(bool(snapshot["show_paleoisochrons"]))
+    state_gateway.set_show_model_age_lines(bool(snapshot["show_model_age_lines"]))
+    state_gateway.set_show_growth_curves(bool(snapshot["show_growth_curves"]))
+    state_gateway.set_show_isochrons(bool(snapshot["show_isochrons"]))
     state_gateway.set_marginal_kde_layout(
         top_size=float(snapshot["marginal_kde_top_size"]),
         right_size=float(snapshot["marginal_kde_right_size"]),
@@ -219,6 +231,12 @@ def test_state_store_session_preference_domains() -> None:
         )
         state_gateway.set_ml_last_result({"status": "ok", "score": 0.93})
         state_gateway.set_ml_last_model_meta({"model": "xgb", "classes": 4})
+        state_gateway.set_show_model_curves(False)
+        state_gateway.set_show_plumbotectonics_curves(False)
+        state_gateway.set_show_paleoisochrons(False)
+        state_gateway.set_show_model_age_lines(False)
+        state_gateway.set_show_growth_curves(False)
+        state_gateway.set_show_isochrons(True)
         state_gateway.set_standardize_data(False)
         state_gateway.set_pca_component_indices([2, 4])
         state_gateway.set_ternary_auto_zoom(False)
@@ -274,6 +292,12 @@ def test_state_store_session_preference_domains() -> None:
         assert app_state.marginal_kde_style["gridsize"] == 320
         assert app_state.ml_last_result == {"status": "ok", "score": 0.93}
         assert app_state.ml_last_model_meta == {"model": "xgb", "classes": 4}
+        assert app_state.show_model_curves is False
+        assert app_state.show_plumbotectonics_curves is False
+        assert app_state.show_paleoisochrons is False
+        assert app_state.show_model_age_lines is False
+        assert app_state.show_growth_curves is False
+        assert app_state.show_isochrons is True
         assert app_state.standardize_data is False
         assert app_state.pca_component_indices == [2, 4]
         assert app_state.ternary_auto_zoom is False
@@ -320,6 +344,12 @@ def test_state_store_session_preference_domains() -> None:
         assert store_snapshot["marginal_kde_style"]["gridsize"] == 320
         assert store_snapshot["ml_last_result"] == {"status": "ok", "score": 0.93}
         assert store_snapshot["ml_last_model_meta"] == {"model": "xgb", "classes": 4}
+        assert store_snapshot["show_model_curves"] is False
+        assert store_snapshot["show_plumbotectonics_curves"] is False
+        assert store_snapshot["show_paleoisochrons"] is False
+        assert store_snapshot["show_model_age_lines"] is False
+        assert store_snapshot["show_growth_curves"] is False
+        assert store_snapshot["show_isochrons"] is True
         assert store_snapshot["standardize_data"] is False
         assert store_snapshot["pca_component_indices"] == [2, 4]
         assert store_snapshot["ternary_auto_zoom"] is False
@@ -392,6 +422,34 @@ def test_state_store_equation_overlay_domain() -> None:
         state_gateway.set_show_equation_overlays(False)
         assert app_state.show_equation_overlays is False
         assert app_state.state_store.snapshot()["show_equation_overlays"] is False
+    finally:
+        _restore_state(snapshot)
+
+
+def test_state_store_geochem_overlay_visibility_domains() -> None:
+    snapshot = _snapshot_state()
+    try:
+        state_gateway.set_show_model_curves(False)
+        state_gateway.set_show_plumbotectonics_curves(False)
+        state_gateway.set_show_paleoisochrons(False)
+        state_gateway.set_show_model_age_lines(False)
+        state_gateway.set_show_growth_curves(False)
+        state_gateway.set_show_isochrons(True)
+
+        assert app_state.show_model_curves is False
+        assert app_state.show_plumbotectonics_curves is False
+        assert app_state.show_paleoisochrons is False
+        assert app_state.show_model_age_lines is False
+        assert app_state.show_growth_curves is False
+        assert app_state.show_isochrons is True
+
+        store_snapshot = app_state.state_store.snapshot()
+        assert store_snapshot["show_model_curves"] is False
+        assert store_snapshot["show_plumbotectonics_curves"] is False
+        assert store_snapshot["show_paleoisochrons"] is False
+        assert store_snapshot["show_model_age_lines"] is False
+        assert store_snapshot["show_growth_curves"] is False
+        assert store_snapshot["show_isochrons"] is True
     finally:
         _restore_state(snapshot)
 

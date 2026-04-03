@@ -113,6 +113,7 @@ class AppStateGateway:
             "show_paleoisochrons": "set_show_paleoisochrons",
             "show_model_age_lines": "set_show_model_age_lines",
             "show_growth_curves": "set_show_growth_curves",
+            "show_isochrons": "set_show_isochrons",
             "use_real_age_for_mu_kappa": "set_use_real_age_for_mu_kappa",
             "standardize_data": "set_standardize_data",
             "ternary_auto_zoom": "set_ternary_auto_zoom",
@@ -456,19 +457,19 @@ class AppStateGateway:
         self._state.plumbotectonics_group_visibility = dict(visibility or {})
 
     def set_show_model_curves(self, show: bool) -> None:
-        self._state.show_model_curves = bool(show)
+        self._dispatch("SET_SHOW_MODEL_CURVES", show=bool(show))
 
     def set_show_plumbotectonics_curves(self, show: bool) -> None:
-        self._state.show_plumbotectonics_curves = bool(show)
+        self._dispatch("SET_SHOW_PLUMBOTECTONICS_CURVES", show=bool(show))
 
     def set_show_paleoisochrons(self, show: bool) -> None:
-        self._state.show_paleoisochrons = bool(show)
+        self._dispatch("SET_SHOW_PALEOISOCHRONS", show=bool(show))
 
     def set_show_model_age_lines(self, show: bool) -> None:
-        self._state.show_model_age_lines = bool(show)
+        self._dispatch("SET_SHOW_MODEL_AGE_LINES", show=bool(show))
 
     def set_show_growth_curves(self, show: bool) -> None:
-        self._state.show_growth_curves = bool(show)
+        self._dispatch("SET_SHOW_GROWTH_CURVES", show=bool(show))
 
     def set_use_real_age_for_mu_kappa(self, enabled: bool) -> None:
         self._state.use_real_age_for_mu_kappa = bool(enabled)
@@ -694,7 +695,7 @@ class AppStateGateway:
         self._state.selected_isochron_data = data
 
     def set_show_isochrons(self, show: bool) -> None:
-        self._state.show_isochrons = bool(show)
+        self._dispatch("SET_SHOW_ISOCHRONS", show=bool(show))
 
     def set_selection_tool(self, tool: str | None) -> None:
         self._dispatch("SET_SELECTION_TOOL", tool=tool)

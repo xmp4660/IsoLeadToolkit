@@ -28,6 +28,14 @@ class StateStore:
             "show_kde": bool(getattr(state, "show_kde", False)),
             "show_marginal_kde": bool(getattr(state, "show_marginal_kde", True)),
             "show_equation_overlays": bool(getattr(state, "show_equation_overlays", False)),
+            "show_model_curves": bool(getattr(state, "show_model_curves", True)),
+            "show_plumbotectonics_curves": bool(
+                getattr(state, "show_plumbotectonics_curves", True)
+            ),
+            "show_paleoisochrons": bool(getattr(state, "show_paleoisochrons", True)),
+            "show_model_age_lines": bool(getattr(state, "show_model_age_lines", True)),
+            "show_growth_curves": bool(getattr(state, "show_growth_curves", True)),
+            "show_isochrons": bool(getattr(state, "show_isochrons", False)),
             "marginal_kde_top_size": float(getattr(state, "marginal_kde_top_size", 15.0)),
             "marginal_kde_right_size": float(getattr(state, "marginal_kde_right_size", 15.0)),
             "marginal_kde_max_points": int(getattr(state, "marginal_kde_max_points", 5000)),
@@ -140,6 +148,24 @@ class StateStore:
 
         elif action_type == "SET_SHOW_EQUATION_OVERLAYS":
             self._snapshot["show_equation_overlays"] = bool(action.get("show", False))
+
+        elif action_type == "SET_SHOW_MODEL_CURVES":
+            self._snapshot["show_model_curves"] = bool(action.get("show", False))
+
+        elif action_type == "SET_SHOW_PLUMBOTECTONICS_CURVES":
+            self._snapshot["show_plumbotectonics_curves"] = bool(action.get("show", False))
+
+        elif action_type == "SET_SHOW_PALEOISOCHRONS":
+            self._snapshot["show_paleoisochrons"] = bool(action.get("show", False))
+
+        elif action_type == "SET_SHOW_MODEL_AGE_LINES":
+            self._snapshot["show_model_age_lines"] = bool(action.get("show", False))
+
+        elif action_type == "SET_SHOW_GROWTH_CURVES":
+            self._snapshot["show_growth_curves"] = bool(action.get("show", False))
+
+        elif action_type == "SET_SHOW_ISOCHRONS":
+            self._snapshot["show_isochrons"] = bool(action.get("show", False))
 
         elif action_type == "SET_MARGINAL_KDE_LAYOUT":
             top_size = action.get("top_size")
@@ -414,6 +440,12 @@ class StateStore:
             "show_kde": bool(self._snapshot["show_kde"]),
             "show_marginal_kde": bool(self._snapshot["show_marginal_kde"]),
             "show_equation_overlays": bool(self._snapshot["show_equation_overlays"]),
+            "show_model_curves": bool(self._snapshot["show_model_curves"]),
+            "show_plumbotectonics_curves": bool(self._snapshot["show_plumbotectonics_curves"]),
+            "show_paleoisochrons": bool(self._snapshot["show_paleoisochrons"]),
+            "show_model_age_lines": bool(self._snapshot["show_model_age_lines"]),
+            "show_growth_curves": bool(self._snapshot["show_growth_curves"]),
+            "show_isochrons": bool(self._snapshot["show_isochrons"]),
             "marginal_kde_top_size": float(self._snapshot["marginal_kde_top_size"]),
             "marginal_kde_right_size": float(self._snapshot["marginal_kde_right_size"]),
             "marginal_kde_max_points": int(self._snapshot["marginal_kde_max_points"]),
@@ -497,6 +529,12 @@ class StateStore:
         self._state.show_kde = bool(self._snapshot["show_kde"])
         self._state.show_marginal_kde = bool(self._snapshot["show_marginal_kde"])
         self._state.show_equation_overlays = bool(self._snapshot["show_equation_overlays"])
+        self._state.show_model_curves = bool(self._snapshot["show_model_curves"])
+        self._state.show_plumbotectonics_curves = bool(self._snapshot["show_plumbotectonics_curves"])
+        self._state.show_paleoisochrons = bool(self._snapshot["show_paleoisochrons"])
+        self._state.show_model_age_lines = bool(self._snapshot["show_model_age_lines"])
+        self._state.show_growth_curves = bool(self._snapshot["show_growth_curves"])
+        self._state.show_isochrons = bool(self._snapshot["show_isochrons"])
         self._state.marginal_kde_top_size = float(self._snapshot["marginal_kde_top_size"])
         self._state.marginal_kde_right_size = float(self._snapshot["marginal_kde_right_size"])
         self._state.marginal_kde_max_points = int(self._snapshot["marginal_kde_max_points"])

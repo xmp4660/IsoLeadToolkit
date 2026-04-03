@@ -392,6 +392,20 @@
                                                                     复制列表后通过 gateway 回写，避免原地修改旁路 Store。
                                                                 - 扩展状态与兼容测试，覆盖上述域的显式 setter 与
                                                                     `set_attr` 快照一致性。
+                                - 第六十批迁移清理（地化叠加可见性开关纳入 StateStore）：
+                                                                - `core/state/store.py` 新增状态域：
+                                                                    `show_model_curves`、`show_plumbotectonics_curves`、
+                                                                    `show_paleoisochrons`、`show_model_age_lines`、
+                                                                    `show_growth_curves`、`show_isochrons`。
+                                                                - `core/state/gateway.py` 对应显式 API
+                                                                    `set_show_model_curves`、`set_show_plumbotectonics_curves`、
+                                                                    `set_show_paleoisochrons`、`set_show_model_age_lines`、
+                                                                    `set_show_growth_curves`、`set_show_isochrons`
+                                                                    改为 action dispatch，并将 `show_isochrons`
+                                                                    纳入 `set_attr` 兼容分发。
+                                                                - 扩展 `tests/test_state_store.py` 与
+                                                                    `tests/test_gateway_set_attr_compatibility.py`，
+                                                                    覆盖显式 setter 与 `set_attr` 在上述开关域上的一致性。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 

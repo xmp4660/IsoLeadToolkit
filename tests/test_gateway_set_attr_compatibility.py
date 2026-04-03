@@ -470,6 +470,28 @@ def test_equation_overlays_set_attr_compatibility() -> None:
         state_gateway.set_equation_overlays(original_equation_overlays)
 
 
+@pytest.mark.parametrize(
+    "attr",
+    [
+        "show_model_curves",
+        "show_plumbotectonics_curves",
+        "show_paleoisochrons",
+        "show_model_age_lines",
+        "show_growth_curves",
+        "show_isochrons",
+    ],
+)
+def test_geochem_overlay_visibility_set_attr_compatibility(attr: str) -> None:
+    original_value = bool(getattr(app_state, attr, False))
+
+    try:
+        state_gateway.set_attr(attr, not original_value)
+        assert bool(getattr(app_state, attr)) is (not original_value)
+        assert app_state.state_store.snapshot()[attr] is (not original_value)
+    finally:
+        state_gateway.set_attr(attr, original_value)
+
+
 def test_confidence_level_set_attr_conversion() -> None:
     original_level = float(getattr(app_state, "confidence_level", 0.95))
 
