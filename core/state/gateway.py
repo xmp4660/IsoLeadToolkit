@@ -451,7 +451,16 @@ class AppStateGateway:
         self._state.legend_update_callback = callback
 
     def set_overlay_label_state(self, label_state: dict[str, Any]) -> None:
+        allowed_keys = {
+            "paleoisochron_label_data",
+            "plumbotectonics_label_data",
+            "plumbotectonics_isoage_label_data",
+            "overlay_curve_label_data",
+        }
         for key, value in label_state.items():
+            if key not in allowed_keys:
+                logger.warning("Ignored unknown overlay label state key: %s", key)
+                continue
             if isinstance(value, list):
                 setattr(self._state, key, list(value))
             else:

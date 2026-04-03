@@ -500,6 +500,18 @@
                                                                 - 扩展 `tests/test_state_store.py` 与
                                                                     `tests/test_gateway_set_attr_compatibility.py`，
                                                                     覆盖显式 setter 与 `set_attr` 兼容路径。
+                                - 第七十批迁移清理（overlay label state 受控键收口）：
+                                                                - `core/state/gateway.py` 的
+                                                                    `set_overlay_label_state` 改为
+                                                                    白名单键更新，仅允许
+                                                                    `paleoisochron_label_data`、
+                                                                    `plumbotectonics_label_data`、
+                                                                    `plumbotectonics_isoage_label_data`、
+                                                                    `overlay_curve_label_data`。
+                                                                - 未知键改为告警并忽略，防止
+                                                                    动态属性写入绕过网关边界。
+                                                                - `tests/test_gateway_set_attr_compatibility.py`
+                                                                    新增已知键更新与未知键忽略回归测试。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 

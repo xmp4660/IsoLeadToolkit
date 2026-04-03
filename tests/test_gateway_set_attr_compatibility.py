@@ -145,6 +145,56 @@ def test_group_marker_map_set_attr_compatibility() -> None:
         state_gateway.set_group_marker_map(original_marker_map)
 
 
+def test_overlay_label_state_only_updates_known_keys() -> None:
+    original_overlay_curve = list(getattr(app_state, "overlay_curve_label_data", []) or [])
+    original_paleo = list(getattr(app_state, "paleoisochron_label_data", []) or [])
+    original_plumbo = list(getattr(app_state, "plumbotectonics_label_data", []) or [])
+    original_isoage = list(getattr(app_state, "plumbotectonics_isoage_label_data", []) or [])
+
+    try:
+        state_gateway.set_overlay_label_state(
+            {
+                "overlay_curve_label_data": [{"text": "A"}],
+                "paleoisochron_label_data": [{"text": "B"}],
+                "plumbotectonics_label_data": [{"text": "C"}],
+                "plumbotectonics_isoage_label_data": [{"text": "D"}],
+            }
+        )
+
+        assert app_state.overlay_curve_label_data == [{"text": "A"}]
+        assert app_state.paleoisochron_label_data == [{"text": "B"}]
+        assert app_state.plumbotectonics_label_data == [{"text": "C"}]
+        assert app_state.plumbotectonics_isoage_label_data == [{"text": "D"}]
+    finally:
+        state_gateway.set_overlay_label_state(
+            {
+                "overlay_curve_label_data": original_overlay_curve,
+                "paleoisochron_label_data": original_paleo,
+                "plumbotectonics_label_data": original_plumbo,
+                "plumbotectonics_isoage_label_data": original_isoage,
+            }
+        )
+
+
+def test_overlay_label_state_ignores_unknown_keys() -> None:
+    fallback_attr = "_test_overlay_label_state_unknown"
+    existed = hasattr(app_state, fallback_attr)
+    original_value = getattr(app_state, fallback_attr, None) if existed else None
+
+    try:
+        state_gateway.set_overlay_label_state({fallback_attr: [{"text": "x"}]})
+
+        if existed:
+            assert getattr(app_state, fallback_attr) == original_value
+        else:
+            assert not hasattr(app_state, fallback_attr)
+    finally:
+        if existed:
+            setattr(app_state, fallback_attr, original_value)
+        elif hasattr(app_state, fallback_attr):
+            delattr(app_state, fallback_attr)
+
+
 def test_point_size_set_attr_conversion() -> None:
     original_point_size = int(getattr(app_state, "point_size", 60))
 
