@@ -39,7 +39,8 @@ class AppStateGateway:
         if isinstance(value, dict):
             self.set_export_image_options(**value)
             return
-        self._state.export_image_options = value
+        # Keep legacy callers safe while preventing direct state bypass.
+        self.set_export_image_options()
 
     def _set_isochron_error_mode_compat(self, value: Any) -> None:
         mode = str(value or "fixed").strip().lower()

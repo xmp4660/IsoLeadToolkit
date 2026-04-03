@@ -464,6 +464,14 @@
                                                                 - 扩展 `tests/test_state_store.py` 与
                                                                     `tests/test_gateway_set_attr_compatibility.py`，
                                                                     覆盖该域在显式 setter 与 `set_attr` 路径下的一致性。
+                                - 第六十六批迁移清理（门控直写白名单守护）：
+                                                                - 新增 `scripts/check_gateway_direct_state_assignments.py`，
+                                                                    扫描 `core/state/gateway.py` 中
+                                                                    `self._state.<field> = ...` 直写，仅允许运行期对象字段。
+                                                                - 将 `export_image_options` 非 dict 兼容分支
+                                                                    从直写改为安全调用显式 setter，避免旁路 StateStore。
+                                                                - `tests/test_guard_scripts.py` 纳入新守护脚本，
+                                                                    持续防止业务状态回退到 gateway 直写路径。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 
