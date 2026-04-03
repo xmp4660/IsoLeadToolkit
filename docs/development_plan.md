@@ -537,6 +537,20 @@
                                                                 - `tests/test_gateway_set_attr_compatibility.py`
                                                                     新增 `set_attr` 未知键忽略与
                                                                     panel style update 受控更新回归。
+                                - 第七十三批迁移清理（panel style 回退白名单化）：
+                                                                - `core/state/gateway.py`
+                                                                    新增 panel style 回退键白名单，
+                                                                    `set_panel_style_updates` 仅允许
+                                                                    白名单样式键走直写回退。
+                                                                - 同时增加 panel style 总白名单门禁，
+                                                                    样式入口先过滤键，再决定是否
+                                                                    走兼容映射或直写回退。
+                                                                - 即使是 `app_state` 已存在字段，
+                                                                    若不在样式白名单内也会被忽略并告警，
+                                                                    防止样式入口误写业务状态。
+                                                                - `tests/test_gateway_set_attr_compatibility.py`
+                                                                    扩展回归：验证已有但非样式字段
+                                                                    不会通过 panel style 路径被修改。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 

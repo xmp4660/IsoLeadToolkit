@@ -180,16 +180,19 @@ def test_panel_style_updates_known_key_and_unknown_key() -> None:
     fallback_attr = "_test_panel_style_unknown"
     existed = hasattr(app_state, fallback_attr)
     original_value = getattr(app_state, fallback_attr, None) if existed else None
+    original_selection_mode = bool(getattr(app_state, "selection_mode", False))
 
     try:
         state_gateway.set_panel_style_updates(
             {
                 "plot_style_grid": (not original_plot_style_grid),
                 fallback_attr: "ignored",
+                "selection_mode": (not original_selection_mode),
             }
         )
 
         assert bool(getattr(app_state, "plot_style_grid", False)) is (not original_plot_style_grid)
+        assert bool(getattr(app_state, "selection_mode", False)) is original_selection_mode
         if existed:
             assert getattr(app_state, fallback_attr) == original_value
         else:
@@ -197,6 +200,7 @@ def test_panel_style_updates_known_key_and_unknown_key() -> None:
     finally:
         if hasattr(app_state, "plot_style_grid"):
             setattr(app_state, "plot_style_grid", original_plot_style_grid)
+        state_gateway.set_selection_mode(original_selection_mode)
         if existed:
             setattr(app_state, fallback_attr, original_value)
         elif hasattr(app_state, fallback_attr):
