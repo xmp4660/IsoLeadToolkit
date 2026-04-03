@@ -25,6 +25,18 @@ class StateStore:
         self._snapshot: dict[str, Any] = {
             "render_mode": str(getattr(state, "render_mode", "UMAP")),
             "algorithm": str(getattr(state, "algorithm", "UMAP")),
+            "umap_params": self._normalize_algorithm_params(
+                getattr(state, "umap_params", None)
+            ),
+            "tsne_params": self._normalize_algorithm_params(
+                getattr(state, "tsne_params", None)
+            ),
+            "pca_params": self._normalize_algorithm_params(
+                getattr(state, "pca_params", None)
+            ),
+            "robust_pca_params": self._normalize_algorithm_params(
+                getattr(state, "robust_pca_params", None)
+            ),
             "show_kde": bool(getattr(state, "show_kde", False)),
             "show_marginal_kde": bool(getattr(state, "show_marginal_kde", True)),
             "show_equation_overlays": bool(getattr(state, "show_equation_overlays", False)),
@@ -199,6 +211,20 @@ class StateStore:
 
         elif action_type == "SET_ALGORITHM":
             self._snapshot["algorithm"] = str(action.get("algorithm", "UMAP") or "UMAP")
+
+        elif action_type == "SET_UMAP_PARAMS":
+            self._snapshot["umap_params"] = self._normalize_algorithm_params(action.get("params"))
+
+        elif action_type == "SET_TSNE_PARAMS":
+            self._snapshot["tsne_params"] = self._normalize_algorithm_params(action.get("params"))
+
+        elif action_type == "SET_PCA_PARAMS":
+            self._snapshot["pca_params"] = self._normalize_algorithm_params(action.get("params"))
+
+        elif action_type == "SET_ROBUST_PCA_PARAMS":
+            self._snapshot["robust_pca_params"] = self._normalize_algorithm_params(
+                action.get("params")
+            )
 
         elif action_type == "SET_SHOW_KDE":
             self._snapshot["show_kde"] = bool(action.get("show", False))
@@ -626,6 +652,10 @@ class StateStore:
         return {
             "render_mode": str(self._snapshot["render_mode"]),
             "algorithm": str(self._snapshot["algorithm"]),
+            "umap_params": dict(self._snapshot["umap_params"]),
+            "tsne_params": dict(self._snapshot["tsne_params"]),
+            "pca_params": dict(self._snapshot["pca_params"]),
+            "robust_pca_params": dict(self._snapshot["robust_pca_params"]),
             "show_kde": bool(self._snapshot["show_kde"]),
             "show_marginal_kde": bool(self._snapshot["show_marginal_kde"]),
             "show_equation_overlays": bool(self._snapshot["show_equation_overlays"]),
@@ -768,6 +798,10 @@ class StateStore:
             algorithm = render_mode
             self._snapshot["algorithm"] = algorithm
         self._state.algorithm = algorithm
+        self._state.umap_params = dict(self._snapshot["umap_params"])
+        self._state.tsne_params = dict(self._snapshot["tsne_params"])
+        self._state.pca_params = dict(self._snapshot["pca_params"])
+        self._state.robust_pca_params = dict(self._snapshot["robust_pca_params"])
         self._state.show_kde = bool(self._snapshot["show_kde"])
         self._state.show_marginal_kde = bool(self._snapshot["show_marginal_kde"])
         self._state.show_equation_overlays = bool(self._snapshot["show_equation_overlays"])
@@ -948,6 +982,17 @@ class StateStore:
             normalized = {int(v) for v in indices}
             return normalized if normalized else set()
         return {int(indices)}
+
+    @staticmethod
+    def _normalize_algorithm_params(params: Any) -> dict[str, Any]:
+        if isinstance(params, dict):
+            return dict(params)
+        if params is None:
+            return {}
+        try:
+            return dict(params)
+        except Exception:
+            return {}
 
     @staticmethod
     def _normalize_marginal_size(value: Any) -> float:

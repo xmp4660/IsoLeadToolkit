@@ -2,6 +2,20 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-03 · StateStore 第八十二批）
+
+- 参数域纳入 StateStore 托管：
+    - `umap_params`
+    - `tsne_params`
+    - `pca_params`
+    - `robust_pca_params`
+- `core/state/store.py` 新增对应 action（`SET_*_PARAMS`）、快照输出与 `_sync_state` 回写，参数统一按 dict 归一化。
+- `core/state/gateway.py` 新增显式 API：`set_umap_params`、`set_tsne_params`、`set_pca_params`、`set_robust_pca_params`，并接入 `set_attr` 兼容转发。
+- `core/state/app_state.py` 的 `AlgorithmState` 兼容视图参数 setter 改为优先 `state_store.dispatch`，减少兼容层旁路写入。
+- 回归测试更新：
+    - `tests/test_state_store.py` 补充参数域 snapshot/restore 与兼容视图分发断言。
+    - `tests/test_gateway_set_attr_compatibility.py` 新增参数域 `set_attr` 兼容性用例。
+
 ## 核查更新（2026-03-07）
 
 本次按代码现状逐项核查后，更新如下：

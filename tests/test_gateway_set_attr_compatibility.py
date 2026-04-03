@@ -301,6 +301,30 @@ def test_point_size_set_attr_conversion() -> None:
         state_gateway.set_point_size(original_point_size)
 
 
+@pytest.mark.parametrize(
+    "attr,payload",
+    [
+        ("umap_params", {"n_neighbors": 21, "min_dist": 0.2}),
+        ("tsne_params", {"perplexity": 35, "learning_rate": 120}),
+        ("pca_params", {"n_components": 3, "random_state": 42}),
+        (
+            "robust_pca_params",
+            {"n_components": 3, "random_state": 42, "support_fraction": 0.8},
+        ),
+    ],
+)
+def test_algorithm_params_set_attr_compatibility(attr: str, payload: dict[str, float | int]) -> None:
+    original = dict(getattr(app_state, attr, {}) or {})
+
+    try:
+        state_gateway.set_attr(attr, payload)
+
+        assert getattr(app_state, attr) == payload
+        assert app_state.state_store.snapshot()[attr] == payload
+    finally:
+        state_gateway.set_attr(attr, original)
+
+
 def test_pca_diagnostics_set_attr_compatibility() -> None:
     original_variance = getattr(app_state, "last_pca_variance", None)
     original_components = getattr(app_state, "last_pca_components", None)

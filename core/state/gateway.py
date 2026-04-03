@@ -230,6 +230,10 @@ class AppStateGateway:
             "active_subset_indices": "set_active_subset_indices",
             "selection_tool": "set_selection_tool",
             "visible_groups": "set_visible_groups",
+            "umap_params": "set_umap_params",
+            "tsne_params": "set_tsne_params",
+            "pca_params": "set_pca_params",
+            "robust_pca_params": "set_robust_pca_params",
             "group_cols": "_set_group_cols_compat",
             "data_cols": "_set_data_cols_compat",
             "export_image_options": "_set_export_image_options_compat",
@@ -391,6 +395,18 @@ class AppStateGateway:
 
     def set_algorithm(self, algorithm: str) -> None:
         self._dispatch("SET_ALGORITHM", algorithm=algorithm)
+
+    def set_umap_params(self, params: Any) -> None:
+        self._dispatch("SET_UMAP_PARAMS", params=dict(params or {}))
+
+    def set_tsne_params(self, params: Any) -> None:
+        self._dispatch("SET_TSNE_PARAMS", params=dict(params or {}))
+
+    def set_pca_params(self, params: Any) -> None:
+        self._dispatch("SET_PCA_PARAMS", params=dict(params or {}))
+
+    def set_robust_pca_params(self, params: Any) -> None:
+        self._dispatch("SET_ROBUST_PCA_PARAMS", params=dict(params or {}))
 
     def set_show_kde(self, show: bool) -> None:
         self._dispatch("SET_SHOW_KDE", show=bool(show))

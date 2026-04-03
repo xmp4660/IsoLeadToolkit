@@ -117,6 +117,10 @@ class AlgorithmState:
 
     @umap_params.setter
     def umap_params(self, value: Any) -> None:
+        state_store = getattr(self.app_state, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_UMAP_PARAMS', 'params': dict(value or {})})
+            return
         setattr(self.app_state, 'umap_params', value)
 
     @property
@@ -125,6 +129,10 @@ class AlgorithmState:
 
     @tsne_params.setter
     def tsne_params(self, value: Any) -> None:
+        state_store = getattr(self.app_state, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_TSNE_PARAMS', 'params': dict(value or {})})
+            return
         setattr(self.app_state, 'tsne_params', value)
 
     @property
@@ -133,6 +141,10 @@ class AlgorithmState:
 
     @pca_params.setter
     def pca_params(self, value: Any) -> None:
+        state_store = getattr(self.app_state, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_PCA_PARAMS', 'params': dict(value or {})})
+            return
         setattr(self.app_state, 'pca_params', value)
 
     @property
@@ -141,6 +153,10 @@ class AlgorithmState:
 
     @robust_pca_params.setter
     def robust_pca_params(self, value: Any) -> None:
+        state_store = getattr(self.app_state, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_ROBUST_PCA_PARAMS', 'params': dict(value or {})})
+            return
         setattr(self.app_state, 'robust_pca_params', value)
 
 
