@@ -145,6 +145,17 @@ def test_group_marker_map_set_attr_compatibility() -> None:
         state_gateway.set_group_marker_map(original_marker_map)
 
 
+def test_plumbotectonics_label_data_set_attr_compatibility() -> None:
+    original = list(getattr(app_state, "plumbotectonics_label_data", []) or [])
+
+    try:
+        state_gateway.set_attr("plumbotectonics_label_data", [{"text": "P1"}])
+
+        assert app_state.plumbotectonics_label_data == [{"text": "P1"}]
+    finally:
+        state_gateway.set_plumbotectonics_label_data(original)
+
+
 def test_overlay_label_state_only_updates_known_keys() -> None:
     original_overlay_curve = list(getattr(app_state, "overlay_curve_label_data", []) or [])
     original_paleo = list(getattr(app_state, "paleoisochron_label_data", []) or [])

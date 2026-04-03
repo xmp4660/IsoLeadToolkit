@@ -138,6 +138,7 @@ class AppStateGateway:
             "overlay_artists": "set_overlay_artists",
             "overlay_curve_label_data": "set_overlay_curve_label_data",
             "paleoisochron_label_data": "set_paleoisochron_label_data",
+            "plumbotectonics_label_data": "set_plumbotectonics_label_data",
             "plumbotectonics_isoage_label_data": "set_plumbotectonics_isoage_label_data",
             "pca_component_indices": "set_pca_component_indices",
             "ternary_manual_limits": "set_ternary_manual_limits",
@@ -451,20 +452,18 @@ class AppStateGateway:
         self._state.legend_update_callback = callback
 
     def set_overlay_label_state(self, label_state: dict[str, Any]) -> None:
-        allowed_keys = {
-            "paleoisochron_label_data",
-            "plumbotectonics_label_data",
-            "plumbotectonics_isoage_label_data",
-            "overlay_curve_label_data",
+        handlers: dict[str, Callable[[Any], None]] = {
+            "paleoisochron_label_data": self.set_paleoisochron_label_data,
+            "plumbotectonics_label_data": self.set_plumbotectonics_label_data,
+            "plumbotectonics_isoage_label_data": self.set_plumbotectonics_isoage_label_data,
+            "overlay_curve_label_data": self.set_overlay_curve_label_data,
         }
         for key, value in label_state.items():
-            if key not in allowed_keys:
+            handler = handlers.get(key)
+            if handler is None:
                 logger.warning("Ignored unknown overlay label state key: %s", key)
                 continue
-            if isinstance(value, list):
-                setattr(self._state, key, list(value))
-            else:
-                setattr(self._state, key, value)
+            handler(value)
 
     def set_palette_and_marker_map(self, palette: dict[str, Any], marker_map: dict[str, Any]) -> None:
         self._dispatch("SET_CURRENT_PALETTE", palette=dict(palette))
@@ -579,6 +578,9 @@ class AppStateGateway:
 
     def set_paleoisochron_label_data(self, data: Any) -> None:
         self._state.paleoisochron_label_data = list(data or [])
+
+    def set_plumbotectonics_label_data(self, data: Any) -> None:
+        self._state.plumbotectonics_label_data = list(data or [])
 
     def set_plumbotectonics_isoage_label_data(self, data: Any) -> None:
         self._state.plumbotectonics_isoage_label_data = list(data or [])

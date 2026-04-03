@@ -30,6 +30,7 @@ ALLOWED_DIRECT_FIELDS = {
     "overlay_artists",
     "overlay_curve_label_data",
     "paleoisochron_label_data",
+    "plumbotectonics_label_data",
     "plumbotectonics_isoage_label_data",
     "marginal_axes",
     "embedding_task_token",

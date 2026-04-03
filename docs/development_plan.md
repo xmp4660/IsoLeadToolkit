@@ -512,6 +512,19 @@
                                                                     动态属性写入绕过网关边界。
                                                                 - `tests/test_gateway_set_attr_compatibility.py`
                                                                     新增已知键更新与未知键忽略回归测试。
+                                - 第七十一批迁移清理（overlay label 显式 setter 对齐）：
+                                                                - `core/state/gateway.py` 新增
+                                                                    `set_plumbotectonics_label_data`，
+                                                                    并将 `set_overlay_label_state`
+                                                                    改为通过 setter 映射分发，移除
+                                                                    该路径上的动态 `setattr` 写入。
+                                                                - `set_attr` 兼容映射新增
+                                                                    `plumbotectonics_label_data`
+                                                                    到显式 setter 的转发。
+                                                                - `scripts/check_gateway_direct_state_assignments.py`
+                                                                    白名单同步新增该字段。
+                                                                - `tests/test_gateway_set_attr_compatibility.py`
+                                                                    新增该兼容路径回归测试。
 
 ## 架构现代化改造方案（2026-03-31 新增）
 
