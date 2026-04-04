@@ -779,6 +779,73 @@ def test_app_state_overlay_property_setters_dispatch_to_state_store() -> None:
         _restore_state(snapshot)
 
 
+def test_app_state_overlay_detail_property_setters_dispatch_to_state_store() -> None:
+    snapshot = _snapshot_state()
+    try:
+        setattr(app_state, "isochron_label_options", {"show_age": True})
+        setattr(app_state, "equation_overlays", [{"id": "eq_custom_2", "visible": True}])
+        setattr(app_state, "line_styles", {"model_curve": "--", "isochron": ":"})
+        setattr(app_state, "paleoisochron_step", 250)
+        setattr(app_state, "paleoisochron_ages", [250, 500, 750])
+        setattr(app_state, "plumbotectonics_variant", "2")
+        setattr(app_state, "plumbotectonics_group_visibility", {"grp1": False})
+        setattr(app_state, "selected_isochron_data", {"id": "iso1"})
+        setattr(app_state, "isochron_results", {"age": 123.4})
+        setattr(app_state, "model_curve_width", 1.7)
+        setattr(app_state, "plumbotectonics_curve_width", 1.8)
+        setattr(app_state, "paleoisochron_width", 1.9)
+        setattr(app_state, "model_age_line_width", 2.0)
+        setattr(app_state, "isochron_line_width", 1.6)
+        setattr(app_state, "overlay_artists", {"curves": ["line1"]})
+        setattr(app_state, "overlay_curve_label_data", [{"text": "curve"}])
+        setattr(app_state, "paleoisochron_label_data", [{"text": "paleo"}])
+        setattr(app_state, "plumbotectonics_label_data", [{"text": "plumbo"}])
+        setattr(app_state, "plumbotectonics_isoage_label_data", [{"text": "isoage"}])
+
+        assert app_state.isochron_label_options == {"show_age": True}
+        assert app_state.equation_overlays == [{"id": "eq_custom_2", "visible": True}]
+        assert app_state.line_styles == {"model_curve": "--", "isochron": ":"}
+        assert app_state.paleoisochron_step == 250
+        assert app_state.paleoisochron_ages == [250, 500, 750]
+        assert app_state.plumbotectonics_variant == "2"
+        assert app_state.plumbotectonics_group_visibility == {"grp1": False}
+        assert app_state.selected_isochron_data == {"id": "iso1"}
+        assert app_state.isochron_results == {"age": 123.4}
+        assert app_state.model_curve_width == 1.7
+        assert app_state.plumbotectonics_curve_width == 1.8
+        assert app_state.paleoisochron_width == 1.9
+        assert app_state.model_age_line_width == 2.0
+        assert app_state.isochron_line_width == 1.6
+        assert app_state.overlay_artists == {"curves": ["line1"]}
+        assert app_state.overlay_curve_label_data == [{"text": "curve"}]
+        assert app_state.paleoisochron_label_data == [{"text": "paleo"}]
+        assert app_state.plumbotectonics_label_data == [{"text": "plumbo"}]
+        assert app_state.plumbotectonics_isoage_label_data == [{"text": "isoage"}]
+
+        store_snapshot = app_state.state_store.snapshot()
+        assert store_snapshot["isochron_label_options"] == {"show_age": True}
+        assert store_snapshot["equation_overlays"] == [{"id": "eq_custom_2", "visible": True}]
+        assert store_snapshot["line_styles"] == {"model_curve": "--", "isochron": ":"}
+        assert store_snapshot["paleoisochron_step"] == 250
+        assert store_snapshot["paleoisochron_ages"] == [250, 500, 750]
+        assert store_snapshot["plumbotectonics_variant"] == "2"
+        assert store_snapshot["plumbotectonics_group_visibility"] == {"grp1": False}
+        assert store_snapshot["selected_isochron_data"] == {"id": "iso1"}
+        assert store_snapshot["isochron_results"] == {"age": 123.4}
+        assert store_snapshot["model_curve_width"] == 1.7
+        assert store_snapshot["plumbotectonics_curve_width"] == 1.8
+        assert store_snapshot["paleoisochron_width"] == 1.9
+        assert store_snapshot["model_age_line_width"] == 2.0
+        assert store_snapshot["isochron_line_width"] == 1.6
+        assert store_snapshot["overlay_artists"] == {"curves": ["line1"]}
+        assert store_snapshot["overlay_curve_label_data"] == [{"text": "curve"}]
+        assert store_snapshot["paleoisochron_label_data"] == [{"text": "paleo"}]
+        assert store_snapshot["plumbotectonics_label_data"] == [{"text": "plumbo"}]
+        assert store_snapshot["plumbotectonics_isoage_label_data"] == [{"text": "isoage"}]
+    finally:
+        _restore_state(snapshot)
+
+
 def test_build_group_palette_syncs_state_store_snapshot() -> None:
     snapshot = _snapshot_state()
     try:

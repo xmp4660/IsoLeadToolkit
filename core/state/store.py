@@ -1348,16 +1348,18 @@ class StateStore:
         self._state.overlay.geo_model_name = str(self._snapshot["geo_model_name"])
         self._state.paleo_label_refreshing = bool(self._snapshot["paleo_label_refreshing"])
         self._state.overlay_label_refreshing = bool(self._snapshot["overlay_label_refreshing"])
-        self._state.overlay_curve_label_data = list(self._snapshot["overlay_curve_label_data"])
-        self._state.paleoisochron_label_data = list(self._snapshot["paleoisochron_label_data"])
-        self._state.plumbotectonics_label_data = list(self._snapshot["plumbotectonics_label_data"])
-        self._state.plumbotectonics_isoage_label_data = list(
+        self._state.overlay.overlay_curve_label_data = list(self._snapshot["overlay_curve_label_data"])
+        self._state.overlay.paleoisochron_label_data = list(self._snapshot["paleoisochron_label_data"])
+        self._state.overlay.plumbotectonics_label_data = list(
+            self._snapshot["plumbotectonics_label_data"]
+        )
+        self._state.overlay.plumbotectonics_isoage_label_data = list(
             self._snapshot["plumbotectonics_isoage_label_data"]
         )
-        self._state.overlay_artists = dict(self._snapshot["overlay_artists"])
+        self._state.overlay.overlay_artists = dict(self._snapshot["overlay_artists"])
         self._state.last_embedding = self._snapshot["last_embedding"]
         self._state.last_embedding_type = str(self._snapshot["last_embedding_type"])
-        self._state.selected_isochron_data = self._snapshot["selected_isochron_data"]
+        self._state.overlay.selected_isochron_data = self._snapshot["selected_isochron_data"]
         self._state.embedding_task_token = int(self._snapshot["embedding_task_token"])
         self._state.embedding_task_running = bool(self._snapshot["embedding_task_running"])
         self._state.marginal_axes = self._snapshot["marginal_axes"]
@@ -1389,17 +1391,17 @@ class StateStore:
         self._state.isochron_sx_value = float(self._snapshot["isochron_sx_value"])
         self._state.isochron_sy_value = float(self._snapshot["isochron_sy_value"])
         self._state.isochron_rxy_value = float(self._snapshot["isochron_rxy_value"])
-        self._state.isochron_results = dict(self._snapshot["isochron_results"])
-        self._state.plumbotectonics_group_visibility = dict(
+        self._state.overlay.isochron_results = dict(self._snapshot["isochron_results"])
+        self._state.overlay.plumbotectonics_group_visibility = dict(
             self._snapshot["plumbotectonics_group_visibility"]
         )
         self._state.overlay.use_real_age_for_mu_kappa = bool(
             self._snapshot["use_real_age_for_mu_kappa"]
         )
         self._state.overlay.mu_kappa_age_col = self._snapshot["mu_kappa_age_col"]
-        self._state.plumbotectonics_variant = str(self._snapshot["plumbotectonics_variant"])
-        self._state.paleoisochron_step = int(self._snapshot["paleoisochron_step"])
-        self._state.paleoisochron_ages = list(self._snapshot["paleoisochron_ages"])
+        self._state.overlay.plumbotectonics_variant = str(self._snapshot["plumbotectonics_variant"])
+        self._state.overlay.paleoisochron_step = int(self._snapshot["paleoisochron_step"])
+        self._state.overlay.paleoisochron_ages = list(self._snapshot["paleoisochron_ages"])
         self._state.draw_selection_ellipse = bool(self._snapshot["draw_selection_ellipse"])
         self._state.marginal_kde_top_size = float(self._snapshot["marginal_kde_top_size"])
         self._state.marginal_kde_right_size = float(self._snapshot["marginal_kde_right_size"])
@@ -1437,7 +1439,7 @@ class StateStore:
         self._state.legend.legend_last_handles = self._snapshot["legend_last_handles"]
         self._state.legend.legend_last_labels = self._snapshot["legend_last_labels"]
         self._state.recent_files = list(self._snapshot["recent_files"])
-        self._state.line_styles = dict(self._snapshot["line_styles"])
+        self._state.overlay.line_styles = dict(self._snapshot["line_styles"])
         self._state.saved_themes = dict(self._snapshot["saved_themes"])
         self._state.custom_palettes = dict(self._snapshot["custom_palettes"])
         self._state.custom_shape_sets = dict(self._snapshot["custom_shape_sets"])
@@ -1470,14 +1472,16 @@ class StateStore:
         self._state.ternary_stretch_mode = str(self._snapshot["ternary_stretch_mode"])
         self._state.ternary_stretch = bool(self._snapshot["ternary_stretch"])
         self._state.ternary_factors = list(self._snapshot["ternary_factors"])
-        self._state.model_curve_width = float(self._snapshot["model_curve_width"])
-        self._state.plumbotectonics_curve_width = float(self._snapshot["plumbotectonics_curve_width"])
-        self._state.paleoisochron_width = float(self._snapshot["paleoisochron_width"])
-        self._state.model_age_line_width = float(self._snapshot["model_age_line_width"])
-        self._state.isochron_line_width = float(self._snapshot["isochron_line_width"])
+        self._state.overlay.model_curve_width = float(self._snapshot["model_curve_width"])
+        self._state.overlay.plumbotectonics_curve_width = float(
+            self._snapshot["plumbotectonics_curve_width"]
+        )
+        self._state.overlay.paleoisochron_width = float(self._snapshot["paleoisochron_width"])
+        self._state.overlay.model_age_line_width = float(self._snapshot["model_age_line_width"])
+        self._state.overlay.isochron_line_width = float(self._snapshot["isochron_line_width"])
         self._state.selected_isochron_line_width = float(self._snapshot["selected_isochron_line_width"])
-        self._state.isochron_label_options = dict(self._snapshot["isochron_label_options"])
-        self._state.equation_overlays = list(self._snapshot["equation_overlays"])
+        self._state.overlay.isochron_label_options = dict(self._snapshot["isochron_label_options"])
+        self._state.overlay.equation_overlays = list(self._snapshot["equation_overlays"])
         self._state.export_image_options = dict(self._snapshot["export_image_options"])
 
     @classmethod

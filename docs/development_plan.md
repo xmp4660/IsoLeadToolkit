@@ -2,6 +2,22 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-04 · StateStore 第九十四批）
+
+- `core/state/app_state.py` 顶层 Overlay 兼容属性 setter 继续收口到 StateStore（action 已覆盖域）：
+    - `isochron_label_options`、`equation_overlays`、`line_styles`
+    - `paleoisochron_step`、`paleoisochron_ages`
+    - `plumbotectonics_variant`、`plumbotectonics_group_visibility`
+    - `selected_isochron_data`、`isochron_results`
+    - `model_curve_width`、`plumbotectonics_curve_width`、`paleoisochron_width`
+    - `model_age_line_width`、`isochron_line_width`
+    - `overlay_artists`、`overlay_curve_label_data`、`paleoisochron_label_data`
+    - `plumbotectonics_label_data`、`plumbotectonics_isoage_label_data`
+- 行为调整：在 `state_store` 可用时，以上属性统一通过 `SET_*` action 分发，兼容 `state_store` 不可用时的旧回退路径。
+- 同步机制修正：`core/state/store.py` `_sync_state` 对上述字段改为直接回写 `overlay` 子状态，避免通过兼容 setter 触发递归分发。
+- 回归测试更新：
+    - `tests/test_state_store.py` 新增 `test_app_state_overlay_detail_property_setters_dispatch_to_state_store`，锁定写入路径与 store 快照一致性。
+
 ## 阶段进展（2026-04-04 · StateStore 第九十三批）
 
 - `core/state/app_state.py` 顶层 Overlay 兼容属性 setter 收口到 StateStore（首批高频 geochem 域）：

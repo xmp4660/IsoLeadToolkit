@@ -537,6 +537,10 @@ class AppState:
 
     @isochron_label_options.setter
     def isochron_label_options(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_ISOCHRON_LABEL_OPTIONS', 'options': dict(value or {})})
+            return
         self.overlay.isochron_label_options = value
 
     @property
@@ -557,6 +561,10 @@ class AppState:
 
     @equation_overlays.setter
     def equation_overlays(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_EQUATION_OVERLAYS', 'overlays': list(value or [])})
+            return
         self.overlay.equation_overlays = value
 
     @property
@@ -565,6 +573,10 @@ class AppState:
 
     @line_styles.setter
     def line_styles(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_LINE_STYLES', 'line_styles': dict(value or {})})
+            return
         self.overlay.line_styles = value
 
     @property
@@ -589,6 +601,10 @@ class AppState:
 
     @paleoisochron_step.setter
     def paleoisochron_step(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_PALEOISOCHRON_STEP', 'step': int(value)})
+            return
         self.overlay.paleoisochron_step = value
 
     @property
@@ -597,6 +613,10 @@ class AppState:
 
     @paleoisochron_ages.setter
     def paleoisochron_ages(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_PALEOISOCHRON_AGES', 'ages': list(value or [])})
+            return
         self.overlay.paleoisochron_ages = value
 
     @property
@@ -605,6 +625,10 @@ class AppState:
 
     @plumbotectonics_variant.setter
     def plumbotectonics_variant(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_PLUMBOTECTONICS_VARIANT', 'variant': value})
+            return
         self.overlay.plumbotectonics_variant = value
 
     @property
@@ -613,6 +637,12 @@ class AppState:
 
     @plumbotectonics_group_visibility.setter
     def plumbotectonics_group_visibility(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch(
+                {'type': 'SET_PLUMBOTECTONICS_GROUP_VISIBILITY', 'visibility': dict(value or {})}
+            )
+            return
         self.overlay.plumbotectonics_group_visibility = value
 
     @property
@@ -685,6 +715,10 @@ class AppState:
 
     @selected_isochron_data.setter
     def selected_isochron_data(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_SELECTED_ISOCHRON_DATA', 'data': value})
+            return
         self.overlay.selected_isochron_data = value
 
     @property
@@ -693,6 +727,10 @@ class AppState:
 
     @isochron_results.setter
     def isochron_results(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_ISOCHRON_RESULTS', 'results': dict(value or {})})
+            return
         self.overlay.isochron_results = value
 
     @property
@@ -701,6 +739,10 @@ class AppState:
 
     @model_curve_width.setter
     def model_curve_width(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_MODEL_CURVE_WIDTH', 'width': float(value)})
+            return
         self.overlay.model_curve_width = value
 
     @property
@@ -709,6 +751,10 @@ class AppState:
 
     @plumbotectonics_curve_width.setter
     def plumbotectonics_curve_width(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_PLUMBOTECTONICS_CURVE_WIDTH', 'width': float(value)})
+            return
         self.overlay.plumbotectonics_curve_width = value
 
     @property
@@ -717,6 +763,10 @@ class AppState:
 
     @paleoisochron_width.setter
     def paleoisochron_width(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_PALEOISOCHRON_WIDTH', 'width': float(value)})
+            return
         self.overlay.paleoisochron_width = value
 
     @property
@@ -725,6 +775,10 @@ class AppState:
 
     @model_age_line_width.setter
     def model_age_line_width(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_MODEL_AGE_LINE_WIDTH', 'width': float(value)})
+            return
         self.overlay.model_age_line_width = value
 
     @property
@@ -733,6 +787,10 @@ class AppState:
 
     @isochron_line_width.setter
     def isochron_line_width(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_ISOCHRON_LINE_WIDTH', 'width': float(value)})
+            return
         self.overlay.isochron_line_width = value
 
     @property
@@ -741,6 +799,10 @@ class AppState:
 
     @overlay_artists.setter
     def overlay_artists(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_OVERLAY_ARTISTS', 'artists': dict(value or {})})
+            return
         self.overlay.overlay_artists = value
 
     @property
@@ -749,6 +811,10 @@ class AppState:
 
     @overlay_curve_label_data.setter
     def overlay_curve_label_data(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_OVERLAY_CURVE_LABEL_DATA', 'data': list(value or [])})
+            return
         self.overlay.overlay_curve_label_data = value
 
     @property
@@ -757,6 +823,10 @@ class AppState:
 
     @paleoisochron_label_data.setter
     def paleoisochron_label_data(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_PALEOISOCHRON_LABEL_DATA', 'data': list(value or [])})
+            return
         self.overlay.paleoisochron_label_data = value
 
     @property
@@ -765,6 +835,10 @@ class AppState:
 
     @plumbotectonics_label_data.setter
     def plumbotectonics_label_data(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_PLUMBOTECTONICS_LABEL_DATA', 'data': list(value or [])})
+            return
         self.overlay.plumbotectonics_label_data = value
 
     @property
@@ -773,6 +847,12 @@ class AppState:
 
     @plumbotectonics_isoage_label_data.setter
     def plumbotectonics_isoage_label_data(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch(
+                {'type': 'SET_PLUMBOTECTONICS_ISOAGE_LABEL_DATA', 'data': list(value or [])}
+            )
+            return
         self.overlay.plumbotectonics_isoage_label_data = value
 
     # ------------------------------------------------------------------ #
