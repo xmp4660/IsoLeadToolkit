@@ -25,71 +25,64 @@ class AppStateGateway:
         self._compat_attr_handlers = self._build_compat_attr_handlers()
         self._overlay_toggle_handlers = self._build_overlay_toggle_handlers()
         self._panel_style_allowed_keys = self._build_panel_style_allowed_keys()
-        self._panel_style_fallback_keys = self._build_panel_style_fallback_keys()
 
     def _build_panel_style_allowed_keys(self) -> set[str]:
         """All accepted keys for panel style updates."""
-        return self._build_panel_style_fallback_keys().union(
-            {
-                "plot_style_grid",
-                "plot_marker_size",
-                "plot_marker_alpha",
-                "show_plot_title",
-                "plot_dpi",
-                "custom_primary_font",
-                "custom_cjk_font",
-                "plot_font_sizes",
-                "plot_facecolor",
-                "axes_facecolor",
-                "grid_color",
-                "grid_linewidth",
-                "grid_alpha",
-                "grid_linestyle",
-                "tick_direction",
-                "tick_color",
-                "tick_length",
-                "tick_width",
-                "axis_linewidth",
-                "axis_line_color",
-                "minor_ticks",
-                "minor_tick_length",
-                "minor_tick_width",
-                "show_top_spine",
-                "show_right_spine",
-                "minor_grid",
-                "minor_grid_color",
-                "minor_grid_linewidth",
-                "minor_grid_alpha",
-                "minor_grid_linestyle",
-                "scatter_show_edge",
-                "scatter_edgecolor",
-                "scatter_edgewidth",
-                "label_color",
-                "label_weight",
-                "label_pad",
-                "title_color",
-                "title_weight",
-                "title_pad",
-                "legend_frame_on",
-                "legend_frame_alpha",
-                "legend_frame_facecolor",
-                "legend_frame_edgecolor",
-                "adjust_text_force_text",
-                "adjust_text_force_static",
-                "adjust_text_expand",
-                "adjust_text_iter_lim",
-                "adjust_text_time_lim",
-                "color_scheme",
-                "model_curve_width",
-                "paleoisochron_width",
-                "model_age_line_width",
-                "isochron_line_width",
-            }
-        )
-
-    def _build_panel_style_fallback_keys(self) -> set[str]:
-        """Keys allowed for direct panel style fallback updates."""
-        return set()
+        return {
+            "plot_style_grid",
+            "plot_marker_size",
+            "plot_marker_alpha",
+            "show_plot_title",
+            "plot_dpi",
+            "custom_primary_font",
+            "custom_cjk_font",
+            "plot_font_sizes",
+            "plot_facecolor",
+            "axes_facecolor",
+            "grid_color",
+            "grid_linewidth",
+            "grid_alpha",
+            "grid_linestyle",
+            "tick_direction",
+            "tick_color",
+            "tick_length",
+            "tick_width",
+            "axis_linewidth",
+            "axis_line_color",
+            "minor_ticks",
+            "minor_tick_length",
+            "minor_tick_width",
+            "show_top_spine",
+            "show_right_spine",
+            "minor_grid",
+            "minor_grid_color",
+            "minor_grid_linewidth",
+            "minor_grid_alpha",
+            "minor_grid_linestyle",
+            "scatter_show_edge",
+            "scatter_edgecolor",
+            "scatter_edgewidth",
+            "label_color",
+            "label_weight",
+            "label_pad",
+            "title_color",
+            "title_weight",
+            "title_pad",
+            "legend_frame_on",
+            "legend_frame_alpha",
+            "legend_frame_facecolor",
+            "legend_frame_edgecolor",
+            "adjust_text_force_text",
+            "adjust_text_force_static",
+            "adjust_text_expand",
+            "adjust_text_iter_lim",
+            "adjust_text_time_lim",
+            "color_scheme",
+            "model_curve_width",
+            "paleoisochron_width",
+            "model_age_line_width",
+            "isochron_line_width",
+        }
 
     def _dispatch(self, action_type: str, **payload: Any) -> dict[str, Any]:
         return self._store.dispatch({"type": action_type, **payload})
@@ -433,9 +426,6 @@ class AppStateGateway:
             handler = self._compat_attr_handlers.get(name)
             if handler is not None:
                 handler(value)
-                continue
-            if name in self._panel_style_fallback_keys and hasattr(self._state, name):
-                setattr(self._state, name, value)
                 continue
             logger.warning("Ignored unsupported panel style update key: %s", name)
 
