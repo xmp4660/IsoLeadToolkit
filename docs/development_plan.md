@@ -2,6 +2,24 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-04 · StateStore 第八十六批）
+
+- 样式参数域纳入 StateStore 托管（次级网格/刻度/边框）：
+    - `minor_ticks`、`minor_tick_length`、`minor_tick_width`
+    - `show_top_spine`、`show_right_spine`
+    - `minor_grid`、`minor_grid_color`、`minor_grid_linewidth`、`minor_grid_alpha`、`minor_grid_linestyle`
+    - `scatter_show_edge`、`scatter_edgecolor`、`scatter_edgewidth`
+- `core/state/store.py` 新增对应 action、快照输出与 `_sync_state` 回写，并复用线宽/透明度/颜色归一化规则。
+- `core/state/gateway.py` 新增显式 API：
+    - `set_minor_ticks`、`set_minor_tick_length`、`set_minor_tick_width`
+    - `set_show_top_spine`、`set_show_right_spine`
+    - `set_minor_grid`、`set_minor_grid_color`、`set_minor_grid_linewidth`、`set_minor_grid_alpha`、`set_minor_grid_linestyle`
+    - `set_scatter_show_edge`、`set_scatter_edgecolor`、`set_scatter_edgewidth`
+- 面板样式写入收口：上述字段已从 fallback 直写集合移除，改为通过兼容映射分发到显式 setter。
+- 回归测试更新：
+    - `tests/test_state_store.py` 扩展 snapshot/restore 与样式托管断言。
+    - `tests/test_gateway_set_attr_compatibility.py` 扩展 `set_panel_style_updates` 与 `set_attr` 兼容断言。
+
 ## 阶段进展（2026-04-04 · StateStore 第八十五批）
 
 - 样式参数域纳入 StateStore 托管（网格与坐标轴核心）：

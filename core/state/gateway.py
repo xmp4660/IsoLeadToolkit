@@ -48,6 +48,19 @@ class AppStateGateway:
                 "tick_width",
                 "axis_linewidth",
                 "axis_line_color",
+                "minor_ticks",
+                "minor_tick_length",
+                "minor_tick_width",
+                "show_top_spine",
+                "show_right_spine",
+                "minor_grid",
+                "minor_grid_color",
+                "minor_grid_linewidth",
+                "minor_grid_alpha",
+                "minor_grid_linestyle",
+                "scatter_show_edge",
+                "scatter_edgecolor",
+                "scatter_edgewidth",
                 "color_scheme",
                 "model_curve_width",
                 "paleoisochron_width",
@@ -62,19 +75,6 @@ class AppStateGateway:
             "custom_primary_font",
             "custom_cjk_font",
             "plot_font_sizes",
-            "minor_ticks",
-            "minor_tick_length",
-            "minor_tick_width",
-            "show_top_spine",
-            "show_right_spine",
-            "minor_grid",
-            "minor_grid_color",
-            "minor_grid_linewidth",
-            "minor_grid_alpha",
-            "minor_grid_linestyle",
-            "scatter_show_edge",
-            "scatter_edgecolor",
-            "scatter_edgewidth",
             "label_color",
             "label_weight",
             "label_pad",
@@ -250,6 +250,11 @@ class AppStateGateway:
         bool_map = {
             "plot_style_grid": "set_plot_style_grid",
             "show_plot_title": "set_show_plot_title",
+            "minor_ticks": "set_minor_ticks",
+            "show_top_spine": "set_show_top_spine",
+            "show_right_spine": "set_show_right_spine",
+            "minor_grid": "set_minor_grid",
+            "scatter_show_edge": "set_scatter_show_edge",
             "show_kde": "set_show_kde",
             "show_marginal_kde": "set_show_marginal_kde",
             "show_equation_overlays": "set_show_equation_overlays",
@@ -293,6 +298,11 @@ class AppStateGateway:
             "tick_length": "set_tick_length",
             "tick_width": "set_tick_width",
             "axis_linewidth": "set_axis_linewidth",
+            "minor_tick_length": "set_minor_tick_length",
+            "minor_tick_width": "set_minor_tick_width",
+            "minor_grid_linewidth": "set_minor_grid_linewidth",
+            "minor_grid_alpha": "set_minor_grid_alpha",
+            "scatter_edgewidth": "set_scatter_edgewidth",
             "confidence_level": "set_confidence_level",
             "legend_nudge_step": "set_legend_nudge_step",
             "ternary_boundary_percent": "set_ternary_boundary_percent",
@@ -316,6 +326,9 @@ class AppStateGateway:
             "tick_direction": "set_tick_direction",
             "tick_color": "set_tick_color",
             "axis_line_color": "set_axis_line_color",
+            "minor_grid_color": "set_minor_grid_color",
+            "minor_grid_linestyle": "set_minor_grid_linestyle",
+            "scatter_edgecolor": "set_scatter_edgecolor",
             "geo_model_name": "set_geo_model_name",
             "current_plot_title": "set_current_plot_title",
             "language": "set_language_code",
@@ -489,6 +502,45 @@ class AppStateGateway:
 
     def set_axis_line_color(self, color: str) -> None:
         self._dispatch("SET_AXIS_LINE_COLOR", color=str(color))
+
+    def set_minor_ticks(self, enabled: bool) -> None:
+        self._dispatch("SET_MINOR_TICKS", enabled=bool(enabled))
+
+    def set_minor_tick_length(self, length: float) -> None:
+        self._dispatch("SET_MINOR_TICK_LENGTH", length=float(length))
+
+    def set_minor_tick_width(self, width: float) -> None:
+        self._dispatch("SET_MINOR_TICK_WIDTH", width=float(width))
+
+    def set_show_top_spine(self, show: bool) -> None:
+        self._dispatch("SET_SHOW_TOP_SPINE", show=bool(show))
+
+    def set_show_right_spine(self, show: bool) -> None:
+        self._dispatch("SET_SHOW_RIGHT_SPINE", show=bool(show))
+
+    def set_minor_grid(self, enabled: bool) -> None:
+        self._dispatch("SET_MINOR_GRID", enabled=bool(enabled))
+
+    def set_minor_grid_color(self, color: str) -> None:
+        self._dispatch("SET_MINOR_GRID_COLOR", color=str(color))
+
+    def set_minor_grid_linewidth(self, width: float) -> None:
+        self._dispatch("SET_MINOR_GRID_LINEWIDTH", width=float(width))
+
+    def set_minor_grid_alpha(self, alpha: float) -> None:
+        self._dispatch("SET_MINOR_GRID_ALPHA", alpha=float(alpha))
+
+    def set_minor_grid_linestyle(self, linestyle: str) -> None:
+        self._dispatch("SET_MINOR_GRID_LINESTYLE", linestyle=str(linestyle))
+
+    def set_scatter_show_edge(self, show: bool) -> None:
+        self._dispatch("SET_SCATTER_SHOW_EDGE", show=bool(show))
+
+    def set_scatter_edgecolor(self, color: str) -> None:
+        self._dispatch("SET_SCATTER_EDGECOLOR", color=str(color))
+
+    def set_scatter_edgewidth(self, width: float) -> None:
+        self._dispatch("SET_SCATTER_EDGEWIDTH", width=float(width))
 
     def set_show_kde(self, show: bool) -> None:
         self._dispatch("SET_SHOW_KDE", show=bool(show))

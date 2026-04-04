@@ -98,6 +98,42 @@ class StateStore:
                 getattr(state, "axis_line_color", "#1f2937"),
                 "#1f2937",
             ),
+            "minor_ticks": bool(getattr(state, "minor_ticks", False)),
+            "minor_tick_length": self._normalize_tick_length(
+                getattr(state, "minor_tick_length", 2.5),
+                default=2.5,
+            ),
+            "minor_tick_width": self._normalize_style_linewidth(
+                getattr(state, "minor_tick_width", 0.6),
+                default=0.6,
+            ),
+            "show_top_spine": bool(getattr(state, "show_top_spine", True)),
+            "show_right_spine": bool(getattr(state, "show_right_spine", True)),
+            "minor_grid": bool(getattr(state, "minor_grid", False)),
+            "minor_grid_color": self._normalize_color(
+                getattr(state, "minor_grid_color", "#e2e8f0"),
+                "#e2e8f0",
+            ),
+            "minor_grid_linewidth": self._normalize_style_linewidth(
+                getattr(state, "minor_grid_linewidth", 0.4),
+                default=0.4,
+            ),
+            "minor_grid_alpha": self._normalize_unit_interval(
+                getattr(state, "minor_grid_alpha", 0.4),
+                default=0.4,
+            ),
+            "minor_grid_linestyle": self._normalize_grid_linestyle(
+                getattr(state, "minor_grid_linestyle", ":")
+            ),
+            "scatter_show_edge": bool(getattr(state, "scatter_show_edge", True)),
+            "scatter_edgecolor": self._normalize_color(
+                getattr(state, "scatter_edgecolor", "#1e293b"),
+                "#1e293b",
+            ),
+            "scatter_edgewidth": self._normalize_style_linewidth(
+                getattr(state, "scatter_edgewidth", 0.4),
+                default=0.4,
+            ),
             "show_kde": bool(getattr(state, "show_kde", False)),
             "show_marginal_kde": bool(getattr(state, "show_marginal_kde", True)),
             "show_equation_overlays": bool(getattr(state, "show_equation_overlays", False)),
@@ -380,6 +416,68 @@ class StateStore:
             self._snapshot["axis_line_color"] = self._normalize_color(
                 action.get("color", "#1f2937"),
                 "#1f2937",
+            )
+
+        elif action_type == "SET_MINOR_TICKS":
+            self._snapshot["minor_ticks"] = bool(action.get("enabled", False))
+
+        elif action_type == "SET_MINOR_TICK_LENGTH":
+            self._snapshot["minor_tick_length"] = self._normalize_tick_length(
+                action.get("length", 2.5),
+                default=2.5,
+            )
+
+        elif action_type == "SET_MINOR_TICK_WIDTH":
+            self._snapshot["minor_tick_width"] = self._normalize_style_linewidth(
+                action.get("width", 0.6),
+                default=0.6,
+            )
+
+        elif action_type == "SET_SHOW_TOP_SPINE":
+            self._snapshot["show_top_spine"] = bool(action.get("show", True))
+
+        elif action_type == "SET_SHOW_RIGHT_SPINE":
+            self._snapshot["show_right_spine"] = bool(action.get("show", True))
+
+        elif action_type == "SET_MINOR_GRID":
+            self._snapshot["minor_grid"] = bool(action.get("enabled", False))
+
+        elif action_type == "SET_MINOR_GRID_COLOR":
+            self._snapshot["minor_grid_color"] = self._normalize_color(
+                action.get("color", "#e2e8f0"),
+                "#e2e8f0",
+            )
+
+        elif action_type == "SET_MINOR_GRID_LINEWIDTH":
+            self._snapshot["minor_grid_linewidth"] = self._normalize_style_linewidth(
+                action.get("width", 0.4),
+                default=0.4,
+            )
+
+        elif action_type == "SET_MINOR_GRID_ALPHA":
+            self._snapshot["minor_grid_alpha"] = self._normalize_unit_interval(
+                action.get("alpha", 0.4),
+                default=0.4,
+            )
+
+        elif action_type == "SET_MINOR_GRID_LINESTYLE":
+            self._snapshot["minor_grid_linestyle"] = self._normalize_grid_linestyle(
+                action.get("linestyle", ":")
+            )
+
+        elif action_type == "SET_SCATTER_SHOW_EDGE":
+            self._snapshot["scatter_show_edge"] = bool(action.get("show", True))
+
+        elif action_type == "SET_SCATTER_EDGECOLOR":
+            self._snapshot["scatter_edgecolor"] = self._normalize_color(
+                action.get("color", "#1e293b"),
+                "#1e293b",
+            )
+
+        elif action_type == "SET_SCATTER_EDGEWIDTH":
+            self._snapshot["scatter_edgewidth"] = self._normalize_style_linewidth(
+                action.get("width", 0.4),
+                default=0.4,
             )
 
         elif action_type == "SET_SHOW_KDE":
@@ -831,6 +929,19 @@ class StateStore:
             "tick_width": float(self._snapshot["tick_width"]),
             "axis_linewidth": float(self._snapshot["axis_linewidth"]),
             "axis_line_color": str(self._snapshot["axis_line_color"]),
+            "minor_ticks": bool(self._snapshot["minor_ticks"]),
+            "minor_tick_length": float(self._snapshot["minor_tick_length"]),
+            "minor_tick_width": float(self._snapshot["minor_tick_width"]),
+            "show_top_spine": bool(self._snapshot["show_top_spine"]),
+            "show_right_spine": bool(self._snapshot["show_right_spine"]),
+            "minor_grid": bool(self._snapshot["minor_grid"]),
+            "minor_grid_color": str(self._snapshot["minor_grid_color"]),
+            "minor_grid_linewidth": float(self._snapshot["minor_grid_linewidth"]),
+            "minor_grid_alpha": float(self._snapshot["minor_grid_alpha"]),
+            "minor_grid_linestyle": str(self._snapshot["minor_grid_linestyle"]),
+            "scatter_show_edge": bool(self._snapshot["scatter_show_edge"]),
+            "scatter_edgecolor": str(self._snapshot["scatter_edgecolor"]),
+            "scatter_edgewidth": float(self._snapshot["scatter_edgewidth"]),
             "show_kde": bool(self._snapshot["show_kde"]),
             "show_marginal_kde": bool(self._snapshot["show_marginal_kde"]),
             "show_equation_overlays": bool(self._snapshot["show_equation_overlays"]),
@@ -996,6 +1107,19 @@ class StateStore:
         self._state.tick_width = float(self._snapshot["tick_width"])
         self._state.axis_linewidth = float(self._snapshot["axis_linewidth"])
         self._state.axis_line_color = str(self._snapshot["axis_line_color"])
+        self._state.minor_ticks = bool(self._snapshot["minor_ticks"])
+        self._state.minor_tick_length = float(self._snapshot["minor_tick_length"])
+        self._state.minor_tick_width = float(self._snapshot["minor_tick_width"])
+        self._state.show_top_spine = bool(self._snapshot["show_top_spine"])
+        self._state.show_right_spine = bool(self._snapshot["show_right_spine"])
+        self._state.minor_grid = bool(self._snapshot["minor_grid"])
+        self._state.minor_grid_color = str(self._snapshot["minor_grid_color"])
+        self._state.minor_grid_linewidth = float(self._snapshot["minor_grid_linewidth"])
+        self._state.minor_grid_alpha = float(self._snapshot["minor_grid_alpha"])
+        self._state.minor_grid_linestyle = str(self._snapshot["minor_grid_linestyle"])
+        self._state.scatter_show_edge = bool(self._snapshot["scatter_show_edge"])
+        self._state.scatter_edgecolor = str(self._snapshot["scatter_edgecolor"])
+        self._state.scatter_edgewidth = float(self._snapshot["scatter_edgewidth"])
         self._state.show_kde = bool(self._snapshot["show_kde"])
         self._state.show_marginal_kde = bool(self._snapshot["show_marginal_kde"])
         self._state.show_equation_overlays = bool(self._snapshot["show_equation_overlays"])

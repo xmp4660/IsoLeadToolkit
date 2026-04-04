@@ -112,6 +112,19 @@ def _snapshot_state() -> dict[str, Any]:
         "tick_width": float(getattr(app_state, "tick_width", 0.8)),
         "axis_linewidth": float(getattr(app_state, "axis_linewidth", 1.0)),
         "axis_line_color": str(getattr(app_state, "axis_line_color", "#1f2937")),
+        "minor_ticks": bool(getattr(app_state, "minor_ticks", False)),
+        "minor_tick_length": float(getattr(app_state, "minor_tick_length", 2.5)),
+        "minor_tick_width": float(getattr(app_state, "minor_tick_width", 0.6)),
+        "show_top_spine": bool(getattr(app_state, "show_top_spine", True)),
+        "show_right_spine": bool(getattr(app_state, "show_right_spine", True)),
+        "minor_grid": bool(getattr(app_state, "minor_grid", False)),
+        "minor_grid_color": str(getattr(app_state, "minor_grid_color", "#e2e8f0")),
+        "minor_grid_linewidth": float(getattr(app_state, "minor_grid_linewidth", 0.4)),
+        "minor_grid_alpha": float(getattr(app_state, "minor_grid_alpha", 0.4)),
+        "minor_grid_linestyle": str(getattr(app_state, "minor_grid_linestyle", ":")),
+        "scatter_show_edge": bool(getattr(app_state, "scatter_show_edge", True)),
+        "scatter_edgecolor": str(getattr(app_state, "scatter_edgecolor", "#1e293b")),
+        "scatter_edgewidth": float(getattr(app_state, "scatter_edgewidth", 0.4)),
         "point_size": int(getattr(app_state, "point_size", 60)),
         "show_tooltip": bool(getattr(app_state, "show_tooltip", False)),
         "tooltip_columns": list(getattr(app_state, "tooltip_columns", []) or []),
@@ -199,6 +212,19 @@ def _restore_state(snapshot: dict[str, Any]) -> None:
     state_gateway.set_tick_width(float(snapshot["tick_width"]))
     state_gateway.set_axis_linewidth(float(snapshot["axis_linewidth"]))
     state_gateway.set_axis_line_color(str(snapshot["axis_line_color"]))
+    state_gateway.set_minor_ticks(bool(snapshot["minor_ticks"]))
+    state_gateway.set_minor_tick_length(float(snapshot["minor_tick_length"]))
+    state_gateway.set_minor_tick_width(float(snapshot["minor_tick_width"]))
+    state_gateway.set_show_top_spine(bool(snapshot["show_top_spine"]))
+    state_gateway.set_show_right_spine(bool(snapshot["show_right_spine"]))
+    state_gateway.set_minor_grid(bool(snapshot["minor_grid"]))
+    state_gateway.set_minor_grid_color(str(snapshot["minor_grid_color"]))
+    state_gateway.set_minor_grid_linewidth(float(snapshot["minor_grid_linewidth"]))
+    state_gateway.set_minor_grid_alpha(float(snapshot["minor_grid_alpha"]))
+    state_gateway.set_minor_grid_linestyle(str(snapshot["minor_grid_linestyle"]))
+    state_gateway.set_scatter_show_edge(bool(snapshot["scatter_show_edge"]))
+    state_gateway.set_scatter_edgecolor(str(snapshot["scatter_edgecolor"]))
+    state_gateway.set_scatter_edgewidth(float(snapshot["scatter_edgewidth"]))
     state_gateway.set_point_size(int(snapshot["point_size"]))
     state_gateway.set_show_tooltip(bool(snapshot["show_tooltip"]))
     state_gateway.set_show_kde(bool(snapshot["show_kde"]))
@@ -376,6 +402,19 @@ def test_state_store_plot_style_domains() -> None:
         state_gateway.set_tick_width(1.1)
         state_gateway.set_axis_linewidth(1.4)
         state_gateway.set_axis_line_color("#111827")
+        state_gateway.set_minor_ticks(True)
+        state_gateway.set_minor_tick_length(3.2)
+        state_gateway.set_minor_tick_width(0.9)
+        state_gateway.set_show_top_spine(False)
+        state_gateway.set_show_right_spine(False)
+        state_gateway.set_minor_grid(True)
+        state_gateway.set_minor_grid_color("#94a3b8")
+        state_gateway.set_minor_grid_linewidth(0.8)
+        state_gateway.set_minor_grid_alpha(0.5)
+        state_gateway.set_minor_grid_linestyle("-.")
+        state_gateway.set_scatter_show_edge(False)
+        state_gateway.set_scatter_edgecolor("#334155")
+        state_gateway.set_scatter_edgewidth(0.7)
 
         assert app_state.plot_style_grid is True
         assert app_state.plot_marker_size == 88
@@ -394,6 +433,19 @@ def test_state_store_plot_style_domains() -> None:
         assert app_state.tick_width == 1.1
         assert app_state.axis_linewidth == 1.4
         assert app_state.axis_line_color == "#111827"
+        assert app_state.minor_ticks is True
+        assert app_state.minor_tick_length == 3.2
+        assert app_state.minor_tick_width == 0.9
+        assert app_state.show_top_spine is False
+        assert app_state.show_right_spine is False
+        assert app_state.minor_grid is True
+        assert app_state.minor_grid_color == "#94a3b8"
+        assert app_state.minor_grid_linewidth == 0.8
+        assert app_state.minor_grid_alpha == 0.5
+        assert app_state.minor_grid_linestyle == "-."
+        assert app_state.scatter_show_edge is False
+        assert app_state.scatter_edgecolor == "#334155"
+        assert app_state.scatter_edgewidth == 0.7
 
         store_snapshot = app_state.state_store.snapshot()
         assert store_snapshot["plot_style_grid"] is True
@@ -413,6 +465,19 @@ def test_state_store_plot_style_domains() -> None:
         assert store_snapshot["tick_width"] == 1.1
         assert store_snapshot["axis_linewidth"] == 1.4
         assert store_snapshot["axis_line_color"] == "#111827"
+        assert store_snapshot["minor_ticks"] is True
+        assert store_snapshot["minor_tick_length"] == 3.2
+        assert store_snapshot["minor_tick_width"] == 0.9
+        assert store_snapshot["show_top_spine"] is False
+        assert store_snapshot["show_right_spine"] is False
+        assert store_snapshot["minor_grid"] is True
+        assert store_snapshot["minor_grid_color"] == "#94a3b8"
+        assert store_snapshot["minor_grid_linewidth"] == 0.8
+        assert store_snapshot["minor_grid_alpha"] == 0.5
+        assert store_snapshot["minor_grid_linestyle"] == "-."
+        assert store_snapshot["scatter_show_edge"] is False
+        assert store_snapshot["scatter_edgecolor"] == "#334155"
+        assert store_snapshot["scatter_edgewidth"] == 0.7
     finally:
         _restore_state(snapshot)
 

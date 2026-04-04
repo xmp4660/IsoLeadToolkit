@@ -220,6 +220,19 @@ def test_panel_style_updates_known_key_and_unknown_key() -> None:
     original_tick_width = float(getattr(app_state, "tick_width", 0.8))
     original_axis_linewidth = float(getattr(app_state, "axis_linewidth", 1.0))
     original_axis_line_color = str(getattr(app_state, "axis_line_color", "#1f2937"))
+    original_minor_ticks = bool(getattr(app_state, "minor_ticks", False))
+    original_minor_tick_length = float(getattr(app_state, "minor_tick_length", 2.5))
+    original_minor_tick_width = float(getattr(app_state, "minor_tick_width", 0.6))
+    original_show_top_spine = bool(getattr(app_state, "show_top_spine", True))
+    original_show_right_spine = bool(getattr(app_state, "show_right_spine", True))
+    original_minor_grid = bool(getattr(app_state, "minor_grid", False))
+    original_minor_grid_color = str(getattr(app_state, "minor_grid_color", "#e2e8f0"))
+    original_minor_grid_linewidth = float(getattr(app_state, "minor_grid_linewidth", 0.4))
+    original_minor_grid_alpha = float(getattr(app_state, "minor_grid_alpha", 0.4))
+    original_minor_grid_linestyle = str(getattr(app_state, "minor_grid_linestyle", ":"))
+    original_scatter_show_edge = bool(getattr(app_state, "scatter_show_edge", True))
+    original_scatter_edgecolor = str(getattr(app_state, "scatter_edgecolor", "#1e293b"))
+    original_scatter_edgewidth = float(getattr(app_state, "scatter_edgewidth", 0.4))
     fallback_attr = "_test_panel_style_unknown"
     existed = hasattr(app_state, fallback_attr)
     original_value = getattr(app_state, fallback_attr, None) if existed else None
@@ -245,6 +258,19 @@ def test_panel_style_updates_known_key_and_unknown_key() -> None:
                 "tick_width": 1.0,
                 "axis_linewidth": 1.3,
                 "axis_line_color": "#111827",
+                "minor_ticks": True,
+                "minor_tick_length": 3.2,
+                "minor_tick_width": 0.9,
+                "show_top_spine": False,
+                "show_right_spine": False,
+                "minor_grid": True,
+                "minor_grid_color": "#94a3b8",
+                "minor_grid_linewidth": 0.8,
+                "minor_grid_alpha": 0.5,
+                "minor_grid_linestyle": "-.",
+                "scatter_show_edge": False,
+                "scatter_edgecolor": "#334155",
+                "scatter_edgewidth": 0.7,
                 fallback_attr: "ignored",
                 "selection_mode": (not original_selection_mode),
             }
@@ -267,6 +293,19 @@ def test_panel_style_updates_known_key_and_unknown_key() -> None:
         assert float(getattr(app_state, "tick_width", 0.0)) == 1.0
         assert float(getattr(app_state, "axis_linewidth", 0.0)) == 1.3
         assert str(getattr(app_state, "axis_line_color", "")) == "#111827"
+        assert bool(getattr(app_state, "minor_ticks", False)) is True
+        assert float(getattr(app_state, "minor_tick_length", 0.0)) == 3.2
+        assert float(getattr(app_state, "minor_tick_width", 0.0)) == 0.9
+        assert bool(getattr(app_state, "show_top_spine", True)) is False
+        assert bool(getattr(app_state, "show_right_spine", True)) is False
+        assert bool(getattr(app_state, "minor_grid", False)) is True
+        assert str(getattr(app_state, "minor_grid_color", "")) == "#94a3b8"
+        assert float(getattr(app_state, "minor_grid_linewidth", 0.0)) == 0.8
+        assert float(getattr(app_state, "minor_grid_alpha", 0.0)) == 0.5
+        assert str(getattr(app_state, "minor_grid_linestyle", "")) == "-."
+        assert bool(getattr(app_state, "scatter_show_edge", True)) is False
+        assert str(getattr(app_state, "scatter_edgecolor", "")) == "#334155"
+        assert float(getattr(app_state, "scatter_edgewidth", 0.0)) == 0.7
         assert bool(getattr(app_state, "selection_mode", False)) is original_selection_mode
 
         snapshot = app_state.state_store.snapshot()
@@ -287,6 +326,19 @@ def test_panel_style_updates_known_key_and_unknown_key() -> None:
         assert snapshot["tick_width"] == 1.0
         assert snapshot["axis_linewidth"] == 1.3
         assert snapshot["axis_line_color"] == "#111827"
+        assert snapshot["minor_ticks"] is True
+        assert snapshot["minor_tick_length"] == 3.2
+        assert snapshot["minor_tick_width"] == 0.9
+        assert snapshot["show_top_spine"] is False
+        assert snapshot["show_right_spine"] is False
+        assert snapshot["minor_grid"] is True
+        assert snapshot["minor_grid_color"] == "#94a3b8"
+        assert snapshot["minor_grid_linewidth"] == 0.8
+        assert snapshot["minor_grid_alpha"] == 0.5
+        assert snapshot["minor_grid_linestyle"] == "-."
+        assert snapshot["scatter_show_edge"] is False
+        assert snapshot["scatter_edgecolor"] == "#334155"
+        assert snapshot["scatter_edgewidth"] == 0.7
 
         if existed:
             assert getattr(app_state, fallback_attr) == original_value
@@ -310,6 +362,19 @@ def test_panel_style_updates_known_key_and_unknown_key() -> None:
         state_gateway.set_tick_width(original_tick_width)
         state_gateway.set_axis_linewidth(original_axis_linewidth)
         state_gateway.set_axis_line_color(original_axis_line_color)
+        state_gateway.set_minor_ticks(original_minor_ticks)
+        state_gateway.set_minor_tick_length(original_minor_tick_length)
+        state_gateway.set_minor_tick_width(original_minor_tick_width)
+        state_gateway.set_show_top_spine(original_show_top_spine)
+        state_gateway.set_show_right_spine(original_show_right_spine)
+        state_gateway.set_minor_grid(original_minor_grid)
+        state_gateway.set_minor_grid_color(original_minor_grid_color)
+        state_gateway.set_minor_grid_linewidth(original_minor_grid_linewidth)
+        state_gateway.set_minor_grid_alpha(original_minor_grid_alpha)
+        state_gateway.set_minor_grid_linestyle(original_minor_grid_linestyle)
+        state_gateway.set_scatter_show_edge(original_scatter_show_edge)
+        state_gateway.set_scatter_edgecolor(original_scatter_edgecolor)
+        state_gateway.set_scatter_edgewidth(original_scatter_edgewidth)
         state_gateway.set_selection_mode(original_selection_mode)
         if existed:
             setattr(app_state, fallback_attr, original_value)
@@ -337,6 +402,19 @@ def test_panel_style_updates_known_key_and_unknown_key() -> None:
         ("tick_width", 1.05),
         ("axis_linewidth", 1.2),
         ("axis_line_color", "#111827"),
+        ("minor_ticks", True),
+        ("minor_tick_length", 3.0),
+        ("minor_tick_width", 0.9),
+        ("show_top_spine", False),
+        ("show_right_spine", False),
+        ("minor_grid", True),
+        ("minor_grid_color", "#94a3b8"),
+        ("minor_grid_linewidth", 0.8),
+        ("minor_grid_alpha", 0.5),
+        ("minor_grid_linestyle", "-."),
+        ("scatter_show_edge", False),
+        ("scatter_edgecolor", "#334155"),
+        ("scatter_edgewidth", 0.7),
     ],
 )
 def test_style_fields_set_attr_compatibility(attr: str, payload: object) -> None:
