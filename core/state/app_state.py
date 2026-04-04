@@ -429,6 +429,10 @@ class AppState:
 
     @show_model_curves.setter
     def show_model_curves(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_SHOW_MODEL_CURVES', 'show': bool(value)})
+            return
         self.overlay.show_model_curves = value
 
     @property
@@ -437,6 +441,10 @@ class AppState:
 
     @show_paleoisochrons.setter
     def show_paleoisochrons(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_SHOW_PALEOISOCHRONS', 'show': bool(value)})
+            return
         self.overlay.show_paleoisochrons = value
 
     @property
@@ -445,6 +453,10 @@ class AppState:
 
     @show_plumbotectonics_curves.setter
     def show_plumbotectonics_curves(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_SHOW_PLUMBOTECTONICS_CURVES', 'show': bool(value)})
+            return
         self.overlay.show_plumbotectonics_curves = value
 
     @property
@@ -453,6 +465,10 @@ class AppState:
 
     @show_model_age_lines.setter
     def show_model_age_lines(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_SHOW_MODEL_AGE_LINES', 'show': bool(value)})
+            return
         self.overlay.show_model_age_lines = value
 
     @property
@@ -461,6 +477,10 @@ class AppState:
 
     @show_isochrons.setter
     def show_isochrons(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_SHOW_ISOCHRONS', 'show': bool(value)})
+            return
         self.overlay.show_isochrons = value
 
     @property
@@ -469,6 +489,10 @@ class AppState:
 
     @show_growth_curves.setter
     def show_growth_curves(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_SHOW_GROWTH_CURVES', 'show': bool(value)})
+            return
         self.overlay.show_growth_curves = value
 
     @property
@@ -477,6 +501,10 @@ class AppState:
 
     @show_equation_overlays.setter
     def show_equation_overlays(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_SHOW_EQUATION_OVERLAYS', 'show': bool(value)})
+            return
         self.overlay.show_equation_overlays = value
 
     @property
@@ -485,6 +513,10 @@ class AppState:
 
     @use_real_age_for_mu_kappa.setter
     def use_real_age_for_mu_kappa(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_USE_REAL_AGE_FOR_MU_KAPPA', 'enabled': bool(value)})
+            return
         self.overlay.use_real_age_for_mu_kappa = value
 
     @property
@@ -493,6 +525,10 @@ class AppState:
 
     @mu_kappa_age_col.setter
     def mu_kappa_age_col(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_MU_KAPPA_AGE_COL', 'column': value})
+            return
         self.overlay.mu_kappa_age_col = value
 
     @property
@@ -509,6 +545,10 @@ class AppState:
 
     @geo_model_name.setter
     def geo_model_name(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_GEO_MODEL_NAME', 'model_name': value})
+            return
         self.overlay.geo_model_name = value
 
     @property

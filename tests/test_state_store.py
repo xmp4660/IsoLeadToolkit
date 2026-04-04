@@ -739,6 +739,46 @@ def test_app_state_legend_property_setters_dispatch_to_state_store() -> None:
         _restore_state(snapshot)
 
 
+def test_app_state_overlay_property_setters_dispatch_to_state_store() -> None:
+    snapshot = _snapshot_state()
+    try:
+        setattr(app_state, "show_model_curves", False)
+        setattr(app_state, "show_plumbotectonics_curves", True)
+        setattr(app_state, "show_paleoisochrons", True)
+        setattr(app_state, "show_model_age_lines", False)
+        setattr(app_state, "show_growth_curves", True)
+        setattr(app_state, "show_isochrons", False)
+        setattr(app_state, "show_equation_overlays", True)
+        setattr(app_state, "geo_model_name", "Maltese and Mezger 2020")
+        setattr(app_state, "use_real_age_for_mu_kappa", True)
+        setattr(app_state, "mu_kappa_age_col", "Age")
+
+        assert app_state.show_model_curves is False
+        assert app_state.show_plumbotectonics_curves is True
+        assert app_state.show_paleoisochrons is True
+        assert app_state.show_model_age_lines is False
+        assert app_state.show_growth_curves is True
+        assert app_state.show_isochrons is False
+        assert app_state.show_equation_overlays is True
+        assert app_state.geo_model_name == "Maltese and Mezger 2020"
+        assert app_state.use_real_age_for_mu_kappa is True
+        assert app_state.mu_kappa_age_col == "Age"
+
+        store_snapshot = app_state.state_store.snapshot()
+        assert store_snapshot["show_model_curves"] is False
+        assert store_snapshot["show_plumbotectonics_curves"] is True
+        assert store_snapshot["show_paleoisochrons"] is True
+        assert store_snapshot["show_model_age_lines"] is False
+        assert store_snapshot["show_growth_curves"] is True
+        assert store_snapshot["show_isochrons"] is False
+        assert store_snapshot["show_equation_overlays"] is True
+        assert store_snapshot["geo_model_name"] == "Maltese and Mezger 2020"
+        assert store_snapshot["use_real_age_for_mu_kappa"] is True
+        assert store_snapshot["mu_kappa_age_col"] == "Age"
+    finally:
+        _restore_state(snapshot)
+
+
 def test_build_group_palette_syncs_state_store_snapshot() -> None:
     snapshot = _snapshot_state()
     try:

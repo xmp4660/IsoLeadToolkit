@@ -2,6 +2,18 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-04 · StateStore 第九十三批）
+
+- `core/state/app_state.py` 顶层 Overlay 兼容属性 setter 收口到 StateStore（首批高频 geochem 域）：
+    - `show_model_curves`、`show_plumbotectonics_curves`、`show_paleoisochrons`
+    - `show_model_age_lines`、`show_growth_curves`、`show_isochrons`
+    - `show_equation_overlays`、`geo_model_name`
+    - `use_real_age_for_mu_kappa`、`mu_kappa_age_col`
+- 行为调整：在 `state_store` 可用时，以上属性写入统一通过 `SET_*` action 分发；无 store 场景保持旧兼容回退。
+- 同步机制修正：`core/state/store.py` 的 `_sync_state` 对上述字段改为直接回写 `overlay` 子状态，避免通过属性 setter 触发递归分发。
+- 回归测试更新：
+    - `tests/test_state_store.py` 新增 `test_app_state_overlay_property_setters_dispatch_to_state_store`，锁定兼容属性写入与 store 快照一致性。
+
 ## 阶段进展（2026-04-04 · StateStore 第九十二批）
 
 - `core/state/app_state.py` 的 LegendState 兼容属性 setter 收口到 StateStore：

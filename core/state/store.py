@@ -1344,8 +1344,8 @@ class StateStore:
         self._state.adjust_text_time_lim = float(self._snapshot["adjust_text_time_lim"])
         self._state.show_kde = bool(self._snapshot["show_kde"])
         self._state.show_marginal_kde = bool(self._snapshot["show_marginal_kde"])
-        self._state.show_equation_overlays = bool(self._snapshot["show_equation_overlays"])
-        self._state.geo_model_name = str(self._snapshot["geo_model_name"])
+        self._state.overlay.show_equation_overlays = bool(self._snapshot["show_equation_overlays"])
+        self._state.overlay.geo_model_name = str(self._snapshot["geo_model_name"])
         self._state.paleo_label_refreshing = bool(self._snapshot["paleo_label_refreshing"])
         self._state.overlay_label_refreshing = bool(self._snapshot["overlay_label_refreshing"])
         self._state.overlay_curve_label_data = list(self._snapshot["overlay_curve_label_data"])
@@ -1374,12 +1374,14 @@ class StateStore:
             if self._snapshot["last_2d_cols"] is not None
             else None
         )
-        self._state.show_model_curves = bool(self._snapshot["show_model_curves"])
-        self._state.show_plumbotectonics_curves = bool(self._snapshot["show_plumbotectonics_curves"])
-        self._state.show_paleoisochrons = bool(self._snapshot["show_paleoisochrons"])
-        self._state.show_model_age_lines = bool(self._snapshot["show_model_age_lines"])
-        self._state.show_growth_curves = bool(self._snapshot["show_growth_curves"])
-        self._state.show_isochrons = bool(self._snapshot["show_isochrons"])
+        self._state.overlay.show_model_curves = bool(self._snapshot["show_model_curves"])
+        self._state.overlay.show_plumbotectonics_curves = bool(
+            self._snapshot["show_plumbotectonics_curves"]
+        )
+        self._state.overlay.show_paleoisochrons = bool(self._snapshot["show_paleoisochrons"])
+        self._state.overlay.show_model_age_lines = bool(self._snapshot["show_model_age_lines"])
+        self._state.overlay.show_growth_curves = bool(self._snapshot["show_growth_curves"])
+        self._state.overlay.show_isochrons = bool(self._snapshot["show_isochrons"])
         self._state.isochron_error_mode = str(self._snapshot["isochron_error_mode"])
         self._state.isochron_sx_col = str(self._snapshot["isochron_sx_col"])
         self._state.isochron_sy_col = str(self._snapshot["isochron_sy_col"])
@@ -1391,8 +1393,10 @@ class StateStore:
         self._state.plumbotectonics_group_visibility = dict(
             self._snapshot["plumbotectonics_group_visibility"]
         )
-        self._state.use_real_age_for_mu_kappa = bool(self._snapshot["use_real_age_for_mu_kappa"])
-        self._state.mu_kappa_age_col = self._snapshot["mu_kappa_age_col"]
+        self._state.overlay.use_real_age_for_mu_kappa = bool(
+            self._snapshot["use_real_age_for_mu_kappa"]
+        )
+        self._state.overlay.mu_kappa_age_col = self._snapshot["mu_kappa_age_col"]
         self._state.plumbotectonics_variant = str(self._snapshot["plumbotectonics_variant"])
         self._state.paleoisochron_step = int(self._snapshot["paleoisochron_step"])
         self._state.paleoisochron_ages = list(self._snapshot["paleoisochron_ages"])
