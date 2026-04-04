@@ -153,9 +153,11 @@ def _snapshot_state() -> dict[str, Any]:
         "color_scheme": str(getattr(app_state, "color_scheme", "vibrant")),
         "legend_position": getattr(app_state, "legend_position", None),
         "legend_location": getattr(app_state, "legend_location", "outside_left"),
+        "legend_display_mode": str(getattr(app_state, "legend_display_mode", "inline")),
         "legend_columns": int(getattr(app_state, "legend_columns", 0)),
         "legend_nudge_step": float(getattr(app_state, "legend_nudge_step", 0.02)),
         "legend_offset": tuple(getattr(app_state, "legend_offset", (0.0, 0.0)) or (0.0, 0.0)),
+        "hidden_groups": set(getattr(app_state, "hidden_groups", set()) or set()),
         "legend_last_title": getattr(app_state, "legend_last_title", None),
         "legend_last_handles": getattr(app_state, "legend_last_handles", None),
         "legend_last_labels": getattr(app_state, "legend_last_labels", None),
@@ -352,9 +354,11 @@ def _restore_state(snapshot: dict[str, Any]) -> None:
     state_gateway.set_color_scheme(str(snapshot["color_scheme"]))
     state_gateway.set_legend_position(snapshot["legend_position"])
     state_gateway.set_legend_location(snapshot["legend_location"])
+    state_gateway.set_legend_display_mode(snapshot["legend_display_mode"])
     state_gateway.set_legend_columns(int(snapshot["legend_columns"]))
     state_gateway.set_legend_nudge_step(float(snapshot["legend_nudge_step"]))
     state_gateway.set_legend_offset(snapshot["legend_offset"])
+    state_gateway.set_hidden_groups(snapshot["hidden_groups"])
     state_gateway.set_legend_snapshot(
         snapshot["legend_last_title"],
         snapshot["legend_last_handles"],
@@ -730,6 +734,8 @@ def test_app_state_legend_property_setters_dispatch_to_state_store() -> None:
         setattr(app_state, "legend_offset", (0.1, -0.05))
         setattr(app_state, "legend_nudge_step", 0.03)
         setattr(app_state, "legend_location", "outside_right")
+        setattr(app_state, "legend_display_mode", "window")
+        setattr(app_state, "hidden_groups", {"G1", "G2"})
         setattr(app_state, "legend_frame_on", False)
         setattr(app_state, "legend_frame_alpha", 0.66)
         setattr(app_state, "legend_frame_facecolor", "#f8fafc")
@@ -744,6 +750,8 @@ def test_app_state_legend_property_setters_dispatch_to_state_store() -> None:
         assert store_snapshot["legend_offset"] == (0.1, -0.05)
         assert store_snapshot["legend_nudge_step"] == 0.03
         assert store_snapshot["legend_location"] == "outside_right"
+        assert store_snapshot["legend_display_mode"] == "window"
+        assert store_snapshot["hidden_groups"] == {"G1", "G2"}
         assert store_snapshot["legend_frame_on"] is False
         assert store_snapshot["legend_frame_alpha"] == 0.66
         assert store_snapshot["legend_frame_facecolor"] == "#f8fafc"

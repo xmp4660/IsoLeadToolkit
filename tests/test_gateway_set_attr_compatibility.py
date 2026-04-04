@@ -856,39 +856,49 @@ def test_legend_preferences_set_attr_compatibility() -> None:
     original_color_scheme = str(getattr(app_state, "color_scheme", "vibrant"))
     original_position = getattr(app_state, "legend_position", None)
     original_location = getattr(app_state, "legend_location", "outside_left")
+    original_display_mode = str(getattr(app_state, "legend_display_mode", "inline"))
     original_columns = int(getattr(app_state, "legend_columns", 0))
     original_nudge_step = float(getattr(app_state, "legend_nudge_step", 0.02))
     original_offset = tuple(getattr(app_state, "legend_offset", (0.0, 0.0)) or (0.0, 0.0))
+    original_hidden_groups = set(getattr(app_state, "hidden_groups", set()) or set())
 
     try:
         state_gateway.set_attr("color_scheme", 777)
         state_gateway.set_attr("legend_position", "upper left")
         state_gateway.set_attr("legend_location", "outside_right")
+        state_gateway.set_attr("legend_display_mode", "window")
         state_gateway.set_attr("legend_columns", "4")
         state_gateway.set_attr("legend_nudge_step", "0.125")
         state_gateway.set_attr("legend_offset", [0.2, -0.1])
+        state_gateway.set_attr("hidden_groups", ["G1", "G2"])
 
         assert app_state.color_scheme == "777"
         assert app_state.legend_position == "upper left"
         assert app_state.legend_location == "outside_right"
+        assert app_state.legend_display_mode == "window"
         assert app_state.legend_columns == 4
         assert app_state.legend_nudge_step == 0.125
         assert app_state.legend_offset == (0.2, -0.1)
+        assert app_state.hidden_groups == {"G1", "G2"}
 
         store_snapshot = app_state.state_store.snapshot()
         assert store_snapshot["color_scheme"] == "777"
         assert store_snapshot["legend_position"] == "upper left"
         assert store_snapshot["legend_location"] == "outside_right"
+        assert store_snapshot["legend_display_mode"] == "window"
         assert store_snapshot["legend_columns"] == 4
         assert store_snapshot["legend_nudge_step"] == 0.125
         assert store_snapshot["legend_offset"] == (0.2, -0.1)
+        assert store_snapshot["hidden_groups"] == {"G1", "G2"}
     finally:
         state_gateway.set_color_scheme(original_color_scheme)
         state_gateway.set_legend_position(original_position)
         state_gateway.set_legend_location(original_location)
+        state_gateway.set_legend_display_mode(original_display_mode)
         state_gateway.set_legend_columns(original_columns)
         state_gateway.set_legend_nudge_step(original_nudge_step)
         state_gateway.set_legend_offset(original_offset)
+        state_gateway.set_hidden_groups(original_hidden_groups)
 
 
 def test_recent_files_set_attr_compatibility() -> None:

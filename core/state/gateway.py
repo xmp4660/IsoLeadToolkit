@@ -188,6 +188,8 @@ class AppStateGateway:
             "saved_themes": "set_saved_themes",
             "legend_position": "set_legend_position",
             "legend_location": "set_legend_location",
+            "legend_display_mode": "set_legend_display_mode",
+            "hidden_groups": "set_hidden_groups",
             "legend_offset": "set_legend_offset",
             "isochron_results": "set_isochron_results",
             "plumbotectonics_group_visibility": "set_plumbotectonics_group_visibility",
@@ -819,6 +821,12 @@ class AppStateGateway:
 
     def set_legend_location(self, location: Any) -> None:
         self._dispatch("SET_LEGEND_LOCATION", location=location)
+
+    def set_legend_display_mode(self, mode: Any) -> None:
+        self._dispatch("SET_LEGEND_DISPLAY_MODE", mode=str(mode))
+
+    def set_hidden_groups(self, groups: Any) -> None:
+        self._dispatch("SET_HIDDEN_GROUPS", groups=set(groups or set()))
 
     def set_legend_columns(self, columns: int) -> None:
         self._dispatch("SET_LEGEND_COLUMNS", columns=columns)

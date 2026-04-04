@@ -2,6 +2,22 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-04 · StateStore 第九十八批）
+
+- 新增 Legend 参数域 StateStore 托管：
+    - `legend_display_mode`
+    - `hidden_groups`
+- `core/state/store.py` 新增对应 action、快照导出与 `_sync_state` 回写：
+    - `SET_LEGEND_DISPLAY_MODE`
+    - `SET_HIDDEN_GROUPS`
+- `core/state/gateway.py` 新增显式 API 与 `set_attr` 兼容映射：
+    - `set_legend_display_mode`
+    - `set_hidden_groups`
+- `core/state/app_state.py` 对应兼容属性 setter 改为优先 dispatch。
+- 回归测试更新：
+    - `tests/test_state_store.py` 扩展 legend 兼容 setter 断言与 snapshot/restore 覆盖。
+    - `tests/test_gateway_set_attr_compatibility.py` 扩展 legend 偏好兼容用例。
+
 ## 阶段进展（2026-04-04 · StateStore 第九十七批）
 
 - 新增 Overlay 参数域 StateStore 托管：

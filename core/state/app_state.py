@@ -1026,6 +1026,10 @@ class AppState:
 
     @legend_display_mode.setter
     def legend_display_mode(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_LEGEND_DISPLAY_MODE', 'mode': str(value)})
+            return
         self.legend.legend_display_mode = value
 
     @property
@@ -1082,6 +1086,10 @@ class AppState:
 
     @hidden_groups.setter
     def hidden_groups(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_HIDDEN_GROUPS', 'groups': set(value or set())})
+            return
         self.legend.hidden_groups = value
 
     @property

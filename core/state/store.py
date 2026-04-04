@@ -306,9 +306,11 @@ class StateStore:
             "color_scheme": str(getattr(state, "color_scheme", "vibrant")),
             "legend_position": getattr(state, "legend_position", None),
             "legend_location": getattr(state, "legend_location", "outside_left"),
+            "legend_display_mode": str(getattr(state, "legend_display_mode", "inline")),
             "legend_columns": int(getattr(state, "legend_columns", 0)),
             "legend_nudge_step": float(getattr(state, "legend_nudge_step", 0.02)),
             "legend_offset": tuple(getattr(state, "legend_offset", (0.0, 0.0)) or (0.0, 0.0)),
+            "hidden_groups": set(getattr(state, "hidden_groups", set()) or set()),
             "legend_last_title": getattr(state, "legend_last_title", None),
             "legend_last_handles": getattr(state, "legend_last_handles", None),
             "legend_last_labels": getattr(state, "legend_last_labels", None),
@@ -863,6 +865,9 @@ class StateStore:
         elif action_type == "SET_LEGEND_LOCATION":
             self._snapshot["legend_location"] = action.get("location")
 
+        elif action_type == "SET_LEGEND_DISPLAY_MODE":
+            self._snapshot["legend_display_mode"] = str(action.get("mode", "inline"))
+
         elif action_type == "SET_LEGEND_COLUMNS":
             self._snapshot["legend_columns"] = int(action.get("columns", 0))
 
@@ -872,6 +877,9 @@ class StateStore:
         elif action_type == "SET_LEGEND_OFFSET":
             offset = action.get("offset")
             self._snapshot["legend_offset"] = tuple(offset) if offset is not None else (0.0, 0.0)
+
+        elif action_type == "SET_HIDDEN_GROUPS":
+            self._snapshot["hidden_groups"] = set(action.get("groups") or set())
 
         elif action_type == "SET_LEGEND_SNAPSHOT":
             self._snapshot["legend_last_title"] = action.get("title")
@@ -1248,9 +1256,11 @@ class StateStore:
             "color_scheme": str(self._snapshot["color_scheme"]),
             "legend_position": self._snapshot["legend_position"],
             "legend_location": self._snapshot["legend_location"],
+            "legend_display_mode": str(self._snapshot["legend_display_mode"]),
             "legend_columns": int(self._snapshot["legend_columns"]),
             "legend_nudge_step": float(self._snapshot["legend_nudge_step"]),
             "legend_offset": tuple(self._snapshot["legend_offset"]),
+            "hidden_groups": set(self._snapshot["hidden_groups"]),
             "legend_last_title": self._snapshot["legend_last_title"],
             "legend_last_handles": self._snapshot["legend_last_handles"],
             "legend_last_labels": self._snapshot["legend_last_labels"],
@@ -1458,9 +1468,11 @@ class StateStore:
         self._state.color_scheme = str(self._snapshot["color_scheme"])
         self._state.legend.legend_position = self._snapshot["legend_position"]
         self._state.legend.legend_location = self._snapshot["legend_location"]
+        self._state.legend.legend_display_mode = str(self._snapshot["legend_display_mode"])
         self._state.legend.legend_columns = int(self._snapshot["legend_columns"])
         self._state.legend.legend_nudge_step = float(self._snapshot["legend_nudge_step"])
         self._state.legend.legend_offset = tuple(self._snapshot["legend_offset"])
+        self._state.legend.hidden_groups = set(self._snapshot["hidden_groups"])
         self._state.legend.legend_last_title = self._snapshot["legend_last_title"]
         self._state.legend.legend_last_handles = self._snapshot["legend_last_handles"]
         self._state.legend.legend_last_labels = self._snapshot["legend_last_labels"]
