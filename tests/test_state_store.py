@@ -70,6 +70,8 @@ def _snapshot_state() -> dict[str, Any]:
         "use_real_age_for_mu_kappa": bool(getattr(app_state, "use_real_age_for_mu_kappa", False)),
         "mu_kappa_age_col": getattr(app_state, "mu_kappa_age_col", None),
         "plumbotectonics_variant": str(getattr(app_state, "plumbotectonics_variant", "0")),
+        "paleoisochron_min_age": int(getattr(app_state, "paleoisochron_min_age", 0)),
+        "paleoisochron_max_age": int(getattr(app_state, "paleoisochron_max_age", 3000)),
         "paleoisochron_step": int(getattr(app_state, "paleoisochron_step", 1000)),
         "paleoisochron_ages": list(getattr(app_state, "paleoisochron_ages", []) or []),
         "draw_selection_ellipse": bool(getattr(app_state, "draw_selection_ellipse", False)),
@@ -198,6 +200,11 @@ def _snapshot_state() -> dict[str, Any]:
         "isochron_line_width": float(getattr(app_state, "isochron_line_width", 1.5)),
         "selected_isochron_line_width": float(getattr(app_state, "selected_isochron_line_width", 2.0)),
         "isochron_label_options": dict(getattr(app_state, "isochron_label_options", {}) or {}),
+        "model_curve_models": (
+            list(getattr(app_state, "model_curve_models", []) or [])
+            if getattr(app_state, "model_curve_models", None) is not None
+            else None
+        ),
         "equation_overlays": list(getattr(app_state, "equation_overlays", []) or []),
         "export_image_options": dict(getattr(app_state, "export_image_options", {}) or {}),
     }
@@ -323,6 +330,8 @@ def _restore_state(snapshot: dict[str, Any]) -> None:
     state_gateway.set_use_real_age_for_mu_kappa(bool(snapshot["use_real_age_for_mu_kappa"]))
     state_gateway.set_mu_kappa_age_col(snapshot["mu_kappa_age_col"])
     state_gateway.set_plumbotectonics_variant(str(snapshot["plumbotectonics_variant"]))
+    state_gateway.set_paleoisochron_min_age(int(snapshot["paleoisochron_min_age"]))
+    state_gateway.set_paleoisochron_max_age(int(snapshot["paleoisochron_max_age"]))
     state_gateway.set_paleoisochron_step(int(snapshot["paleoisochron_step"]))
     state_gateway.set_paleoisochron_ages(snapshot["paleoisochron_ages"])
     state_gateway.set_draw_selection_ellipse(bool(snapshot["draw_selection_ellipse"]))
@@ -399,6 +408,7 @@ def _restore_state(snapshot: dict[str, Any]) -> None:
     state_gateway.set_isochron_line_width(snapshot["isochron_line_width"])
     state_gateway.set_selected_isochron_line_width(snapshot["selected_isochron_line_width"])
     state_gateway.set_isochron_label_options(snapshot["isochron_label_options"])
+    state_gateway.set_model_curve_models(snapshot["model_curve_models"])
     state_gateway.set_equation_overlays(snapshot["equation_overlays"])
     state_gateway.sync_available_and_visible_groups(snapshot["available_groups"])
     state_gateway.set_visible_groups(snapshot["visible_groups"])
@@ -793,7 +803,10 @@ def test_app_state_overlay_detail_property_setters_dispatch_to_state_store() -> 
         setattr(app_state, "line_styles", {"model_curve": "--", "isochron": ":"})
         setattr(app_state, "paleoisochron_step", 250)
         setattr(app_state, "paleoisochron_ages", [250, 500, 750])
+        setattr(app_state, "paleoisochron_min_age", 100)
+        setattr(app_state, "paleoisochron_max_age", 2500)
         setattr(app_state, "plumbotectonics_variant", "2")
+        setattr(app_state, "model_curve_models", ["Stacey & Kramers (2nd Stage)"])
         setattr(app_state, "plumbotectonics_group_visibility", {"grp1": False})
         setattr(app_state, "selected_isochron_data", {"id": "iso1"})
         setattr(app_state, "isochron_results", {"age": 123.4})
@@ -813,7 +826,10 @@ def test_app_state_overlay_detail_property_setters_dispatch_to_state_store() -> 
         assert app_state.line_styles == {"model_curve": "--", "isochron": ":"}
         assert app_state.paleoisochron_step == 250
         assert app_state.paleoisochron_ages == [250, 500, 750]
+        assert app_state.paleoisochron_min_age == 100
+        assert app_state.paleoisochron_max_age == 2500
         assert app_state.plumbotectonics_variant == "2"
+        assert app_state.model_curve_models == ["Stacey & Kramers (2nd Stage)"]
         assert app_state.plumbotectonics_group_visibility == {"grp1": False}
         assert app_state.selected_isochron_data == {"id": "iso1"}
         assert app_state.isochron_results == {"age": 123.4}
@@ -834,7 +850,10 @@ def test_app_state_overlay_detail_property_setters_dispatch_to_state_store() -> 
         assert store_snapshot["line_styles"] == {"model_curve": "--", "isochron": ":"}
         assert store_snapshot["paleoisochron_step"] == 250
         assert store_snapshot["paleoisochron_ages"] == [250, 500, 750]
+        assert store_snapshot["paleoisochron_min_age"] == 100
+        assert store_snapshot["paleoisochron_max_age"] == 2500
         assert store_snapshot["plumbotectonics_variant"] == "2"
+        assert store_snapshot["model_curve_models"] == ["Stacey & Kramers (2nd Stage)"]
         assert store_snapshot["plumbotectonics_group_visibility"] == {"grp1": False}
         assert store_snapshot["selected_isochron_data"] == {"id": "iso1"}
         assert store_snapshot["isochron_results"] == {"age": 123.4}

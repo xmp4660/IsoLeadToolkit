@@ -195,6 +195,9 @@ class AppStateGateway:
             "sheet_name": "set_sheet_name",
             "mu_kappa_age_col": "set_mu_kappa_age_col",
             "paleoisochron_ages": "set_paleoisochron_ages",
+            "paleoisochron_min_age": "set_paleoisochron_min_age",
+            "paleoisochron_max_age": "set_paleoisochron_max_age",
+            "model_curve_models": "set_model_curve_models",
             "overlay_artists": "set_overlay_artists",
             "marginal_axes": "set_marginal_axes",
             "overlay_curve_label_data": "set_overlay_curve_label_data",
@@ -867,11 +870,21 @@ class AppStateGateway:
     def set_plumbotectonics_variant(self, variant: str) -> None:
         self._dispatch("SET_PLUMBOTECTONICS_VARIANT", variant=variant)
 
+    def set_paleoisochron_min_age(self, age: int) -> None:
+        self._dispatch("SET_PALEOISOCHRON_MIN_AGE", age=int(age))
+
+    def set_paleoisochron_max_age(self, age: int) -> None:
+        self._dispatch("SET_PALEOISOCHRON_MAX_AGE", age=int(age))
+
     def set_paleoisochron_step(self, step: int) -> None:
         self._dispatch("SET_PALEOISOCHRON_STEP", step=step)
 
     def set_paleoisochron_ages(self, ages: Any) -> None:
         self._dispatch("SET_PALEOISOCHRON_AGES", ages=list(ages or []))
+
+    def set_model_curve_models(self, models: Any) -> None:
+        normalized = list(models or []) if models is not None else None
+        self._dispatch("SET_MODEL_CURVE_MODELS", models=normalized)
 
     def set_overlay_artists(self, artists: Any) -> None:
         self._dispatch("SET_OVERLAY_ARTISTS", artists=dict(artists or {}))

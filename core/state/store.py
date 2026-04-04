@@ -273,6 +273,8 @@ class StateStore:
             "use_real_age_for_mu_kappa": bool(getattr(state, "use_real_age_for_mu_kappa", False)),
             "mu_kappa_age_col": getattr(state, "mu_kappa_age_col", None),
             "plumbotectonics_variant": str(getattr(state, "plumbotectonics_variant", "0")),
+            "paleoisochron_min_age": int(getattr(state, "paleoisochron_min_age", 0)),
+            "paleoisochron_max_age": int(getattr(state, "paleoisochron_max_age", 3000)),
             "paleoisochron_step": int(getattr(state, "paleoisochron_step", 1000)),
             "paleoisochron_ages": list(getattr(state, "paleoisochron_ages", []) or []),
             "draw_selection_ellipse": bool(getattr(state, "draw_selection_ellipse", False)),
@@ -367,6 +369,11 @@ class StateStore:
             "isochron_line_width": float(getattr(state, "isochron_line_width", 1.5)),
             "selected_isochron_line_width": float(getattr(state, "selected_isochron_line_width", 2.0)),
             "isochron_label_options": dict(getattr(state, "isochron_label_options", {}) or {}),
+            "model_curve_models": (
+                list(getattr(state, "model_curve_models", []) or [])
+                if getattr(state, "model_curve_models", None) is not None
+                else None
+            ),
             "equation_overlays": list(getattr(state, "equation_overlays", []) or []),
             "export_image_options": self._normalize_export_options(
                 getattr(state, "export_image_options", None)
@@ -791,6 +798,12 @@ class StateStore:
         elif action_type == "SET_PLUMBOTECTONICS_VARIANT":
             self._snapshot["plumbotectonics_variant"] = str(action.get("variant", "0"))
 
+        elif action_type == "SET_PALEOISOCHRON_MIN_AGE":
+            self._snapshot["paleoisochron_min_age"] = int(action.get("age", 0))
+
+        elif action_type == "SET_PALEOISOCHRON_MAX_AGE":
+            self._snapshot["paleoisochron_max_age"] = int(action.get("age", 3000))
+
         elif action_type == "SET_PALEOISOCHRON_STEP":
             self._snapshot["paleoisochron_step"] = int(action.get("step", 1000))
 
@@ -1052,6 +1065,10 @@ class StateStore:
         elif action_type == "SET_ISOCHRON_LABEL_OPTIONS":
             self._snapshot["isochron_label_options"] = dict(action.get("options") or {})
 
+        elif action_type == "SET_MODEL_CURVE_MODELS":
+            models = action.get("models")
+            self._snapshot["model_curve_models"] = list(models or []) if models is not None else None
+
         elif action_type == "SET_EQUATION_OVERLAYS":
             self._snapshot["equation_overlays"] = list(action.get("overlays") or [])
 
@@ -1198,6 +1215,8 @@ class StateStore:
             "use_real_age_for_mu_kappa": bool(self._snapshot["use_real_age_for_mu_kappa"]),
             "mu_kappa_age_col": self._snapshot["mu_kappa_age_col"],
             "plumbotectonics_variant": str(self._snapshot["plumbotectonics_variant"]),
+            "paleoisochron_min_age": int(self._snapshot["paleoisochron_min_age"]),
+            "paleoisochron_max_age": int(self._snapshot["paleoisochron_max_age"]),
             "paleoisochron_step": int(self._snapshot["paleoisochron_step"]),
             "paleoisochron_ages": list(self._snapshot["paleoisochron_ages"]),
             "draw_selection_ellipse": bool(self._snapshot["draw_selection_ellipse"]),
@@ -1276,6 +1295,11 @@ class StateStore:
             "isochron_line_width": float(self._snapshot["isochron_line_width"]),
             "selected_isochron_line_width": float(self._snapshot["selected_isochron_line_width"]),
             "isochron_label_options": dict(self._snapshot["isochron_label_options"]),
+            "model_curve_models": (
+                list(self._snapshot["model_curve_models"])
+                if self._snapshot["model_curve_models"] is not None
+                else None
+            ),
             "equation_overlays": list(self._snapshot["equation_overlays"]),
             "export_image_options": dict(self._snapshot["export_image_options"]),
         }
@@ -1400,6 +1424,8 @@ class StateStore:
         )
         self._state.overlay.mu_kappa_age_col = self._snapshot["mu_kappa_age_col"]
         self._state.overlay.plumbotectonics_variant = str(self._snapshot["plumbotectonics_variant"])
+        self._state.overlay.paleoisochron_min_age = int(self._snapshot["paleoisochron_min_age"])
+        self._state.overlay.paleoisochron_max_age = int(self._snapshot["paleoisochron_max_age"])
         self._state.overlay.paleoisochron_step = int(self._snapshot["paleoisochron_step"])
         self._state.overlay.paleoisochron_ages = list(self._snapshot["paleoisochron_ages"])
         self._state.draw_selection_ellipse = bool(self._snapshot["draw_selection_ellipse"])
@@ -1481,6 +1507,11 @@ class StateStore:
         self._state.overlay.isochron_line_width = float(self._snapshot["isochron_line_width"])
         self._state.selected_isochron_line_width = float(self._snapshot["selected_isochron_line_width"])
         self._state.overlay.isochron_label_options = dict(self._snapshot["isochron_label_options"])
+        self._state.overlay.model_curve_models = (
+            list(self._snapshot["model_curve_models"])
+            if self._snapshot["model_curve_models"] is not None
+            else None
+        )
         self._state.overlay.equation_overlays = list(self._snapshot["equation_overlays"])
         self._state.export_image_options = dict(self._snapshot["export_image_options"])
 

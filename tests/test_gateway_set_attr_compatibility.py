@@ -1201,34 +1201,51 @@ def test_geochem_parameter_set_attr_compatibility() -> None:
     original_use_real_age = bool(getattr(app_state, "use_real_age_for_mu_kappa", False))
     original_mu_kappa_age_col = getattr(app_state, "mu_kappa_age_col", None)
     original_variant = str(getattr(app_state, "plumbotectonics_variant", "0"))
+    original_min_age = int(getattr(app_state, "paleoisochron_min_age", 0))
+    original_max_age = int(getattr(app_state, "paleoisochron_max_age", 3000))
     original_step = int(getattr(app_state, "paleoisochron_step", 1000))
     original_ages = list(getattr(app_state, "paleoisochron_ages", []) or [])
+    original_models = getattr(app_state, "model_curve_models", None)
+    if original_models is not None:
+        original_models = list(original_models)
 
     try:
         state_gateway.set_attr("use_real_age_for_mu_kappa", True)
         state_gateway.set_attr("mu_kappa_age_col", "Age_Ma")
         state_gateway.set_attr("plumbotectonics_variant", 2)
+        state_gateway.set_attr("paleoisochron_min_age", "120")
+        state_gateway.set_attr("paleoisochron_max_age", "2800")
         state_gateway.set_attr("paleoisochron_step", "250")
         state_gateway.set_attr("paleoisochron_ages", [1000, 750, 500, 250])
+        state_gateway.set_attr("model_curve_models", ["Stacey & Kramers (2nd Stage)"])
 
         assert app_state.use_real_age_for_mu_kappa is True
         assert app_state.mu_kappa_age_col == "Age_Ma"
         assert app_state.plumbotectonics_variant == "2"
+        assert app_state.paleoisochron_min_age == 120
+        assert app_state.paleoisochron_max_age == 2800
         assert app_state.paleoisochron_step == 250
         assert app_state.paleoisochron_ages == [1000, 750, 500, 250]
+        assert app_state.model_curve_models == ["Stacey & Kramers (2nd Stage)"]
 
         snapshot = app_state.state_store.snapshot()
         assert snapshot["use_real_age_for_mu_kappa"] is True
         assert snapshot["mu_kappa_age_col"] == "Age_Ma"
         assert snapshot["plumbotectonics_variant"] == "2"
+        assert snapshot["paleoisochron_min_age"] == 120
+        assert snapshot["paleoisochron_max_age"] == 2800
         assert snapshot["paleoisochron_step"] == 250
         assert snapshot["paleoisochron_ages"] == [1000, 750, 500, 250]
+        assert snapshot["model_curve_models"] == ["Stacey & Kramers (2nd Stage)"]
     finally:
         state_gateway.set_use_real_age_for_mu_kappa(original_use_real_age)
         state_gateway.set_mu_kappa_age_col(original_mu_kappa_age_col)
         state_gateway.set_plumbotectonics_variant(original_variant)
+        state_gateway.set_paleoisochron_min_age(original_min_age)
+        state_gateway.set_paleoisochron_max_age(original_max_age)
         state_gateway.set_paleoisochron_step(original_step)
         state_gateway.set_paleoisochron_ages(original_ages)
+        state_gateway.set_model_curve_models(original_models)
 
 
 def test_isochron_error_config_set_attr_compatibility() -> None:

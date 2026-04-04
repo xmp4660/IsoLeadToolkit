@@ -585,6 +585,10 @@ class AppState:
 
     @paleoisochron_min_age.setter
     def paleoisochron_min_age(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_PALEOISOCHRON_MIN_AGE', 'age': int(value)})
+            return
         self.overlay.paleoisochron_min_age = value
 
     @property
@@ -593,6 +597,10 @@ class AppState:
 
     @paleoisochron_max_age.setter
     def paleoisochron_max_age(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            state_store.dispatch({'type': 'SET_PALEOISOCHRON_MAX_AGE', 'age': int(value)})
+            return
         self.overlay.paleoisochron_max_age = value
 
     @property
@@ -651,6 +659,11 @@ class AppState:
 
     @model_curve_models.setter
     def model_curve_models(self, value):
+        state_store = getattr(self, 'state_store', None)
+        if state_store is not None:
+            normalized = list(value or []) if value is not None else None
+            state_store.dispatch({'type': 'SET_MODEL_CURVE_MODELS', 'models': normalized})
+            return
         self.overlay.model_curve_models = value
 
     @property
