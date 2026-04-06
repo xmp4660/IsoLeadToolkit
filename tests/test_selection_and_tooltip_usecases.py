@@ -26,6 +26,24 @@ def test_selection_rectangle_and_toggle_plan() -> None:
     assert plan.indices == [1, 2]
 
 
+def test_selection_lasso_handles_near_horizontal_edge() -> None:
+    use_case = SelectionInteractionUseCase()
+    coordinates = {
+        1: (0.9, 5e-17),
+        2: (3.0, 1.0),
+    }
+    vertices = [
+        (0.0, 0.0),
+        (2.0, 1e-16),
+        (2.0, 2.0),
+        (0.0, 2.0),
+    ]
+
+    selected = use_case.lasso_indices(coordinates, vertices)
+
+    assert selected == [1]
+
+
 def test_tooltip_content_fallback_to_id() -> None:
     use_case = TooltipContentUseCase()
     row = {"Name": "Demo"}

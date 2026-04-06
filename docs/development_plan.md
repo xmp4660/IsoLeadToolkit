@@ -2,6 +2,13 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百四十三批）
+
+- P2-3（数值稳定性统一）推进 lasso 几何判定分母保护：
+    - `application/use_cases/selection_interaction.py` 的射线法点在多边形判断从内联 `or 1e-12` 改为显式 `dy == 0` 分支处理，避免除零且保持微小斜率边的几何判定连续性。
+- 回归测试新增：
+    - `tests/test_selection_and_tooltip_usecases.py` 新增 1 个测试，覆盖近水平边（`dy≈1e-16`）场景下 lasso 选择结果稳定性。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百四十二批）
 
 - P2-3（数值稳定性统一）继续收敛 age 求解保护常量：

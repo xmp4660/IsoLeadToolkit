@@ -118,10 +118,14 @@ class SelectionInteractionUseCase:
         x1, y1 = vertices[0]
         for i in range(1, n + 1):
             x2, y2 = vertices[i % n]
-            intersects = ((y1 > y) != (y2 > y)) and (
-                x < (x2 - x1) * (y - y1) / ((y2 - y1) or 1e-12) + x1
-            )
-            if intersects:
-                inside = not inside
+            if (y1 > y) != (y2 > y):
+                dy = y2 - y1
+                if dy == 0.0:
+                    x_intersection = x1
+                else:
+                    x_intersection = (x2 - x1) * (y - y1) / dy + x1
+
+                if x < x_intersection:
+                    inside = not inside
             x1, y1 = x2, y2
         return inside
