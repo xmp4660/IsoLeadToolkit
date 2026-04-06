@@ -1547,3 +1547,9 @@ def test_state_store_bump_data_version_clears_cache() -> None:
         assert len(app_state.embedding_cache) == 0
     finally:
         _restore_state(snapshot)
+
+
+def test_state_store_snapshot_excludes_runtime_legend_domains() -> None:
+    store_snapshot = app_state.state_store.snapshot()
+    assert "legend_to_scatter" not in store_snapshot
+    assert "legend_update_callback" not in store_snapshot

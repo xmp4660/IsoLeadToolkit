@@ -2,6 +2,18 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百批）
+
+- 收口边界测试新增：
+    - `tests/test_state_store.py` 新增 `test_state_store_snapshot_excludes_runtime_legend_domains`，明确 `legend_to_scatter` 与 `legend_update_callback` 不进入 StateStore 快照。
+- 最终审计（本批执行）：
+    - `scripts/check_state_mutations.py --fail-on-hits` → `TOTAL=0`
+    - `scripts/check_gateway_generic_mutations.py --fail-on-hits` → `TOTAL=0`
+    - `scripts/check_gateway_generic_mutations_in_tests.py --fail-on-hits` → `TOTAL=0`
+    - `scripts/check_gateway_direct_state_assignments.py --fail-on-hits` → `TOTAL=0`
+    - `pytest tests/test_state_store.py tests/test_gateway_set_attr_compatibility.py tests/test_guard_scripts.py` → `145 passed`
+- 结论：当前 StateStore 迁移主线已无待收口项（按既定决策，运行时对象域保持非托管）。
+
 ## 阶段进展（2026-04-04 · StateStore 第九十九批）
 
 - 批次决策落地：运行时对象域保持非托管（不纳入 StateStore 快照），避免将不可序列化/仅会话内有效对象写入状态仓。
