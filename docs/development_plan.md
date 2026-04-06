@@ -2,6 +2,15 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百四十一批）
+
+- P2-3（数值稳定性统一）继续收敛 isochron 生长曲线分母保护：
+    - `data/geochemistry/isochron.py` 的 `calculate_isochron1_growth_curve` 分母阈值改为复用 `_SOURCE_DEN_FLOOR`，去除散落字面值。
+- 回归测试新增：
+    - `tests/test_geochemistry_age_isochron.py` 新增 2 个测试，覆盖：
+        - 退化分母场景返回 `None`；
+        - 常规输入返回指定步长的 `x/y` 生长曲线数组。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百四十批）
 
 - P2-3（数值稳定性统一）推进 isochron 反演分母保护统一：

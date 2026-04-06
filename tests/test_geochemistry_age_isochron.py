@@ -7,6 +7,7 @@ import pytest
 
 from data.geochemistry import engine
 from data.geochemistry.isochron import (
+    calculate_isochron1_growth_curve,
     calculate_isochron_age_from_slope,
     calculate_pbpb_age_from_ratio,
     calculate_source_kappa_from_slope,
@@ -80,3 +81,44 @@ def test_calculate_source_kappa_from_slope_returns_zero_on_degenerate_denominato
     )
 
     assert kappa == 0.0
+
+
+def test_calculate_isochron1_growth_curve_returns_none_on_degenerate_denominator() -> None:
+    params = {
+        **engine.get_parameters(),
+        "T1": 1_000_000.0,
+        "a1": 11.0,
+        "b1": 12.0,
+        "age_model": "two_stage",
+    }
+
+    curve = calculate_isochron1_growth_curve(
+        slope=0.3,
+        intercept=11.5,
+        age_ma=1.0,
+        params=params,
+    )
+
+    assert curve is None
+
+
+def test_calculate_isochron1_growth_curve_returns_data_on_regular_input() -> None:
+    params = {
+        **engine.get_parameters(),
+        "T1": 2_000_000.0,
+        "a1": 11.0,
+        "b1": 12.0,
+        "age_model": "two_stage",
+    }
+
+    curve = calculate_isochron1_growth_curve(
+        slope=0.0,
+        intercept=12.0,
+        age_ma=1.0,
+        params=params,
+        steps=16,
+    )
+
+    assert curve is not None
+    assert len(curve["x"]) == 16
+    assert len(curve["y"]) == 16

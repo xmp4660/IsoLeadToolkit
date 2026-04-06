@@ -134,7 +134,7 @@ def calculate_isochron1_growth_curve(
     C_beta = u_ratio * (_exp_evolution_term(l235, T_start_curve, E1_val) - _exp_evolution_term(l235, t_years, E1_val))
 
     denom = C_beta - slope * C_alpha
-    if abs(denom) <= 1e-15:
+    if abs(denom) <= _SOURCE_DEN_FLOOR:
         return None
 
     mu_source = (slope * a_start + intercept - b_start) / denom
