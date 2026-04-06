@@ -57,7 +57,7 @@ def _lazy_import_ml() -> None:
         SimpleImputer = _SimpleImputer
 
 
-def _lazy_import_geochemistry():
+def _lazy_import_geochemistry() -> tuple[Any | None, Any | None]:
     """Lazy-load the geochemistry module. Returns (module, calculate_all_parameters)."""
     global _geochemistry, _calculate_all_parameters, _geochem_checked
     if _geochem_checked:

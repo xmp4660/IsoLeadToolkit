@@ -2,6 +2,13 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百一十三批）
+
+- P2-1（类型注解补齐）推进 plotting 数据辅助模块：
+    - `visualization/plotting/data.py` 的 `_lazy_import_geochemistry` 增加显式返回类型注解。
+- 回归测试新增：
+    - `tests/test_plotting_data_lazy_import.py` 新增缓存行为测试，锁定 lazy import 在首轮加载后复用同一模块/函数引用。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百一十二批）
 
 - P2-1（类型注解补齐）推进 embedding 算法调度工具：
