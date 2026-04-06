@@ -26,7 +26,7 @@ def _solve_simplex_weights(endmember_matrix: np.ndarray, target: np.ndarray) -> 
         residual = float(np.linalg.norm(endmember_matrix[:, 0] - target))
         return weights, residual
 
-    def obj(w):
+    def obj(w: np.ndarray) -> float:
         return np.sum((endmember_matrix @ w - target) ** 2)
 
     x0 = np.full(n_endmembers, 1.0 / n_endmembers, dtype=float)
