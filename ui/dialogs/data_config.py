@@ -1,6 +1,8 @@
 """
 Qt5 数据配置对话框
 """
+from typing import Any
+
 import pandas as pd
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout,
                               QLabel, QPushButton,
@@ -221,7 +223,11 @@ class Qt5DataConfigDialog(QDialog):
         self.accept()
 
 
-def get_data_configuration(df, default_group_cols=None, default_data_cols=None):
+def get_data_configuration(
+    df: Any,
+    default_group_cols: list[str] | None = None,
+    default_data_cols: list[str] | None = None,
+) -> dict[str, list[str]] | None:
     """获取数据配置"""
     dialog = Qt5DataConfigDialog(df, default_group_cols, default_data_cols)
     if dialog.exec_() == Qt5DataConfigDialog.Accepted:

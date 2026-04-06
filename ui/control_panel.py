@@ -3,6 +3,7 @@
 提供算法参数调整和可视化设置。
 """
 import logging
+from typing import Any, Callable
 
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
@@ -330,12 +331,16 @@ class Qt5ControlPanel(QWidget):
             self.export_panel._on_export_clicked()
 
 
-def create_control_panel(callback):
+def create_control_panel(callback: Callable[[], None] | None) -> Qt5ControlPanel:
     """创建控制面板工厂函数"""
     return Qt5ControlPanel(callback)
 
 
-def create_section_dialog(section_key, callback, parent=None):
+def create_section_dialog(
+    section_key: str | None,
+    callback: Callable[[], None] | None,
+    parent: Any = None,
+) -> Any | None:
     """Create a dialog that hosts a single control section."""
     from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QApplication, QScrollArea
     from core import set_language

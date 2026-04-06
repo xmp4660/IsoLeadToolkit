@@ -3,6 +3,7 @@
 import os
 import sys
 import traceback
+from typing import Any
 
 from PyQt5.QtCore import QEvent, QLocale, QObject, QTranslator
 from PyQt5.QtWidgets import QApplication, QStyleFactory, QWidget
@@ -11,7 +12,7 @@ from PyQt5.QtGui import QFont
 from core import translate
 
 
-def _clear_widget_styles(widget):
+def _clear_widget_styles(widget: Any) -> None:
     if widget is None:
         return
 

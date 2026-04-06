@@ -21,7 +21,7 @@ from ui.main_window import Qt5MainWindow
 
 logger = logging.getLogger(__name__)
 
-def _configure_matplotlib_fonts():
+def _configure_matplotlib_fonts() -> None:
     """配置 Matplotlib 字体"""
     import matplotlib
     from matplotlib import font_manager
@@ -50,7 +50,7 @@ def _configure_matplotlib_fonts():
     matplotlib.rcParams['savefig.dpi'] = savefig_dpi_value
 
 
-def _configure_matplotlib():
+def _configure_matplotlib() -> None:
     """配置 matplotlib 后端和字体"""
     import matplotlib
 

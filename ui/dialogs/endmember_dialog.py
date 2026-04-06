@@ -1,5 +1,6 @@
 """端元识别对话框。"""
 import logging
+from typing import Any
 
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
                               QLabel, QTableWidget, QTableWidgetItem, QMessageBox,
@@ -15,7 +16,7 @@ from core import app_state, state_gateway, translate
 logger = logging.getLogger(__name__)
 
 
-def show_endmember_analysis(parent=None):
+def show_endmember_analysis(parent: Any = None) -> None:
     dialog = EndmemberAnalysisDialog(parent)
     dialog.exec_()
 

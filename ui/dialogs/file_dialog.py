@@ -218,7 +218,7 @@ class Qt5FileDialog(QDialog):
         self.accept()
 
 
-def get_file_sheet_selection(default_file=None):
+def get_file_sheet_selection(default_file: str | None = None) -> dict[str, str] | None:
     """获取文件和工作表选择"""
     dialog = Qt5FileDialog(default_file)
     if dialog.exec_() == Qt5FileDialog.Accepted:

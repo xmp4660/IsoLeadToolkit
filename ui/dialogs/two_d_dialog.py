@@ -174,7 +174,7 @@ class Qt5TwoDDialog(QDialog):
         self.accept()
 
 
-def get_2d_column_selection():
+def get_2d_column_selection() -> list[str] | None:
     """获取 2D 列选择"""
     dialog = Qt5TwoDDialog()
     if dialog.exec_() == Qt5TwoDDialog.Accepted:

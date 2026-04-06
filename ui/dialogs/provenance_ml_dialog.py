@@ -9,7 +9,7 @@ class ProvenanceMLDialog(ProvenanceMLDialogMixin, QDialog):
     """Provenance ML dialog."""
 
 
-def show_provenance_ml(parent=None):
+def show_provenance_ml(parent: object | None = None) -> None:
     """Open Provenance ML dialog."""
     dialog = ProvenanceMLDialog(parent)
     dialog.exec_()

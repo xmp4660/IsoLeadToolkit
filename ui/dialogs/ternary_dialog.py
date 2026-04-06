@@ -234,7 +234,7 @@ class Qt5TernaryDialog(QDialog):
         self.accept()
 
 
-def get_ternary_column_selection():
+def get_ternary_column_selection() -> dict[str, object] | None:
     """获取三元图列选择"""
     dialog = Qt5TernaryDialog()
     if dialog.exec_() == Qt5TernaryDialog.Accepted:

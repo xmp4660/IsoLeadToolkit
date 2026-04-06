@@ -22,7 +22,7 @@ import numpy as np
 from core import translate, app_state
 
 
-def get_isochron_error_settings(parent=None):
+def get_isochron_error_settings(parent: object | None = None) -> dict[str, object] | None:
     """Open the isochron regression error settings dialog."""
     dialog = IsochronErrorConfigDialog(parent)
     if dialog.exec_() == QDialog.Accepted:

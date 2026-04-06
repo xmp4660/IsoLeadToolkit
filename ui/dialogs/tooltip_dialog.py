@@ -10,7 +10,7 @@ from PyQt5.QtGui import QFont
 from core import app_state, translate
 
 
-def get_tooltip_configuration(parent=None):
+def get_tooltip_configuration(parent: object | None = None) -> list[str] | None:
     """
     打开工具提示配置对话框
 

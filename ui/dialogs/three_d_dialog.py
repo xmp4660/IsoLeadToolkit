@@ -183,7 +183,7 @@ class Qt5ThreeDDialog(QDialog):
         self.accept()
 
 
-def get_3d_column_selection():
+def get_3d_column_selection() -> list[str] | None:
     """获取 3D 列选择"""
     dialog = Qt5ThreeDDialog()
     if dialog.exec_() == Qt5ThreeDDialog.Accepted:

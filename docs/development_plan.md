@@ -2,6 +2,16 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百三十五批）
+
+- P2-1（类型注解补齐）收敛 UI 顶层 helper 签名：
+    - `ui/app.py`：`_configure_matplotlib_fonts`、`_configure_matplotlib`
+    - `ui/control_panel.py`：`create_control_panel`、`create_section_dialog`
+    - `ui/app_parts/styles.py`：`_clear_widget_styles`
+    - `ui/dialogs/*.py`：`get_*` / `show_*` 顶层包装函数全部补齐显式类型注解。
+- 回归测试新增：
+    - `tests/test_ui_wrapper_helpers.py` 新增 13 个测试，覆盖 matplotlib 启动配置 helper、control panel 工厂函数、dialog 包装函数返回路径以及样式清理 helper 行为。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百三十四批）
 
 - P2-1（类型注解补齐）推进日志入口函数：

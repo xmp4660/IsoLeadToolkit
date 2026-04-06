@@ -13,7 +13,7 @@ from core import app_state, translate
 logger = logging.getLogger(__name__)
 
 
-def show_mixing_calculator(parent=None):
+def show_mixing_calculator(parent: object | None = None) -> None:
     """
     显示混合计算器对话框
 

@@ -108,7 +108,7 @@ class Qt5SheetDialog(QDialog):
         self.accept()
 
 
-def get_sheet_selection(file_path, default_sheet=None):
+def get_sheet_selection(file_path: str, default_sheet: str | None = None) -> str | None:
     """获取工作表选择"""
     dialog = Qt5SheetDialog(file_path, default_sheet)
     if dialog.exec_() == Qt5SheetDialog.Accepted:
