@@ -1,5 +1,6 @@
 """KDE helpers for plotting."""
 import logging
+from typing import Any
 
 import numpy as np
 from scipy.stats import gaussian_kde
@@ -63,7 +64,7 @@ def _estimate_density_curve(
         return None
 
 
-def clear_marginal_axes():
+def clear_marginal_axes() -> None:
     axes = getattr(app_state, 'marginal_axes', None)
     if axes:
         for ax in axes:
@@ -74,7 +75,15 @@ def clear_marginal_axes():
     state_gateway.set_marginal_axes(None)
 
 
-def draw_marginal_kde(ax, df_plot, group_col, palette, unique_cats, x_col='_emb_x', y_col='_emb_y'):
+def draw_marginal_kde(
+    ax: Any,
+    df_plot: Any,
+    group_col: str,
+    palette: dict[str, str],
+    unique_cats: list[str],
+    x_col: str = '_emb_x',
+    y_col: str = '_emb_y',
+) -> None:
     """Draw marginal KDEs on top/right axes for 2D plots."""
     try:
         from mpl_toolkits.axes_grid1 import make_axes_locatable

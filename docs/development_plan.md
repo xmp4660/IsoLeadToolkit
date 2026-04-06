@@ -2,6 +2,15 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百二十七批）
+
+- P2-1（类型注解补齐）推进 plotting KDE 模块：
+    - `visualization/plotting/kde.py` 的 `clear_marginal_axes` 与 `draw_marginal_kde` 补齐显式类型注解。
+- 回归测试新增：
+    - `tests/test_plotting_kde_helpers.py` 新增 2 个测试，覆盖：
+        - 边际 KDE 绘制后 axes 注册；
+        - `clear_marginal_axes` 清理并重置状态。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百二十六批）
 
 - P2-1（类型注解补齐）推进 plotting 样式核心模块：
