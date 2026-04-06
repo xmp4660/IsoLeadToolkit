@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
@@ -15,7 +16,7 @@ from ...style import _legend_columns_for_layout, _legend_layout_config, _style_l
 logger = logging.getLogger(__name__)
 
 
-def _notify_legend_panel(title, handles, labels):
+def _notify_legend_panel(title: str, handles: list[Any], labels: list[str]) -> None:
     callback = getattr(app_state, 'legend_update_callback', None)
     if callable(callback):
         try:
@@ -24,7 +25,7 @@ def _notify_legend_panel(title, handles, labels):
             pass
 
 
-def _build_legend_proxies(handles, labels):
+def _build_legend_proxies(handles: list[Any], labels: list[str]) -> list[Any]:
     """Build proxy legend handles from group_legend_items data."""
     items = group_legend_items(all_groups=list(labels))
     use_patch = any(isinstance(h, Patch) for h in handles)
@@ -49,7 +50,7 @@ def _build_legend_proxies(handles, labels):
     return proxies
 
 
-def _build_overlay_legend_entries(actual_algorithm):
+def _build_overlay_legend_entries(actual_algorithm: str) -> list[tuple[Line2D, str]]:
     """Build legend entries for geochemistry overlay curves."""
     entries = []
     for item in overlay_legend_items(actual_algorithm=actual_algorithm):
@@ -67,9 +68,12 @@ def _build_overlay_legend_entries(actual_algorithm):
 
 
 def _place_inline_legend(
-    ax, group_col, legend_handles, legend_labels,
+    ax: Any,
+    group_col: str,
+    legend_handles: list[Any],
+    legend_labels: list[str],
     *, show_marginal_kde=False, scatters=None, is_kde_mode=False,
-):
+) -> None:
     """Place in-plot legend and notify the outside legend panel."""
     state_gateway.set_legend_snapshot(group_col, legend_handles, legend_labels)
     _notify_legend_panel(group_col, legend_handles, legend_labels)
@@ -125,7 +129,12 @@ def _place_inline_legend(
             pass
 
 
-def _render_legend(actual_algorithm, group_col, unique_cats, scatters):
+def _render_legend(
+    actual_algorithm: str,
+    group_col: str,
+    unique_cats: list[str],
+    scatters: list[Any],
+) -> None:
     try:
         handles = []
         labels = []

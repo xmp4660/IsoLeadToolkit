@@ -2,6 +2,15 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百二十三批）
+
+- P2-1（类型注解补齐）推进渲染图例辅助模块：
+    - `visualization/plotting/rendering/common/legend.py` 的 `_notify_legend_panel`、`_build_legend_proxies`、`_build_overlay_legend_entries`、`_place_inline_legend`、`_render_legend` 补齐显式类型注解。
+- 回归测试新增：
+    - `tests/test_rendering_legend_helpers.py` 新增 2 个测试，覆盖：
+        - patch 模式下图例代理句柄构建；
+        - overlay 图例条目样式应用与文本翻译路径。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百二十二批）
 
 - P2-1（类型注解补齐）推进渲染标题辅助模块：
