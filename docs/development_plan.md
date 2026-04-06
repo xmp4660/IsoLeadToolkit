@@ -2,6 +2,13 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-07 · StateStore 第一百五十七批）
+
+- P2-3（数值稳定性统一）继续收敛 Pb-Pb 年龄求解区间常量：
+    - `data/geochemistry/isochron.py` 新增 `_PBPB_SOLVER_BOUNDS`，替换 `calculate_pbpb_age_from_ratio` 中内联 `(1e6, 10e9)`。
+- 回归测试新增：
+    - `tests/test_geochemistry_age_isochron.py` 新增 1 个测试，覆盖 `calculate_pbpb_age_from_ratio` 对 `_PBPB_SOLVER_BOUNDS` 的透传。
+
 ## 阶段进展（2026-04-07 · StateStore 第一百五十六批）
 
 - P2-3（数值稳定性统一）继续收敛 age 求解区间常量：

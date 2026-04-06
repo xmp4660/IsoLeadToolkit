@@ -36,6 +36,7 @@ from .age import _solve_age_scipy
 
 _SOURCE_DEN_FLOOR = max(EPSILON, 1e-15)
 _YORK_TOL_DEFAULT = 1e-15
+_PBPB_SOLVER_BOUNDS = (1e6, 10e9)
 
 
 def calculate_paleoisochron_line(
@@ -312,7 +313,7 @@ def calculate_pbpb_age_from_ratio(
             den = EPSILON
         return (u_ratio * num / den) - r76
 
-    res = _solve_age_scipy(f, bounds=(1e6, 10e9))
+    res = _solve_age_scipy(f, bounds=_PBPB_SOLVER_BOUNDS)
     if not res:
         return 0.0, None
 

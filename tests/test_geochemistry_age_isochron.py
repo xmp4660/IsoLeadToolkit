@@ -7,6 +7,7 @@ import pytest
 
 from data.geochemistry import age as age_module
 from data.geochemistry import engine
+from data.geochemistry import isochron as isochron_module
 from data.geochemistry.isochron import (
     calculate_isochron1_growth_curve,
     calculate_isochron_age_from_slope,
@@ -41,6 +42,23 @@ def test_calculate_pbpb_age_from_ratio_non_positive_short_circuit() -> None:
 
     assert age_ma == 0.0
     assert age_err_ma is None
+
+
+def test_calculate_pbpb_age_from_ratio_uses_named_solver_bounds(monkeypatch) -> None:
+    captured: dict[str, tuple[float, float]] = {}
+
+    def _fake_solver(func, bounds, search_points=200):
+        _ = func, search_points
+        captured["bounds"] = tuple(float(v) for v in bounds)
+        return 2_000_000.0
+
+    monkeypatch.setattr(isochron_module, "_solve_age_scipy", _fake_solver)
+
+    age_ma, age_err_ma = calculate_pbpb_age_from_ratio(0.25, sr76=None)
+
+    assert age_ma == pytest.approx(2.0, rel=0.0, abs=1e-12)
+    assert age_err_ma is None
+    assert captured["bounds"] == isochron_module._PBPB_SOLVER_BOUNDS
 
 
 def test_calculate_isochron_age_from_slope_matches_pbpb_solver() -> None:
