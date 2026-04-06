@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from core import app_state
 from ..legend_model import OVERLAY_TOGGLE_MAP
@@ -9,7 +10,7 @@ from ..legend_model import OVERLAY_TOGGLE_MAP
 logger = logging.getLogger(__name__)
 
 
-def refresh_overlay_styles():
+def refresh_overlay_styles() -> None:
     """Refresh overlay curve/label styles without full re-render.
 
     Updates line styles (color, width, linestyle, alpha) for overlay artists
@@ -62,7 +63,7 @@ def refresh_overlay_styles():
         logger.warning("Failed to refresh overlay styles: %s", e)
 
 
-def refresh_overlay_visibility():
+def refresh_overlay_visibility() -> None:
     """Refresh overlay visibility based on app_state toggle flags."""
     if app_state.fig is None or app_state.ax is None:
         return
@@ -88,7 +89,7 @@ def refresh_overlay_visibility():
             'growth_curves': 'show_growth_curves',
         }
 
-        def _resolve_visible(style_key):
+        def _resolve_visible(style_key: str) -> bool:
             if isinstance(style_key, str) and style_key.startswith('plumbotectonics_curve:'):
                 group_visibility = getattr(app_state, 'plumbotectonics_group_visibility', {}) or {}
                 return bool(
@@ -102,7 +103,7 @@ def refresh_overlay_visibility():
                 return bool(getattr(app_state, toggle_attr, True))
             return True
 
-        def _set_artist_visible(style_key, artist):
+        def _set_artist_visible(style_key: str, artist: Any) -> None:
             if artist is None:
                 return
             try:
@@ -119,7 +120,7 @@ def refresh_overlay_visibility():
             for artist in payload or []:
                 _set_artist_visible(style_key, artist)
 
-        def _set_label_visibility(entries, fallback_style_key):
+        def _set_label_visibility(entries: list[dict[str, Any]], fallback_style_key: str) -> None:
             for entry in entries or []:
                 if not isinstance(entry, dict):
                     continue

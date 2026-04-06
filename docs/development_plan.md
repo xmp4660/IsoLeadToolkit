@@ -2,6 +2,15 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百二十批）
+
+- P2-1（类型注解补齐）推进 overlay 样式刷新模块：
+    - `visualization/plotting/styling/overlays.py` 的 `refresh_overlay_styles`、`refresh_overlay_visibility` 及内部可见性辅助函数补齐显式类型注解。
+- 回归测试新增：
+    - `tests/test_overlay_styling_visibility.py` 新增 2 个测试，覆盖：
+        - 样式刷新对 artist 颜色/线宽/线型/透明度的应用；
+        - 可见性刷新对 toggle 与分组可见性的联动控制。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百一十九批）
 
 - P2-1（类型注解补齐）推进 geochem 标签模块：
