@@ -2,6 +2,16 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百零八批）
+
+- P2-1（类型注解补齐）继续推进 geochem overlay 公共工具：
+    - `visualization/plotting/geochem/overlay_common.py` 的 artist 注册、label 参数合并、文本模板与 bbox 构造函数补齐显式类型注解。
+- 回归测试新增：
+    - `tests/test_overlay_common_helpers.py` 新增 3 个测试，覆盖：
+        - label 模板格式化与缺失占位符回退；
+        - label bbox 默认值与自定义边框；
+        - 样式合并时对空字符串/None 的忽略规则。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百零七批）
 
 - P2-1（类型注解补齐）推进 visualization/geochem 元数据模块：

@@ -1,6 +1,8 @@
 """Common overlay helper utilities for geochemistry plotting."""
 from __future__ import annotations
 
+from typing import Any, Iterable
+
 from core import app_state, state_gateway
 
 def _is_overlay_label_style_visible(style_key: str | None) -> bool:
@@ -27,7 +29,7 @@ def _is_overlay_label_style_visible(style_key: str | None) -> bool:
     return True
 
 
-def _register_overlay_artist(style_key, artist):
+def _register_overlay_artist(style_key: str, artist: Any) -> None:
     if artist is None:
         return
     if not hasattr(app_state, 'overlay_artists'):
@@ -35,7 +37,7 @@ def _register_overlay_artist(style_key, artist):
     app_state.overlay_artists.setdefault(style_key, []).append(artist)
 
 
-def _resolve_label_options(style_key, fallback):
+def _resolve_label_options(style_key: str, fallback: dict[str, Any]) -> dict[str, Any]:
     style = getattr(app_state, 'line_styles', {}).get(style_key, {}) or {}
     resolved = dict(fallback)
     for key in resolved:
@@ -50,7 +52,7 @@ def _resolve_label_options(style_key, fallback):
     return resolved
 
 
-def _format_label_text(template, age=None, **kwargs):
+def _format_label_text(template: str | None, age: float | None = None, **kwargs: Any) -> str | None:
     if not template:
         return None
     fmt_kwargs = dict(kwargs)
@@ -62,7 +64,7 @@ def _format_label_text(template, age=None, **kwargs):
         return template
 
 
-def _label_bbox(label_opts, edgecolor=None):
+def _label_bbox(label_opts: dict[str, Any], edgecolor: str | None = None) -> dict[str, Any] | None:
     if not label_opts.get('label_background', False):
         return None
     facecolor = label_opts.get('label_bg_color', '#ffffff')
@@ -76,13 +78,13 @@ def _label_bbox(label_opts, edgecolor=None):
 
 
 def _register_overlay_curve_label(
-    text_artist,
-    x_vals,
-    y_vals,
-    label_text,
-    position_mode,
-    style_key=None
-):
+    text_artist: Any,
+    x_vals: Iterable[float],
+    y_vals: Iterable[float],
+    label_text: str,
+    position_mode: str | None,
+    style_key: str | None = None,
+) -> None:
     if text_artist is None:
         return
     if not hasattr(app_state, 'overlay_curve_label_data'):
