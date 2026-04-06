@@ -2,6 +2,15 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百三十一批）
+
+- P2-1（类型注解补齐）推进 equation overlays 模块：
+    - `visualization/plotting/geochem/equation_overlays.py` 的 `_safe_eval_expression`、内部 `_eval_node` 与 `_draw_equation_overlays` 补齐显式类型注解。
+- 回归测试新增：
+    - `tests/test_equation_overlays_helpers.py` 新增 2 个测试，覆盖：
+        - 算术与 `where` 表达式求值；
+        - 未知变量/非法调用符号拒绝。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百三十批）
 
 - P2-1（类型注解补齐）推进 plumbotectonics 曲线模块：

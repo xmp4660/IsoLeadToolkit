@@ -4,6 +4,7 @@ from __future__ import annotations
 import ast
 import logging
 import operator
+from typing import Any
 
 import numpy as np
 
@@ -20,7 +21,7 @@ from .overlay_helpers import (
 
 logger = logging.getLogger(__name__)
 
-def _safe_eval_expression(expression, x_vals):
+def _safe_eval_expression(expression: str, x_vals: np.ndarray) -> Any:
     """Safely evaluate a mathematical expression over *x_vals*.
 
     Uses AST parsing to restrict allowed operations to arithmetic,
@@ -48,7 +49,7 @@ def _safe_eval_expression(expression, x_vals):
         ast.USub: operator.neg,
     }
 
-    def _eval_node(node):
+    def _eval_node(node: ast.AST) -> Any:
         if isinstance(node, ast.Expression):
             return _eval_node(node.body)
         if isinstance(node, ast.Constant):
@@ -113,7 +114,7 @@ def _safe_eval_expression(expression, x_vals):
     return _eval_node(tree)
 
 
-def _draw_equation_overlays(ax):
+def _draw_equation_overlays(ax: Any) -> None:
     """Draw configured equation overlays on the current axes."""
     if not getattr(app_state, 'show_equation_overlays', False):
         return
