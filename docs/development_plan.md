@@ -2,6 +2,14 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百三十七批）
+
+- P2-2（AppState 分层拆分）继续清理剩余 `setattr(app_state, ...)` 旁路写入：
+    - `core/localization.py` 的 `set_language` 改为显式 `state_gateway.set_language_code`。
+    - `visualization/line_styles.py` 的全局状态写入改为显式 `state_gateway.set_line_styles`（对非全局自定义 state 仍保留原地写入行为）。
+- 回归测试新增：
+    - `tests/test_localization_line_style_helpers.py` 新增 4 个测试，覆盖语言切换 gateway 路径、非法语言拒绝、line_style 全局状态写入与自定义状态分支。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百三十六批）
 
 - P2-2（AppState 分层拆分）继续迁移 ternary helper 的状态写入路径：

@@ -104,11 +104,11 @@ def set_language(language: str) -> bool:
 
     ensure_language(language)
     try:
-        from .state import app_state  # Lazy import to avoid circular import
+        from .state import app_state, state_gateway  # Lazy import to avoid circular import
     except Exception:
         return False
 
-    setattr(app_state, 'language', language)
+    state_gateway.set_language_code(language)
     notify = getattr(app_state, 'notify_language_change', None)
     if callable(notify):
         notify()
