@@ -2,6 +2,15 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百二十九批）
+
+- P2-1（类型注解补齐）推进 model age lines 模块：
+    - `visualization/plotting/geochem/model_age_lines.py` 的 `_resolve_model_age`、`_draw_model_age_lines`、`_draw_model_age_lines_86` 补齐显式类型注解。
+- 回归测试新增：
+    - `tests/test_model_age_lines_helpers.py` 新增 2 个测试，覆盖：
+        - 单阶段分支使用 CDT 年龄与 `T2` 覆写；
+        - 两阶段分支优先使用有限 `tSK` 并在缺失处回退 `tCDT`。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百二十八批）
 
 - P2-1（类型注解补齐）推进地化叠加调度模块：

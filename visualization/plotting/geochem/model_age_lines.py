@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import numpy as np
 
@@ -20,7 +21,11 @@ from .plumbotectonics_metadata import get_overlay_default_color
 
 logger = logging.getLogger(__name__)
 
-def _resolve_model_age(pb206, pb207, params):
+def _resolve_model_age(
+    pb206: np.ndarray,
+    pb207: np.ndarray,
+    params: dict[str, Any],
+) -> tuple[np.ndarray, float | None]:
     """Resolve model age and T1 override from Pb data and model params.
 
     Returns:
@@ -39,7 +44,12 @@ def _resolve_model_age(pb206, pb207, params):
     return t_model, t1_override
 
 
-def _draw_model_age_lines(ax, pb206, pb207, params):
+def _draw_model_age_lines(
+    ax: Any,
+    pb206: np.ndarray,
+    pb207: np.ndarray,
+    params: dict[str, Any],
+) -> None:
     """Draw model age construction lines for 206/204 vs 207/204."""
     geochemistry, _ = _lazy_import_geochemistry()
     if geochemistry is None:
@@ -138,7 +148,13 @@ def _draw_model_age_lines(ax, pb206, pb207, params):
     except Exception as err:
         logger.warning("Failed to draw model age lines: %s", err)
 
-def _draw_model_age_lines_86(ax, pb206, pb207, pb208, params):
+def _draw_model_age_lines_86(
+    ax: Any,
+    pb206: np.ndarray,
+    pb207: np.ndarray,
+    pb208: np.ndarray,
+    params: dict[str, Any],
+) -> None:
     """Draw model age construion lines for 206/204 vs 208/204."""
     geochemistry, _ = _lazy_import_geochemistry()
     if geochemistry is None:
