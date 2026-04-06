@@ -2,6 +2,15 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百三十四批）
+
+- P2-1（类型注解补齐）推进日志入口函数：
+    - `utils/logger.py` 的 `setup_logging` 增加显式参数与返回类型注解，并同步补齐 `LoggerWriter` 方法签名类型。
+- 回归测试新增：
+    - `tests/test_logger_setup.py` 新增 2 个测试，覆盖：
+        - `setup_logging` 对 `stdout/stderr` 的重定向与日志文件落盘；
+        - `ISOTOPES_LOG_LEVEL` 环境变量对根日志级别的控制。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百三十三批）
 
 - P2-1（类型注解补齐）收敛 `visualization` 模块级兼容导出函数：
