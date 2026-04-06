@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import numpy as np
 
@@ -13,7 +14,7 @@ from ..ternary import prepare_ternary_components
 logger = logging.getLogger(__name__)
 
 
-def _resolve_kde_style(target: str = 'kde') -> dict:
+def _resolve_kde_style(target: str = 'kde') -> dict[str, Any]:
     legacy_key = 'kde_style' if target == 'kde' else 'marginal_kde_style'
     style_key = 'kde_curve' if target == 'kde' else 'marginal_kde_curve'
     legacy_style = getattr(app_state, legacy_key, {}) or {}
@@ -29,7 +30,13 @@ def _resolve_kde_style(target: str = 'kde') -> dict:
     return ensure_line_style(app_state, style_key, fallback)
 
 
-def _render_kde_overlay(actual_algorithm, df_plot, group_col, unique_cats, new_palette):
+def _render_kde_overlay(
+    actual_algorithm: str,
+    df_plot: Any,
+    group_col: str,
+    unique_cats: list[str],
+    new_palette: dict[str, str],
+) -> None:
     if not getattr(app_state, 'show_kde', False):
         return
     try:

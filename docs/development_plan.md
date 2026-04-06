@@ -2,6 +2,15 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百二十五批）
+
+- P2-1（类型注解补齐）推进渲染 KDE 辅助模块：
+    - `visualization/plotting/rendering/kde.py` 的 `_resolve_kde_style` 与 `_render_kde_overlay` 补齐显式类型注解。
+- 回归测试新增：
+    - `tests/test_rendering_kde_helpers.py` 新增 2 个测试，覆盖：
+        - 主 KDE 样式从 legacy 配置生成 fallback；
+        - marginal KDE 样式默认与字段差异（无 `levels`）。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百二十四批）
 
 - P2-1（类型注解补齐）推进渲染散点辅助模块：
