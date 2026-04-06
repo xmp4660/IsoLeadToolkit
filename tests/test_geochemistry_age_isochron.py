@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from data.geochemistry import age as age_module
 from data.geochemistry import engine
 from data.geochemistry.isochron import (
     calculate_isochron1_growth_curve,
@@ -122,3 +123,51 @@ def test_calculate_isochron1_growth_curve_returns_data_on_regular_input() -> Non
     assert curve is not None
     assert len(curve["x"]) == 16
     assert len(curve["y"]) == 16
+
+
+def test_single_stage_age_guard_short_circuits_ratio_singularity(monkeypatch) -> None:
+    params = {
+        **engine.get_parameters(),
+        "a0": 10.0,
+        "b0": 11.0,
+    }
+
+    def _fake_solver(func, bounds, search_points=200):
+        _ = bounds, search_points
+        val = func(0.0)
+        return None if val >= 1e9 else 0.0
+
+    monkeypatch.setattr(age_module, "_solve_age_scipy", _fake_solver)
+
+    age = age_module.calculate_single_stage_age(
+        Pb206_204_S=10.0,
+        Pb207_204_S=12.0,
+        params=params,
+    )
+
+    assert age is None
+
+
+def test_two_stage_age_guard_produces_nan_for_array_element(monkeypatch) -> None:
+    params = {
+        **engine.get_parameters(),
+        "a1": 12.0,
+        "b1": 13.0,
+    }
+
+    def _fake_solver(func, bounds, search_points=200):
+        _ = bounds, search_points
+        val = func(0.0)
+        return None if val >= 1e9 else 1_000_000.0
+
+    monkeypatch.setattr(age_module, "_solve_age_scipy", _fake_solver)
+
+    ages = age_module.calculate_two_stage_age(
+        Pb206_204_S=np.array([12.0, 12.5], dtype=float),
+        Pb207_204_S=np.array([13.2, 13.4], dtype=float),
+        params=params,
+    )
+
+    assert isinstance(ages, np.ndarray)
+    assert np.isnan(ages[0])
+    assert ages[1] == pytest.approx(1.0, rel=0.0, abs=1e-12)

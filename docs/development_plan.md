@@ -2,6 +2,15 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百四十二批）
+
+- P2-3（数值稳定性统一）继续收敛 age 求解保护常量：
+    - `data/geochemistry/age.py` 将重复字面值 `1e-10`、`1e10` 提炼为 `_RATIO_DIFF_FLOOR` 与 `_SOLVER_GUARD_VALUE`，统一单/双阶段标量与数组路径的奇异点保护语义。
+- 回归测试新增：
+    - `tests/test_geochemistry_age_isochron.py` 新增 2 个测试，覆盖：
+        - 单阶段分母奇异点短路返回 `None`；
+        - 双阶段数组路径中奇异元素回退为 `NaN`，常规元素保持求解结果。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百四十一批）
 
 - P2-3（数值稳定性统一）继续收敛 isochron 生长曲线分母保护：

@@ -19,6 +19,10 @@ from .engine import (
 )
 
 
+_RATIO_DIFF_FLOOR = 1e-10
+_SOLVER_GUARD_VALUE = 1e10
+
+
 def _solve_age_scipy(
     f: Callable[[float], float],
     bounds: tuple[float, float],
@@ -117,7 +121,8 @@ def calculate_single_stage_age(
             if abs(denom) < EPSILON: denom = EPSILON
             num = np.exp(l235 * T) - np.exp(l235 * t)
             
-            if abs(S206 - a0_val) < 1e-10: return 1e10
+            if abs(S206 - a0_val) < _RATIO_DIFF_FLOOR:
+                return _SOLVER_GUARD_VALUE
                 
             R = (S207 - b0_val) / (S206 - a0_val)
             return R - u_ratio * num / denom
@@ -137,7 +142,8 @@ def calculate_single_stage_age(
             if abs(denom) < EPSILON: denom = EPSILON
             num = np.exp(l235 * T) - np.exp(l235 * t)
             
-            if abs(s206 - a0_val) < 1e-10: return 1e10 # 避免除零
+            if abs(s206 - a0_val) < _RATIO_DIFF_FLOOR:  # 避免除零
+                return _SOLVER_GUARD_VALUE
             
             R = (s207 - b0_val) / (s206 - a0_val)
             return R - u_ratio * num / denom
@@ -183,7 +189,8 @@ def calculate_two_stage_age(
             if abs(denom) < EPSILON: denom = EPSILON
             num = np.exp(l235 * T) - np.exp(l235 * t)
             
-            if abs(S206 - a1_val) < 1e-10: return 1e10
+            if abs(S206 - a1_val) < _RATIO_DIFF_FLOOR:
+                return _SOLVER_GUARD_VALUE
                 
             R = (S207 - b1_val) / (S206 - a1_val)
             return R - u_ratio * num / denom
@@ -203,7 +210,8 @@ def calculate_two_stage_age(
             if abs(denom) < EPSILON: denom = EPSILON
             num = np.exp(l235 * T) - np.exp(l235 * t)
             
-            if abs(s206 - a1_val) < 1e-10: return 1e10
+            if abs(s206 - a1_val) < _RATIO_DIFF_FLOOR:
+                return _SOLVER_GUARD_VALUE
                 
             R = (s207 - b1_val) / (s206 - a1_val)
             return R - u_ratio * num / denom
