@@ -424,11 +424,11 @@ class AppState:
     # ------------------------------------------------------------------ #
 
     @property
-    def show_model_curves(self):
+    def show_model_curves(self) -> bool:
         return self.overlay.show_model_curves
 
     @show_model_curves.setter
-    def show_model_curves(self, value):
+    def show_model_curves(self, value: bool) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_SHOW_MODEL_CURVES', 'show': bool(value)})
@@ -436,11 +436,11 @@ class AppState:
         self.overlay.show_model_curves = value
 
     @property
-    def show_paleoisochrons(self):
+    def show_paleoisochrons(self) -> bool:
         return self.overlay.show_paleoisochrons
 
     @show_paleoisochrons.setter
-    def show_paleoisochrons(self, value):
+    def show_paleoisochrons(self, value: bool) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_SHOW_PALEOISOCHRONS', 'show': bool(value)})
@@ -448,11 +448,11 @@ class AppState:
         self.overlay.show_paleoisochrons = value
 
     @property
-    def show_plumbotectonics_curves(self):
+    def show_plumbotectonics_curves(self) -> bool:
         return self.overlay.show_plumbotectonics_curves
 
     @show_plumbotectonics_curves.setter
-    def show_plumbotectonics_curves(self, value):
+    def show_plumbotectonics_curves(self, value: bool) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_SHOW_PLUMBOTECTONICS_CURVES', 'show': bool(value)})
@@ -460,11 +460,11 @@ class AppState:
         self.overlay.show_plumbotectonics_curves = value
 
     @property
-    def show_model_age_lines(self):
+    def show_model_age_lines(self) -> bool:
         return self.overlay.show_model_age_lines
 
     @show_model_age_lines.setter
-    def show_model_age_lines(self, value):
+    def show_model_age_lines(self, value: bool) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_SHOW_MODEL_AGE_LINES', 'show': bool(value)})
@@ -472,11 +472,11 @@ class AppState:
         self.overlay.show_model_age_lines = value
 
     @property
-    def show_isochrons(self):
+    def show_isochrons(self) -> bool:
         return self.overlay.show_isochrons
 
     @show_isochrons.setter
-    def show_isochrons(self, value):
+    def show_isochrons(self, value: bool) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_SHOW_ISOCHRONS', 'show': bool(value)})
@@ -484,11 +484,11 @@ class AppState:
         self.overlay.show_isochrons = value
 
     @property
-    def show_growth_curves(self):
+    def show_growth_curves(self) -> bool:
         return self.overlay.show_growth_curves
 
     @show_growth_curves.setter
-    def show_growth_curves(self, value):
+    def show_growth_curves(self, value: bool) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_SHOW_GROWTH_CURVES', 'show': bool(value)})
@@ -496,11 +496,11 @@ class AppState:
         self.overlay.show_growth_curves = value
 
     @property
-    def show_equation_overlays(self):
+    def show_equation_overlays(self) -> bool:
         return self.overlay.show_equation_overlays
 
     @show_equation_overlays.setter
-    def show_equation_overlays(self, value):
+    def show_equation_overlays(self, value: bool) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_SHOW_EQUATION_OVERLAYS', 'show': bool(value)})
@@ -508,11 +508,11 @@ class AppState:
         self.overlay.show_equation_overlays = value
 
     @property
-    def use_real_age_for_mu_kappa(self):
+    def use_real_age_for_mu_kappa(self) -> bool:
         return self.overlay.use_real_age_for_mu_kappa
 
     @use_real_age_for_mu_kappa.setter
-    def use_real_age_for_mu_kappa(self, value):
+    def use_real_age_for_mu_kappa(self, value: bool) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_USE_REAL_AGE_FOR_MU_KAPPA', 'enabled': bool(value)})
@@ -520,11 +520,11 @@ class AppState:
         self.overlay.use_real_age_for_mu_kappa = value
 
     @property
-    def mu_kappa_age_col(self):
+    def mu_kappa_age_col(self) -> str | None:
         return self.overlay.mu_kappa_age_col
 
     @mu_kappa_age_col.setter
-    def mu_kappa_age_col(self, value):
+    def mu_kappa_age_col(self, value: str | None) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_MU_KAPPA_AGE_COL', 'column': value})
@@ -532,11 +532,11 @@ class AppState:
         self.overlay.mu_kappa_age_col = value
 
     @property
-    def isochron_label_options(self):
+    def isochron_label_options(self) -> dict[str, Any]:
         return self.overlay.isochron_label_options
 
     @isochron_label_options.setter
-    def isochron_label_options(self, value):
+    def isochron_label_options(self, value: dict[str, Any]) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_ISOCHRON_LABEL_OPTIONS', 'options': dict(value or {})})
@@ -544,11 +544,11 @@ class AppState:
         self.overlay.isochron_label_options = value
 
     @property
-    def geo_model_name(self):
+    def geo_model_name(self) -> str:
         return self.overlay.geo_model_name
 
     @geo_model_name.setter
-    def geo_model_name(self, value):
+    def geo_model_name(self, value: str) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_GEO_MODEL_NAME', 'model_name': value})
@@ -556,11 +556,11 @@ class AppState:
         self.overlay.geo_model_name = value
 
     @property
-    def equation_overlays(self):
+    def equation_overlays(self) -> list[dict[str, Any]]:
         return self.overlay.equation_overlays
 
     @equation_overlays.setter
-    def equation_overlays(self, value):
+    def equation_overlays(self, value: list[dict[str, Any]]) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_EQUATION_OVERLAYS', 'overlays': list(value or [])})
@@ -568,11 +568,11 @@ class AppState:
         self.overlay.equation_overlays = value
 
     @property
-    def line_styles(self):
+    def line_styles(self) -> dict[str, dict[str, Any]]:
         return self.overlay.line_styles
 
     @line_styles.setter
-    def line_styles(self, value):
+    def line_styles(self, value: dict[str, dict[str, Any]]) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_LINE_STYLES', 'line_styles': dict(value or {})})
@@ -580,11 +580,11 @@ class AppState:
         self.overlay.line_styles = value
 
     @property
-    def paleoisochron_min_age(self):
+    def paleoisochron_min_age(self) -> int:
         return self.overlay.paleoisochron_min_age
 
     @paleoisochron_min_age.setter
-    def paleoisochron_min_age(self, value):
+    def paleoisochron_min_age(self, value: int) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_PALEOISOCHRON_MIN_AGE', 'age': int(value)})
@@ -592,11 +592,11 @@ class AppState:
         self.overlay.paleoisochron_min_age = value
 
     @property
-    def paleoisochron_max_age(self):
+    def paleoisochron_max_age(self) -> int:
         return self.overlay.paleoisochron_max_age
 
     @paleoisochron_max_age.setter
-    def paleoisochron_max_age(self, value):
+    def paleoisochron_max_age(self, value: int) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_PALEOISOCHRON_MAX_AGE', 'age': int(value)})
@@ -604,11 +604,11 @@ class AppState:
         self.overlay.paleoisochron_max_age = value
 
     @property
-    def paleoisochron_step(self):
+    def paleoisochron_step(self) -> int:
         return self.overlay.paleoisochron_step
 
     @paleoisochron_step.setter
-    def paleoisochron_step(self, value):
+    def paleoisochron_step(self, value: int) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_PALEOISOCHRON_STEP', 'step': int(value)})
@@ -616,11 +616,11 @@ class AppState:
         self.overlay.paleoisochron_step = value
 
     @property
-    def paleoisochron_ages(self):
+    def paleoisochron_ages(self) -> list[int]:
         return self.overlay.paleoisochron_ages
 
     @paleoisochron_ages.setter
-    def paleoisochron_ages(self, value):
+    def paleoisochron_ages(self, value: list[int]) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_PALEOISOCHRON_AGES', 'ages': list(value or [])})
@@ -628,11 +628,11 @@ class AppState:
         self.overlay.paleoisochron_ages = value
 
     @property
-    def plumbotectonics_variant(self):
+    def plumbotectonics_variant(self) -> str:
         return self.overlay.plumbotectonics_variant
 
     @plumbotectonics_variant.setter
-    def plumbotectonics_variant(self, value):
+    def plumbotectonics_variant(self, value: str) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_PLUMBOTECTONICS_VARIANT', 'variant': value})
@@ -640,11 +640,11 @@ class AppState:
         self.overlay.plumbotectonics_variant = value
 
     @property
-    def plumbotectonics_group_visibility(self):
+    def plumbotectonics_group_visibility(self) -> dict[str, bool]:
         return self.overlay.plumbotectonics_group_visibility
 
     @plumbotectonics_group_visibility.setter
-    def plumbotectonics_group_visibility(self, value):
+    def plumbotectonics_group_visibility(self, value: dict[str, bool]) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch(
@@ -654,11 +654,11 @@ class AppState:
         self.overlay.plumbotectonics_group_visibility = value
 
     @property
-    def model_curve_models(self):
+    def model_curve_models(self) -> list[str] | None:
         return self.overlay.model_curve_models
 
     @model_curve_models.setter
-    def model_curve_models(self, value):
+    def model_curve_models(self, value: list[str] | None) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             normalized = list(value or []) if value is not None else None
@@ -667,11 +667,11 @@ class AppState:
         self.overlay.model_curve_models = value
 
     @property
-    def isochron_error_mode(self):
+    def isochron_error_mode(self) -> str:
         return self.overlay.isochron_error_mode
 
     @isochron_error_mode.setter
-    def isochron_error_mode(self, value):
+    def isochron_error_mode(self, value: str) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             mode = str(value or 'fixed').strip().lower()
@@ -697,11 +697,11 @@ class AppState:
         self.overlay.isochron_error_mode = value
 
     @property
-    def isochron_sx_col(self):
+    def isochron_sx_col(self) -> str:
         return self.overlay.isochron_sx_col
 
     @isochron_sx_col.setter
-    def isochron_sx_col(self, value):
+    def isochron_sx_col(self, value: str) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch(
@@ -716,11 +716,11 @@ class AppState:
         self.overlay.isochron_sx_col = value
 
     @property
-    def isochron_sy_col(self):
+    def isochron_sy_col(self) -> str:
         return self.overlay.isochron_sy_col
 
     @isochron_sy_col.setter
-    def isochron_sy_col(self, value):
+    def isochron_sy_col(self, value: str) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch(
@@ -735,11 +735,11 @@ class AppState:
         self.overlay.isochron_sy_col = value
 
     @property
-    def isochron_rxy_col(self):
+    def isochron_rxy_col(self) -> str:
         return self.overlay.isochron_rxy_col
 
     @isochron_rxy_col.setter
-    def isochron_rxy_col(self, value):
+    def isochron_rxy_col(self, value: str) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch(
@@ -754,11 +754,11 @@ class AppState:
         self.overlay.isochron_rxy_col = value
 
     @property
-    def isochron_sx_value(self):
+    def isochron_sx_value(self) -> float:
         return self.overlay.isochron_sx_value
 
     @isochron_sx_value.setter
-    def isochron_sx_value(self, value):
+    def isochron_sx_value(self, value: float) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch(
@@ -773,11 +773,11 @@ class AppState:
         self.overlay.isochron_sx_value = value
 
     @property
-    def isochron_sy_value(self):
+    def isochron_sy_value(self) -> float:
         return self.overlay.isochron_sy_value
 
     @isochron_sy_value.setter
-    def isochron_sy_value(self, value):
+    def isochron_sy_value(self, value: float) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch(
@@ -792,11 +792,11 @@ class AppState:
         self.overlay.isochron_sy_value = value
 
     @property
-    def isochron_rxy_value(self):
+    def isochron_rxy_value(self) -> float:
         return self.overlay.isochron_rxy_value
 
     @isochron_rxy_value.setter
-    def isochron_rxy_value(self, value):
+    def isochron_rxy_value(self, value: float) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch(
@@ -811,11 +811,11 @@ class AppState:
         self.overlay.isochron_rxy_value = value
 
     @property
-    def selected_isochron_data(self):
+    def selected_isochron_data(self) -> Any | None:
         return self.overlay.selected_isochron_data
 
     @selected_isochron_data.setter
-    def selected_isochron_data(self, value):
+    def selected_isochron_data(self, value: Any) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_SELECTED_ISOCHRON_DATA', 'data': value})
@@ -823,11 +823,11 @@ class AppState:
         self.overlay.selected_isochron_data = value
 
     @property
-    def isochron_results(self):
+    def isochron_results(self) -> dict[str, Any]:
         return self.overlay.isochron_results
 
     @isochron_results.setter
-    def isochron_results(self, value):
+    def isochron_results(self, value: dict[str, Any]) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_ISOCHRON_RESULTS', 'results': dict(value or {})})
@@ -835,11 +835,11 @@ class AppState:
         self.overlay.isochron_results = value
 
     @property
-    def model_curve_width(self):
+    def model_curve_width(self) -> float:
         return self.overlay.model_curve_width
 
     @model_curve_width.setter
-    def model_curve_width(self, value):
+    def model_curve_width(self, value: float) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_MODEL_CURVE_WIDTH', 'width': float(value)})
@@ -847,11 +847,11 @@ class AppState:
         self.overlay.model_curve_width = value
 
     @property
-    def plumbotectonics_curve_width(self):
+    def plumbotectonics_curve_width(self) -> float:
         return self.overlay.plumbotectonics_curve_width
 
     @plumbotectonics_curve_width.setter
-    def plumbotectonics_curve_width(self, value):
+    def plumbotectonics_curve_width(self, value: float) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_PLUMBOTECTONICS_CURVE_WIDTH', 'width': float(value)})
@@ -859,11 +859,11 @@ class AppState:
         self.overlay.plumbotectonics_curve_width = value
 
     @property
-    def paleoisochron_width(self):
+    def paleoisochron_width(self) -> float:
         return self.overlay.paleoisochron_width
 
     @paleoisochron_width.setter
-    def paleoisochron_width(self, value):
+    def paleoisochron_width(self, value: float) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_PALEOISOCHRON_WIDTH', 'width': float(value)})
@@ -871,11 +871,11 @@ class AppState:
         self.overlay.paleoisochron_width = value
 
     @property
-    def model_age_line_width(self):
+    def model_age_line_width(self) -> float:
         return self.overlay.model_age_line_width
 
     @model_age_line_width.setter
-    def model_age_line_width(self, value):
+    def model_age_line_width(self, value: float) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_MODEL_AGE_LINE_WIDTH', 'width': float(value)})
@@ -883,11 +883,11 @@ class AppState:
         self.overlay.model_age_line_width = value
 
     @property
-    def isochron_line_width(self):
+    def isochron_line_width(self) -> float:
         return self.overlay.isochron_line_width
 
     @isochron_line_width.setter
-    def isochron_line_width(self, value):
+    def isochron_line_width(self, value: float) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_ISOCHRON_LINE_WIDTH', 'width': float(value)})
@@ -895,11 +895,11 @@ class AppState:
         self.overlay.isochron_line_width = value
 
     @property
-    def overlay_artists(self):
+    def overlay_artists(self) -> dict[str, list[Any]]:
         return self.overlay.overlay_artists
 
     @overlay_artists.setter
-    def overlay_artists(self, value):
+    def overlay_artists(self, value: dict[str, list[Any]]) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_OVERLAY_ARTISTS', 'artists': dict(value or {})})
@@ -907,11 +907,11 @@ class AppState:
         self.overlay.overlay_artists = value
 
     @property
-    def overlay_curve_label_data(self):
+    def overlay_curve_label_data(self) -> list[dict[str, Any]]:
         return self.overlay.overlay_curve_label_data
 
     @overlay_curve_label_data.setter
-    def overlay_curve_label_data(self, value):
+    def overlay_curve_label_data(self, value: list[dict[str, Any]]) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_OVERLAY_CURVE_LABEL_DATA', 'data': list(value or [])})
@@ -919,11 +919,11 @@ class AppState:
         self.overlay.overlay_curve_label_data = value
 
     @property
-    def paleoisochron_label_data(self):
+    def paleoisochron_label_data(self) -> list[dict[str, Any]]:
         return self.overlay.paleoisochron_label_data
 
     @paleoisochron_label_data.setter
-    def paleoisochron_label_data(self, value):
+    def paleoisochron_label_data(self, value: list[dict[str, Any]]) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_PALEOISOCHRON_LABEL_DATA', 'data': list(value or [])})
@@ -931,11 +931,11 @@ class AppState:
         self.overlay.paleoisochron_label_data = value
 
     @property
-    def plumbotectonics_label_data(self):
+    def plumbotectonics_label_data(self) -> list[dict[str, Any]]:
         return self.overlay.plumbotectonics_label_data
 
     @plumbotectonics_label_data.setter
-    def plumbotectonics_label_data(self, value):
+    def plumbotectonics_label_data(self, value: list[dict[str, Any]]) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_PLUMBOTECTONICS_LABEL_DATA', 'data': list(value or [])})
@@ -943,11 +943,11 @@ class AppState:
         self.overlay.plumbotectonics_label_data = value
 
     @property
-    def plumbotectonics_isoage_label_data(self):
+    def plumbotectonics_isoage_label_data(self) -> list[dict[str, Any]]:
         return self.overlay.plumbotectonics_isoage_label_data
 
     @plumbotectonics_isoage_label_data.setter
-    def plumbotectonics_isoage_label_data(self, value):
+    def plumbotectonics_isoage_label_data(self, value: list[dict[str, Any]]) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch(

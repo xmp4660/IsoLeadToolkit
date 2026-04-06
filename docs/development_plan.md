@@ -2,6 +2,14 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百零三批）
+
+- P2-1（类型注解补齐）继续推进：
+    - `core/state/app_state.py` 的 Overlay 兼容属性 getter/setter 补齐显式类型注解。
+    - 覆盖域：展示开关、地化模型参数、等时线误差字段、线宽参数与 overlay 标签/artist 运行时容器。
+- 回归测试更新：
+    - `tests/test_state_store.py` 扩展 `test_app_state_overlay_detail_property_setters_dispatch_to_state_store`，新增 `model_curve_models=None` 路径断言，锁定可空值分发与快照一致性。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百零二批）
 
 - P2-1（类型注解补齐）继续推进：

@@ -875,6 +875,11 @@ def test_app_state_overlay_detail_property_setters_dispatch_to_state_store() -> 
         assert store_snapshot["paleoisochron_label_data"] == [{"text": "paleo"}]
         assert store_snapshot["plumbotectonics_label_data"] == [{"text": "plumbo"}]
         assert store_snapshot["plumbotectonics_isoage_label_data"] == [{"text": "isoage"}]
+
+        setattr(app_state, "model_curve_models", None)
+        assert app_state.model_curve_models is None
+        store_snapshot = app_state.state_store.snapshot()
+        assert store_snapshot["model_curve_models"] is None
     finally:
         _restore_state(snapshot)
 
