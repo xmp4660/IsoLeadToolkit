@@ -1553,3 +1553,26 @@ def test_state_store_snapshot_excludes_runtime_legend_domains() -> None:
     store_snapshot = app_state.state_store.snapshot()
     assert "legend_to_scatter" not in store_snapshot
     assert "legend_update_callback" not in store_snapshot
+
+
+def test_app_state_runtime_legend_properties_passthrough() -> None:
+    original_mapping = dict(getattr(app_state, "legend_to_scatter", {}) or {})
+    original_callback = getattr(app_state, "legend_update_callback", None)
+
+    def _on_legend_update() -> None:
+        return None
+
+    try:
+        test_mapping = {"patch_a": "scatter_a"}
+        setattr(app_state, "legend_to_scatter", test_mapping)
+        setattr(app_state, "legend_update_callback", _on_legend_update)
+
+        assert app_state.legend_to_scatter is test_mapping
+        assert app_state.legend_update_callback is _on_legend_update
+
+        snapshot = app_state.state_store.snapshot()
+        assert "legend_to_scatter" not in snapshot
+        assert "legend_update_callback" not in snapshot
+    finally:
+        setattr(app_state, "legend_to_scatter", original_mapping)
+        setattr(app_state, "legend_update_callback", original_callback)

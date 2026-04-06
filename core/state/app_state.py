@@ -961,11 +961,11 @@ class AppState:
     # ------------------------------------------------------------------ #
 
     @property
-    def legend_position(self):
+    def legend_position(self) -> str | None:
         return self.legend.legend_position
 
     @legend_position.setter
-    def legend_position(self, value):
+    def legend_position(self, value: str | None) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_LEGEND_POSITION', 'position': value})
@@ -973,11 +973,11 @@ class AppState:
         self.legend.legend_position = value
 
     @property
-    def legend_columns(self):
+    def legend_columns(self) -> int:
         return self.legend.legend_columns
 
     @legend_columns.setter
-    def legend_columns(self, value):
+    def legend_columns(self, value: int) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_LEGEND_COLUMNS', 'columns': int(value)})
@@ -985,11 +985,11 @@ class AppState:
         self.legend.legend_columns = value
 
     @property
-    def legend_offset(self):
+    def legend_offset(self) -> tuple[float, float]:
         return self.legend.legend_offset
 
     @legend_offset.setter
-    def legend_offset(self, value):
+    def legend_offset(self, value: tuple[float, float]) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_LEGEND_OFFSET', 'offset': value})
@@ -997,11 +997,11 @@ class AppState:
         self.legend.legend_offset = value
 
     @property
-    def legend_nudge_step(self):
+    def legend_nudge_step(self) -> float:
         return self.legend.legend_nudge_step
 
     @legend_nudge_step.setter
-    def legend_nudge_step(self, value):
+    def legend_nudge_step(self, value: float) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_LEGEND_NUDGE_STEP', 'step': float(value)})
@@ -1009,11 +1009,11 @@ class AppState:
         self.legend.legend_nudge_step = value
 
     @property
-    def legend_location(self):
+    def legend_location(self) -> str:
         return self.legend.legend_location
 
     @legend_location.setter
-    def legend_location(self, value):
+    def legend_location(self, value: str) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_LEGEND_LOCATION', 'location': value})
@@ -1021,11 +1021,11 @@ class AppState:
         self.legend.legend_location = value
 
     @property
-    def legend_display_mode(self):
+    def legend_display_mode(self) -> str:
         return self.legend.legend_display_mode
 
     @legend_display_mode.setter
-    def legend_display_mode(self, value):
+    def legend_display_mode(self, value: str) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_LEGEND_DISPLAY_MODE', 'mode': str(value)})
@@ -1033,11 +1033,11 @@ class AppState:
         self.legend.legend_display_mode = value
 
     @property
-    def legend_frame_on(self):
+    def legend_frame_on(self) -> bool:
         return self.legend.legend_frame_on
 
     @legend_frame_on.setter
-    def legend_frame_on(self, value):
+    def legend_frame_on(self, value: bool) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_LEGEND_FRAME_ON', 'enabled': bool(value)})
@@ -1045,11 +1045,11 @@ class AppState:
         self.legend.legend_frame_on = value
 
     @property
-    def legend_frame_alpha(self):
+    def legend_frame_alpha(self) -> float:
         return self.legend.legend_frame_alpha
 
     @legend_frame_alpha.setter
-    def legend_frame_alpha(self, value):
+    def legend_frame_alpha(self, value: float) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_LEGEND_FRAME_ALPHA', 'alpha': float(value)})
@@ -1057,11 +1057,11 @@ class AppState:
         self.legend.legend_frame_alpha = value
 
     @property
-    def legend_frame_facecolor(self):
+    def legend_frame_facecolor(self) -> str:
         return self.legend.legend_frame_facecolor
 
     @legend_frame_facecolor.setter
-    def legend_frame_facecolor(self, value):
+    def legend_frame_facecolor(self, value: str) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_LEGEND_FRAME_FACECOLOR', 'color': str(value)})
@@ -1069,11 +1069,11 @@ class AppState:
         self.legend.legend_frame_facecolor = value
 
     @property
-    def legend_frame_edgecolor(self):
+    def legend_frame_edgecolor(self) -> str:
         return self.legend.legend_frame_edgecolor
 
     @legend_frame_edgecolor.setter
-    def legend_frame_edgecolor(self, value):
+    def legend_frame_edgecolor(self, value: str) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_LEGEND_FRAME_EDGECOLOR', 'color': str(value)})
@@ -1081,11 +1081,11 @@ class AppState:
         self.legend.legend_frame_edgecolor = value
 
     @property
-    def hidden_groups(self):
+    def hidden_groups(self) -> set[str]:
         return self.legend.hidden_groups
 
     @hidden_groups.setter
-    def hidden_groups(self, value):
+    def hidden_groups(self, value: set[str]) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch({'type': 'SET_HIDDEN_GROUPS', 'groups': set(value or set())})
@@ -1093,27 +1093,27 @@ class AppState:
         self.legend.hidden_groups = value
 
     @property
-    def legend_to_scatter(self):
+    def legend_to_scatter(self) -> dict[Any, Any]:
         return self.legend.legend_to_scatter
 
     @legend_to_scatter.setter
-    def legend_to_scatter(self, value):
+    def legend_to_scatter(self, value: dict[Any, Any]) -> None:
         self.legend.legend_to_scatter = value
 
     @property
-    def legend_update_callback(self):
+    def legend_update_callback(self) -> Callable[[], None] | None:
         return self.legend.legend_update_callback
 
     @legend_update_callback.setter
-    def legend_update_callback(self, value):
+    def legend_update_callback(self, value: Callable[[], None] | None) -> None:
         self.legend.legend_update_callback = value
 
     @property
-    def legend_last_title(self):
+    def legend_last_title(self) -> Any | None:
         return self.legend.legend_last_title
 
     @legend_last_title.setter
-    def legend_last_title(self, value):
+    def legend_last_title(self, value: Any) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch(
@@ -1128,11 +1128,11 @@ class AppState:
         self.legend.legend_last_title = value
 
     @property
-    def legend_last_handles(self):
+    def legend_last_handles(self) -> Any | None:
         return self.legend.legend_last_handles
 
     @legend_last_handles.setter
-    def legend_last_handles(self, value):
+    def legend_last_handles(self, value: Any) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch(
@@ -1147,11 +1147,11 @@ class AppState:
         self.legend.legend_last_handles = value
 
     @property
-    def legend_last_labels(self):
+    def legend_last_labels(self) -> Any | None:
         return self.legend.legend_last_labels
 
     @legend_last_labels.setter
-    def legend_last_labels(self, value):
+    def legend_last_labels(self, value: Any) -> None:
         state_store = getattr(self, 'state_store', None)
         if state_store is not None:
             state_store.dispatch(

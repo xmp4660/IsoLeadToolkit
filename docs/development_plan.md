@@ -2,6 +2,16 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百零二批）
+
+- P2-1（类型注解补齐）继续推进：
+    - `core/state/app_state.py` 的 Legend 兼容属性 getter/setter 补齐显式类型注解。
+    - 覆盖域：位置/列数/偏移/显示模式、边框样式、隐藏组、快照三元、运行时 legend 映射与回调。
+- 回归测试更新：
+    - `tests/test_state_store.py` 新增 `test_app_state_runtime_legend_properties_passthrough`，锁定：
+        - `legend_to_scatter`、`legend_update_callback` 仍为运行时透传属性；
+        - 两者不进入 StateStore 快照。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百零一批）
 
 - P2-1（类型注解补齐）启动首批落地，覆盖 core 轻量状态对象：
