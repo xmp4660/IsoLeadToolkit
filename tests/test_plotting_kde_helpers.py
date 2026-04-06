@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 from core import app_state, state_gateway
-from visualization.plotting.kde import clear_marginal_axes, draw_marginal_kde
+from visualization.plotting.kde import _estimate_density_curve, clear_marginal_axes, draw_marginal_kde
 
 
 def _snapshot_marginal_axes_state() -> object:
@@ -62,3 +63,15 @@ def test_clear_marginal_axes_resets_state() -> None:
     finally:
         plt.close(fig)
         _restore_marginal_axes_state(snapshot)
+
+
+def test_estimate_density_curve_returns_none_for_near_constant_data() -> None:
+    curve = _estimate_density_curve(
+        np.array([1.0, 1.0 + 1e-13, 1.0 - 1e-13], dtype=float),
+        bw_adjust=1.0,
+        gridsize=64,
+        cut=1.0,
+        log_transform=False,
+    )
+
+    assert curve is None

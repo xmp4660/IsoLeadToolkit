@@ -15,6 +15,7 @@ _KDE_MAX_POINTS_DEFAULT = 5000
 _KDE_GRID_SIZE_DEFAULT = 256
 _KDE_BW_ADJUST_DEFAULT = 1.0
 _KDE_CUT_DEFAULT = 1.0
+_KDE_MIN_STD = 1e-12
 
 
 def _to_float_array(values) -> np.ndarray:
@@ -37,7 +38,7 @@ def _estimate_density_curve(
     data = _to_float_array(values)
     if data.size < 2:
         return None
-    if np.nanstd(data) <= 1e-12:
+    if np.nanstd(data) <= _KDE_MIN_STD:
         return None
 
     try:
