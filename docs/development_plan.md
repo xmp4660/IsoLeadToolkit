@@ -2,6 +2,13 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百一十五批）
+
+- P2-1（类型注解补齐）推进 plotting core helper：
+    - `visualization/plotting/core.py` 的 `_build_group_palette`、`_get_subset_dataframe`、`_get_pb_columns`、`_find_age_column` 补齐显式类型注解。
+- 回归测试新增：
+    - `tests/test_plotting_core_column_helpers.py` 新增 3 个测试，覆盖 Pb 列精确/启发式识别与年龄列优先级规则。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百一十四批）
 
 - P2-1（类型注解补齐）推进事件编排模块：

@@ -298,7 +298,7 @@ def get_embedding(
         logger.error("Unknown algorithm: %s", algorithm)
         return None
 
-def _build_group_palette(unique_cats):
+def _build_group_palette(unique_cats: list[Any]) -> dict[Any, str]:
     """Build or reuse a stable group -> color mapping."""
     palette = dict(getattr(app_state, 'current_palette', {}) or {})
 
@@ -324,7 +324,7 @@ def _build_group_palette(unique_cats):
 
     return {cat: palette.get(cat, '#333333') for cat in unique_cats}
 
-def _get_subset_dataframe():
+def _get_subset_dataframe() -> tuple[Any | None, list[int] | None]:
     """Return the active subset of the dataframe and its indices."""
     df_global = _df_global()
     subset_indices = _active_subset_indices()
@@ -340,7 +340,7 @@ def _get_subset_dataframe():
 
     return df_global.copy(), list(range(len(df_global)))
 
-def _get_pb_columns(columns):
+def _get_pb_columns(columns: list[str]) -> tuple[str | None, str | None, str | None]:
     """Find Pb isotope ratio columns with a best-effort heuristic."""
     col_206 = "206Pb/204Pb" if "206Pb/204Pb" in columns else None
     col_207 = "207Pb/204Pb" if "207Pb/204Pb" in columns else None
@@ -360,7 +360,7 @@ def _get_pb_columns(columns):
 
     return col_206, col_207, col_208
 
-def _find_age_column(columns):
+def _find_age_column(columns: list[str]) -> str | None:
     """Find an age column for Mu/Kappa plots."""
     candidates = [
         "Age (Ma)",
