@@ -17,6 +17,8 @@
 - 经典文献: Stacey & Kramers (1975), Jaffey et al. (1971), Tatsumoto et al. (1973)
 """
 
+from typing import Any
+
 import numpy as np
 from scipy import optimize
 try:
@@ -179,9 +181,9 @@ class GeochemistryEngine:
     支持加载预设模型或自定义参数。
     """
     
-    def __init__(self):
+    def __init__(self) -> None:
         # 默认参数初始化 (与 PbIso 文献默认一致: SK 2nd stage)
-        self.params = {
+        self.params: dict[str, float | str] = {
             'age_model': 'two_stage',
             'T1': T_SK_STAGE2,
             'T2': T_EARTH_CANON,
@@ -205,18 +207,18 @@ class GeochemistryEngine:
         self.current_model_name = "Stacey & Kramers (2nd Stage)"
         self._update_derived_params()
 
-    def _update_derived_params(self):
+    def _update_derived_params(self) -> None:
         """更新衍生参数 (内部使用)"""
         mu = self.params.get('mu_M', 9.74)
         u_r = self.params.get('U_ratio', U_RATIO_NATURAL)
         # v = 235U/204Pb = mu * (235U/238U)
         self.params['v_M'] = mu * u_r
 
-    def get_available_models(self):
+    def get_available_models(self) -> list[str]:
         """获取可用预设模型列表"""
         return list(PRESET_MODELS.keys())
 
-    def load_preset(self, model_name):
+    def load_preset(self, model_name: str) -> bool:
         """
         加载预设模型参数
         
@@ -233,7 +235,7 @@ class GeochemistryEngine:
             return True
         return False
 
-    def update_parameters(self, new_params):
+    def update_parameters(self, new_params: dict[str, Any]) -> None:
         """
         更新计算参数
         
@@ -251,7 +253,7 @@ class GeochemistryEngine:
                         pass # 忽略无效输入
         self._update_derived_params()
 
-    def get_parameters(self):
+    def get_parameters(self) -> dict[str, float | str]:
         """获取当前参数副本"""
         return self.params.copy()
 

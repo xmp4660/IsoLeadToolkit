@@ -2,6 +2,14 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百零四批）
+
+- P2-1（类型注解补齐）扩展至 data 层：
+    - `data/geochemistry/engine.py` 的 `GeochemistryEngine` 方法签名补齐显式类型注解（`__init__`、`_update_derived_params`、`get_available_models`、`load_preset`、`update_parameters`、`get_parameters`）。
+    - `params` 字段增加显式容器类型，减少调用侧的隐式 Any 传播。
+- 回归测试新增：
+    - `tests/test_geochemistry_engine.py` 新增 3 个测试，覆盖预设列表一致性、未知模型加载返回值、参数更新时对无效/未知键的处理与 `v_M` 派生值同步。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百零三批）
 
 - P2-1（类型注解补齐）继续推进：
