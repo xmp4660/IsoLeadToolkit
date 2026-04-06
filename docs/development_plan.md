@@ -2,6 +2,17 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百五十二批）
+
+- P2-3（数值稳定性统一）继续收敛 geochemistry/geo-panel 科学计数法参数字面量：
+    - `data/geochemistry/engine.py` 新增 `E1_CUMMING_RICHARDS`、`E2_CUMMING_RICHARDS`，替换 `Cumming & Richards (Model III)` 预设中的散落字面量。
+    - `ui/panels/geo_panel.py` 新增衰变常数默认值与科学步长常量（`_GEO_DECAY_LAMBDA_*`、`_GEO_PARAM_SCIENTIFIC_STEP`），替换面板构建与参数控件配置中的散落字面量。
+- 回归测试新增/增强：
+    - `tests/test_geochemistry_engine.py` 新增 1 个测试，覆盖 `Cumming & Richards (Model III)` 预设对命名常量的使用。
+    - `tests/test_geo_panel_helpers.py` 新增 2 个测试，覆盖：
+        - GeoPanel 衰变常数默认值与 engine 常量对齐；
+        - `_add_geo_param` 科学计数模式步长使用命名常量。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百五十一批）
 
 - P2-3（数值稳定性统一）继续收敛 age 求解器端点保护常量：

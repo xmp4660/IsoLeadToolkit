@@ -71,6 +71,8 @@ REGRESSION_C = -6.143
 # 1.8 PbIso 模型曲线演化参数 (R: E1/E2)
 E1_DEFAULT = 0.0
 E2_DEFAULT = 0.0
+E1_CUMMING_RICHARDS = 5e-11
+E2_CUMMING_RICHARDS = 3.7e-11
 
 # =============================================================================
 # 2. 预设模型库
@@ -147,8 +149,8 @@ PRESET_MODELS = {
         'mu_M': 10.8,
         'omega_M': 41.2,
         'U_ratio': U_RATIO_NATURAL,
-        'E1': 5e-11,
-        'E2': 3.7e-11,
+        'E1': E1_CUMMING_RICHARDS,
+        'E2': E2_CUMMING_RICHARDS,
         'v1v2_formula': 'default',
     },
     "Maltese & Mezger (2020)": {

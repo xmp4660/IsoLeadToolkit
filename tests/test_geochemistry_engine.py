@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from data.geochemistry.engine import GeochemistryEngine, PRESET_MODELS, T_SK_STAGE2
+from data.geochemistry.engine import (
+    E1_CUMMING_RICHARDS,
+    E2_CUMMING_RICHARDS,
+    GeochemistryEngine,
+    PRESET_MODELS,
+    T_SK_STAGE2,
+)
 
 
 def test_get_available_models_matches_presets() -> None:
@@ -40,3 +46,13 @@ def test_update_parameters_ignores_unknown_and_invalid_values() -> None:
     assert params["T1"] == pytest.approx(T_SK_STAGE2)
     assert "unknown_key" not in params
     assert params["v_M"] == pytest.approx(float(params["mu_M"]) * float(params["U_ratio"]))
+
+
+def test_load_cumming_richards_preset_uses_named_evolution_constants() -> None:
+    ge_engine = GeochemistryEngine()
+
+    assert ge_engine.load_preset("Cumming & Richards (Model III)") is True
+
+    params = ge_engine.get_parameters()
+    assert params["E1"] == pytest.approx(E1_CUMMING_RICHARDS)
+    assert params["E2"] == pytest.approx(E2_CUMMING_RICHARDS)

@@ -10,6 +10,10 @@ from core import translate, app_state, state_gateway
 from .base_panel import BasePanel
 
 logger = logging.getLogger(__name__)
+_GEO_DECAY_LAMBDA_238_DEFAULT = 1.55125e-10
+_GEO_DECAY_LAMBDA_235_DEFAULT = 9.8485e-10
+_GEO_DECAY_LAMBDA_232_DEFAULT = 4.94752e-11
+_GEO_PARAM_SCIENTIFIC_STEP = 1e-11
 
 
 class GeoPanel(BasePanel):
@@ -88,9 +92,9 @@ class GeoPanel(BasePanel):
         decay_group.setProperty('translate_key', 'Decay Constants (a^-1)')
         decay_layout = QGridLayout()
 
-        self._add_geo_param(decay_layout, "lambda_238", translate("λ (238U):"), 0, 0, 0.0, 1.0, 1.55125e-10, scientific=True)
-        self._add_geo_param(decay_layout, "lambda_235", translate("λ (235U):"), 0, 2, 0.0, 1.0, 9.8485e-10, scientific=True)
-        self._add_geo_param(decay_layout, "lambda_232", translate("λ (232Th):"), 1, 0, 0.0, 1.0, 4.94752e-11, scientific=True)
+        self._add_geo_param(decay_layout, "lambda_238", translate("λ (238U):"), 0, 0, 0.0, 1.0, _GEO_DECAY_LAMBDA_238_DEFAULT, scientific=True)
+        self._add_geo_param(decay_layout, "lambda_235", translate("λ (235U):"), 0, 2, 0.0, 1.0, _GEO_DECAY_LAMBDA_235_DEFAULT, scientific=True)
+        self._add_geo_param(decay_layout, "lambda_232", translate("λ (232Th):"), 1, 0, 0.0, 1.0, _GEO_DECAY_LAMBDA_232_DEFAULT, scientific=True)
 
         decay_group.setLayout(decay_layout)
         _add_group_page(decay_group, 'Decay Constants (a^-1)')
@@ -186,7 +190,7 @@ class GeoPanel(BasePanel):
         spinbox.setDecimals(6 if scientific else 3)
         if scientific:
             spinbox.setDecimals(12)
-        spinbox.setSingleStep(0.001 if not scientific else 1e-11)
+        spinbox.setSingleStep(0.001 if not scientific else _GEO_PARAM_SCIENTIFIC_STEP)
         spinbox.setValue(default_val)
 
         grid_layout.addWidget(spinbox, row, col + 1)
