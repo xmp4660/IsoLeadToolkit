@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import matplotlib.pyplot as plt
 
@@ -11,7 +12,7 @@ from ...style_manager import apply_custom_style
 logger = logging.getLogger(__name__)
 
 
-def _apply_current_style():
+def _apply_current_style() -> None:
     """Apply the current plot style and color scheme from app_state."""
     show_grid = getattr(app_state, 'plot_style_grid', False)
     color_scheme = getattr(app_state, 'color_scheme', 'vibrant')
@@ -60,7 +61,7 @@ def _apply_current_style():
         logger.warning("Failed to apply rcParams style: %s", err)
 
 
-def _enforce_plot_style(ax):
+def _enforce_plot_style(ax: Any) -> None:
     """Enforce style settings on the specific axes instance."""
     if ax is None:
         return
@@ -140,7 +141,7 @@ def _enforce_plot_style(ax):
         right_spine.set_visible(getattr(app_state, 'show_right_spine', True))
 
 
-def _apply_axis_text_style(ax):
+def _apply_axis_text_style(ax: Any) -> None:
     """Apply axis label/title styling without changing text."""
     if ax is None:
         return

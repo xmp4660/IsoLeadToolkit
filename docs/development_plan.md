@@ -2,6 +2,15 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百二十六批）
+
+- P2-1（类型注解补齐）推进 plotting 样式核心模块：
+    - `visualization/plotting/styling/core.py` 的 `_apply_current_style`、`_enforce_plot_style`、`_apply_axis_text_style` 补齐显式类型注解。
+- 回归测试新增：
+    - `tests/test_styling_core_helpers.py` 新增 2 个测试，覆盖：
+        - 轴标签/标题样式应用；
+        - 坐标轴 spine 可见性与线宽应用。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百二十五批）
 
 - P2-1（类型注解补齐）推进渲染 KDE 辅助模块：
