@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import numpy as np
+import pandas as pd
 
 from core import app_state
 
@@ -12,7 +14,14 @@ from ...ternary import prepare_ternary_components
 logger = logging.getLogger(__name__)
 
 
-def _render_scatter_groups(actual_algorithm, df_plot, group_col, unique_cats, size, palette=None):
+def _render_scatter_groups(
+    actual_algorithm: str,
+    df_plot: pd.DataFrame,
+    group_col: str,
+    unique_cats: list[str],
+    size: float,
+    palette: dict[str, str] | None = None,
+) -> list[Any] | None:
     scatters = []
     is_kde_mode = getattr(app_state, 'show_kde', False)
     show_edge = bool(getattr(app_state, 'scatter_show_edge', True))
