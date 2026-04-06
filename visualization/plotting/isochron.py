@@ -8,7 +8,10 @@ from core import app_state
 logger = logging.getLogger(__name__)
 
 
-def resolve_isochron_errors(df, size):
+def resolve_isochron_errors(
+    df: pd.DataFrame,
+    size: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Resolve sX, sY, rXY arrays from app_state settings."""
     mode = getattr(app_state, 'isochron_error_mode', 'fixed')
 

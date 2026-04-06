@@ -2,6 +2,15 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百一十批）
+
+- P2-1（类型注解补齐）推进 plotting isochron 辅助模块：
+    - `visualization/plotting/isochron.py` 的 `resolve_isochron_errors` 补齐显式参数与返回类型注解。
+- 回归测试新增：
+    - `tests/test_plotting_isochron_helpers.py` 新增 2 个测试，覆盖：
+        - columns 模式下按列解析误差数组；
+        - columns 缺失时回退到 fixed 参数填充。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百零九批）
 
 - P2-1（类型注解补齐）推进 legend 样式工具：
