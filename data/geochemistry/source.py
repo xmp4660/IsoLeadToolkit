@@ -13,6 +13,12 @@ from .engine import engine, EPSILON
 # 内部核心函数 — 统一反演算法
 # =============================================================================
 
+
+def _safe_denominator(values: np.ndarray | float) -> np.ndarray:
+    """Apply shared denominator floor for scalar/array-like values."""
+    arr = np.asarray(values, dtype=float)
+    return np.where(np.abs(arr) < EPSILON, EPSILON, arr)
+
 def _prepare_age(t_Ma: np.ndarray | float | None) -> np.ndarray:
     """年龄预处理: Ma → 年, 处理 None 和异常值."""
     if t_Ma is None:
@@ -98,7 +104,7 @@ def _invert_mu(
     e5t = np.exp(l235 * t)
     e8t = np.exp(l238 * t)
     den_slope = e8t - 1
-    den_slope = np.where(np.abs(den_slope) < EPSILON, EPSILON, den_slope)
+    den_slope = _safe_denominator(den_slope)
     slope_t = u_ratio * (e5t - 1) / den_slope
 
     # 放射性成因增量
@@ -108,7 +114,7 @@ def _invert_mu(
     # 求解 μ
     numerator = (y - Y_ref) - slope_t * (x - X_ref)
     denominator = rad207 - slope_t * rad206
-    denominator = np.where(np.abs(denominator) < EPSILON, EPSILON, denominator)
+    denominator = _safe_denominator(denominator)
 
     return numerator / denominator
 
@@ -141,7 +147,7 @@ def _invert_omega(
     t = _prepare_age(t_Ma)
 
     denom = np.exp(l232 * T_ref) - np.exp(l232 * t)
-    denom = np.where(np.abs(denom) < EPSILON, EPSILON, denom)
+    denom = _safe_denominator(denom)
 
     return (z - Z_ref) / denom
 
@@ -182,10 +188,10 @@ def _invert_kappa(
 
     num_time = np.exp(l238 * T_ref) - np.exp(l238 * t)
     den_time = np.exp(l232 * T_ref) - np.exp(l232 * t)
-    den_time = np.where(np.abs(den_time) < EPSILON, EPSILON, den_time)
+    den_time = _safe_denominator(den_time)
 
     dx = x - X_ref
-    dx = np.where(np.abs(dx) < EPSILON, EPSILON, dx)
+    dx = _safe_denominator(dx)
 
     return ((z - Z_ref) / dx) * (num_time / den_time)
 

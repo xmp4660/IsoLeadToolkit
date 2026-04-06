@@ -2,6 +2,15 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-06 · StateStore 第一百五十四批）
+
+- P2-3（数值稳定性统一）继续收敛 source 反演分母保护逻辑：
+    - `data/geochemistry/source.py` 新增 `_safe_denominator`，统一 `_invert_mu`、`_invert_omega`、`_invert_kappa` 中重复的 `np.where(abs(..)<EPSILON, EPSILON, ..)` 逻辑。
+- 回归测试新增：
+    - `tests/test_geochemistry_source_helpers.py` 新增 2 个测试，覆盖：
+        - `_safe_denominator` 的 EPSILON 下界保护行为；
+        - `_invert_mu` 在退化时间项场景下返回有限值。
+
 ## 阶段进展（2026-04-06 · StateStore 第一百五十二批）
 
 - P2-3（数值稳定性统一）继续收敛 geochemistry/geo-panel 科学计数法参数字面量：
