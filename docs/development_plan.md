@@ -2,6 +2,13 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-07 · StateStore 第一百六十五批）
+
+- P2-3（数值稳定性统一）继续收敛 V1V2 预设中的地幔参数字面量：
+    - `data/geochemistry/engine.py` 新增 `MU_V1V2_DEFAULT`、`KAPPA_V1V2_DEFAULT`、`OMEGA_V1V2_DEFAULT`，并统一 `V1V2 (Geokit)` 与 `V1V2 (Zhu 1993)` 的 `mu_M/omega_M` 预设值来源。
+- 回归测试新增：
+    - `tests/test_geochemistry_engine.py` 新增 1 个测试，覆盖两个 V1V2 预设对共享常量的绑定，以及 `OMEGA_V1V2_DEFAULT = MU_V1V2_DEFAULT * KAPPA_V1V2_DEFAULT` 的关系。
+
 ## 阶段进展（2026-04-07 · StateStore 第一百六十四批）
 
 - P2-3（数值稳定性统一）继续收敛 geochemistry 预设模型中的参数字面量：

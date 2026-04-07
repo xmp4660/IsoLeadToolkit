@@ -11,7 +11,10 @@ from data.geochemistry.engine import (
     E2_DEFAULT,
     E2_CUMMING_RICHARDS,
     GeochemistryEngine,
+    KAPPA_V1V2_DEFAULT,
+    MU_V1V2_DEFAULT,
     MU_M_DEFAULT,
+    OMEGA_V1V2_DEFAULT,
     OMEGA_M_DEFAULT,
     PRESET_MODELS,
     T_EARTH_1ST,
@@ -81,6 +84,17 @@ def test_stacey_kramers_stage2_preset_uses_named_mantle_constants() -> None:
 
     assert sk2["mu_M"] == pytest.approx(MU_M_DEFAULT)
     assert sk2["omega_M"] == pytest.approx(OMEGA_M_DEFAULT)
+
+
+def test_v1v2_presets_share_named_mantle_ratio_constants() -> None:
+    geokit = PRESET_MODELS["V1V2 (Geokit)"]
+    zhu = PRESET_MODELS["V1V2 (Zhu 1993)"]
+
+    assert geokit["mu_M"] == pytest.approx(MU_V1V2_DEFAULT)
+    assert zhu["mu_M"] == pytest.approx(MU_V1V2_DEFAULT)
+    assert OMEGA_V1V2_DEFAULT == pytest.approx(MU_V1V2_DEFAULT * KAPPA_V1V2_DEFAULT)
+    assert geokit["omega_M"] == pytest.approx(OMEGA_V1V2_DEFAULT)
+    assert zhu["omega_M"] == pytest.approx(OMEGA_V1V2_DEFAULT)
 
 
 def test_is_zero_like_treats_zero_as_zero_like() -> None:

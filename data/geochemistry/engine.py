@@ -57,6 +57,9 @@ C1_SK = 31.23
 # PbIso 默认采用 Stacey & Kramers (1975) 二阶段参数
 MU_M_DEFAULT = 9.74           # 默认地幔 mu 值 (238U/204Pb)
 OMEGA_M_DEFAULT = 36.84       # 默认地幔 omega 值 (232Th/204Pb)
+MU_V1V2_DEFAULT = 7.8
+KAPPA_V1V2_DEFAULT = 4.04
+OMEGA_V1V2_DEFAULT = MU_V1V2_DEFAULT * KAPPA_V1V2_DEFAULT
 
 # 1.6 物理比值
 U_RATIO_NATURAL = 1.0 / 137.88  # 天然 235U/238U 比值
@@ -88,8 +91,8 @@ PRESET_MODELS = {
         'Tsec': T_SK_STAGE2,    # Age1
         'a0': A0, 'b0': B0, 'c0': C0,
         'a1': A1_SK, 'b1': B1_SK, 'c1': C1_SK,
-        'mu_M': 7.8,
-        'omega_M': 4.04 * 7.8,
+        'mu_M': MU_V1V2_DEFAULT,
+        'omega_M': OMEGA_V1V2_DEFAULT,
         'U_ratio': U_RATIO_NATURAL,
         'E1': E1_DEFAULT,
         'E2': E2_DEFAULT,
@@ -103,8 +106,8 @@ PRESET_MODELS = {
         'Tsec': 0.0,
         'a0': A0, 'b0': B0, 'c0': C0,
         'a1': A1_SK, 'b1': B1_SK, 'c1': C1_SK,
-        'mu_M': 7.8,
-        'omega_M': 7.8 * 4.04,
+        'mu_M': MU_V1V2_DEFAULT,
+        'omega_M': OMEGA_V1V2_DEFAULT,
         'U_ratio': U_RATIO_NATURAL,
         'E1': E1_DEFAULT,
         'E2': E2_DEFAULT,
