@@ -6,7 +6,9 @@ import numpy as np
 import pytest
 
 from data.geochemistry.engine import (
+    E1_DEFAULT,
     E1_CUMMING_RICHARDS,
+    E2_DEFAULT,
     E2_CUMMING_RICHARDS,
     GeochemistryEngine,
     MU_M_DEFAULT,
@@ -112,6 +114,26 @@ def test_calculate_modelcurve_uses_named_mu_omega_defaults_when_missing() -> Non
         params=params,
         Mu1=MU_M_DEFAULT,
         W1=OMEGA_M_DEFAULT,
+    )
+
+    np.testing.assert_allclose(with_defaults["Pb206_204"], with_explicit_constants["Pb206_204"])
+    np.testing.assert_allclose(with_defaults["Pb207_204"], with_explicit_constants["Pb207_204"])
+    np.testing.assert_allclose(with_defaults["Pb208_204"], with_explicit_constants["Pb208_204"])
+
+
+def test_calculate_modelcurve_uses_named_e_defaults_when_missing() -> None:
+    ge_engine = GeochemistryEngine()
+    params = ge_engine.get_parameters()
+    params.pop("E1", None)
+    params.pop("E2", None)
+    t_vals = np.array([1.0, 5.0], dtype=float)
+
+    with_defaults = calculate_modelcurve(t_vals, params=params)
+    with_explicit_constants = calculate_modelcurve(
+        t_vals,
+        params=params,
+        E1=E1_DEFAULT,
+        E2=E2_DEFAULT,
     )
 
     np.testing.assert_allclose(with_defaults["Pb206_204"], with_explicit_constants["Pb206_204"])

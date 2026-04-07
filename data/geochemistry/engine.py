@@ -324,8 +324,8 @@ def calculate_modelcurve(
     L8_val = params['lambda_238'] if L8 is None else float(L8)
     L2_val = params['lambda_232'] if L2 is None else float(L2)
 
-    E1_val = params.get('E1', 0.0) if E1 is None else float(E1)
-    E2_val = params.get('E2', 0.0) if E2 is None else float(E2)
+    E1_val = params.get('E1', E1_DEFAULT) if E1 is None else float(E1)
+    E2_val = params.get('E2', E2_DEFAULT) if E2 is None else float(E2)
 
     e8_T1 = _exp_evolution_term(L8_val, T1_years, E1_val)
     e8_t = _exp_evolution_term(L8_val, t_years, E1_val)

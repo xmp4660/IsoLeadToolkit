@@ -2,6 +2,14 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-07 · StateStore 第一百六十二批）
+
+- P2-3（数值稳定性统一）继续收敛 geochemistry 中 E1/E2 回退默认值：
+    - `data/geochemistry/engine.py` 与 `data/geochemistry/delta.py` 将 `params.get('E1', 0.0)` / `params.get('E2', 0.0)` 改为命名常量 `E1_DEFAULT` / `E2_DEFAULT`。
+- 回归测试新增/增强：
+    - `tests/test_geochemistry_engine.py` 新增 1 个测试，覆盖 `calculate_modelcurve` 在缺失 `E1/E2` 时使用命名常量回退。
+    - `tests/test_geochemistry_delta_helpers.py` 新增 1 个测试，覆盖 `calculate_deltas` 缺失 `E1/E2` 时与显式常量参数路径结果一致。
+
 ## 阶段进展（2026-04-07 · StateStore 第一百六十一批）
 
 - P2-3（数值稳定性统一）继续收敛 geochemistry engine 的地幔参数回退默认值：

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .engine import engine, _exp_evolution_term
+from .engine import E1_DEFAULT, E2_DEFAULT, engine, _exp_evolution_term
 
 
 def calculate_deltas(
@@ -42,8 +42,8 @@ def calculate_deltas(
     omega_M = params['omega_M']
     v_M = params['v_M']
 
-    E1_val = params.get('E1', 0.0) if E1 is None else float(E1)
-    E2_val = params.get('E2', 0.0) if E2 is None else float(E2)
+    E1_val = params.get('E1', E1_DEFAULT) if E1 is None else float(E1)
+    E2_val = params.get('E2', E2_DEFAULT) if E2 is None else float(E2)
 
     if use_two_stage:
         T = T_mantle if T_mantle is not None else params['Tsec']
