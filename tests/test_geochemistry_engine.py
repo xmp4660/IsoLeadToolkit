@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
 from data.geochemistry.engine import (
@@ -10,6 +11,8 @@ from data.geochemistry.engine import (
     GeochemistryEngine,
     PRESET_MODELS,
     T_SK_STAGE2,
+    _exp_evolution_term,
+    _is_zero_like,
 )
 
 
@@ -56,3 +59,28 @@ def test_load_cumming_richards_preset_uses_named_evolution_constants() -> None:
     params = ge_engine.get_parameters()
     assert params["E1"] == pytest.approx(E1_CUMMING_RICHARDS)
     assert params["E2"] == pytest.approx(E2_CUMMING_RICHARDS)
+
+
+def test_is_zero_like_treats_zero_as_zero_like() -> None:
+    assert _is_zero_like(0.0) is True
+
+
+def test_exp_evolution_term_zero_uses_plain_exponential() -> None:
+    lmbda = 1.55125e-10
+    t_years = np.array([1.0e6, 2.5e6, 4.0e6], dtype=float)
+
+    result = _exp_evolution_term(lmbda, t_years, E=0.0)
+    expected = np.exp(lmbda * t_years)
+
+    np.testing.assert_allclose(result, expected)
+
+
+def test_exp_evolution_term_nonzero_applies_evolution_factor() -> None:
+    lmbda = 9.8485e-10
+    t_years = np.array([2.0e6, 3.0e6], dtype=float)
+    e_value = 0.145
+
+    result = _exp_evolution_term(lmbda, t_years, E=e_value)
+    expected = np.exp(lmbda * t_years) * (1.0 - e_value * (t_years - (1.0 / lmbda)))
+
+    np.testing.assert_allclose(result, expected)

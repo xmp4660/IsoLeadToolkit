@@ -2,6 +2,16 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-07 · StateStore 第一百六十批）
+
+- P2-3（数值稳定性统一）继续收敛 geochemistry engine 演化参数零值判断：
+    - `data/geochemistry/engine.py` 新增 `_is_zero_like`，并将 `_exp_evolution_term` 中重复的 `E == 0 or E == 0.0` 改为统一零值判定 helper。
+- 回归测试新增：
+    - `tests/test_geochemistry_engine.py` 新增 3 个测试，覆盖：
+        - `_is_zero_like` 对零值输入的判定；
+        - `_exp_evolution_term` 在 `E=0` 时退化为纯指数项；
+        - `_exp_evolution_term` 在非零 `E` 时按演化因子公式计算。
+
 ## 阶段进展（2026-04-07 · StateStore 第一百五十九批）
 
 - P2-3（数值稳定性统一）收敛 isochron 模块浮点零比较：

@@ -262,11 +262,16 @@ class GeochemistryEngine:
 # 全局单例实例
 engine = GeochemistryEngine()
 
+
+def _is_zero_like(value: float, floor: float = EPSILON) -> bool:
+    """Return True when value is effectively zero under the configured floor."""
+    return abs(float(value)) <= float(floor)
+
 def _exp_evolution_term(lmbda: float, t_years, E: float = 0.0) -> np.ndarray | float:
     """
     PbIso 模型曲线的指数演化项（对应 R: exp(lambda*t)*(1 - E*(t - 1/lambda))）
     """
-    if E == 0 or E == 0.0:
+    if _is_zero_like(E):
         return np.exp(lmbda * t_years)
     return np.exp(lmbda * t_years) * (1.0 - E * (t_years - (1.0 / lmbda)))
 
