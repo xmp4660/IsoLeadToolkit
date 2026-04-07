@@ -9,8 +9,11 @@ from data.geochemistry.engine import (
     E1_CUMMING_RICHARDS,
     E2_CUMMING_RICHARDS,
     GeochemistryEngine,
+    MU_M_DEFAULT,
+    OMEGA_M_DEFAULT,
     PRESET_MODELS,
     T_SK_STAGE2,
+    calculate_modelcurve,
     _exp_evolution_term,
     _is_zero_like,
 )
@@ -84,3 +87,33 @@ def test_exp_evolution_term_nonzero_applies_evolution_factor() -> None:
     expected = np.exp(lmbda * t_years) * (1.0 - e_value * (t_years - (1.0 / lmbda)))
 
     np.testing.assert_allclose(result, expected)
+
+
+def test_update_derived_params_uses_mu_default_when_missing() -> None:
+    ge_engine = GeochemistryEngine()
+    ge_engine.params.pop("mu_M", None)
+
+    ge_engine._update_derived_params()
+
+    params = ge_engine.get_parameters()
+    assert params["v_M"] == pytest.approx(MU_M_DEFAULT * float(params["U_ratio"]))
+
+
+def test_calculate_modelcurve_uses_named_mu_omega_defaults_when_missing() -> None:
+    ge_engine = GeochemistryEngine()
+    params = ge_engine.get_parameters()
+    params.pop("mu_M", None)
+    params.pop("omega_M", None)
+    t_vals = np.array([1.0, 5.0], dtype=float)
+
+    with_defaults = calculate_modelcurve(t_vals, params=params)
+    with_explicit_constants = calculate_modelcurve(
+        t_vals,
+        params=params,
+        Mu1=MU_M_DEFAULT,
+        W1=OMEGA_M_DEFAULT,
+    )
+
+    np.testing.assert_allclose(with_defaults["Pb206_204"], with_explicit_constants["Pb206_204"])
+    np.testing.assert_allclose(with_defaults["Pb207_204"], with_explicit_constants["Pb207_204"])
+    np.testing.assert_allclose(with_defaults["Pb208_204"], with_explicit_constants["Pb208_204"])

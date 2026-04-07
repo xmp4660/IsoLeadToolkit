@@ -2,6 +2,15 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-07 · StateStore 第一百六十一批）
+
+- P2-3（数值稳定性统一）继续收敛 geochemistry engine 的地幔参数回退默认值：
+    - `data/geochemistry/engine.py` 将 `_update_derived_params` 与 `calculate_modelcurve` 中 `mu_M/omega_M` 的回退字面量替换为 `MU_M_DEFAULT`、`OMEGA_M_DEFAULT` 命名常量。
+- 回归测试新增：
+    - `tests/test_geochemistry_engine.py` 新增 2 个测试，覆盖：
+        - 缺失 `mu_M` 时 `_update_derived_params` 使用命名常量回退；
+        - 缺失 `mu_M/omega_M` 时 `calculate_modelcurve` 与显式传入命名常量结果一致。
+
 ## 阶段进展（2026-04-07 · StateStore 第一百六十批）
 
 - P2-3（数值稳定性统一）继续收敛 geochemistry engine 演化参数零值判断：

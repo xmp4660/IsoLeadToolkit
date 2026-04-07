@@ -211,7 +211,7 @@ class GeochemistryEngine:
 
     def _update_derived_params(self) -> None:
         """更新衍生参数 (内部使用)"""
-        mu = self.params.get('mu_M', 9.74)
+        mu = self.params.get('mu_M', MU_M_DEFAULT)
         u_r = self.params.get('U_ratio', U_RATIO_NATURAL)
         # v = 235U/204Pb = mu * (235U/238U)
         self.params['v_M'] = mu * u_r
@@ -316,8 +316,8 @@ def calculate_modelcurve(
     Y1_val = params['b1'] if Y1 is None else float(Y1)
     Z1_val = params['c1'] if Z1 is None else float(Z1)
 
-    Mu1_val = params.get('mu_M', 9.74) if Mu1 is None else float(Mu1)
-    W1_val = params.get('omega_M', 36.84) if W1 is None else float(W1)
+    Mu1_val = params.get('mu_M', MU_M_DEFAULT) if Mu1 is None else float(Mu1)
+    W1_val = params.get('omega_M', OMEGA_M_DEFAULT) if W1 is None else float(W1)
 
     U8U5_val = (1.0 / params['U_ratio']) if U8U5 is None else float(U8U5)
     L5_val = params['lambda_235'] if L5 is None else float(L5)
