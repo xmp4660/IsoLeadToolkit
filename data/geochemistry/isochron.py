@@ -39,6 +39,11 @@ _YORK_TOL_DEFAULT = 1e-15
 _PBPB_SOLVER_BOUNDS = (1e6, 10e9)
 
 
+def _is_near_zero(value: float, floor: float = _SOURCE_DEN_FLOOR) -> bool:
+    """Return True when value is effectively zero under denominator floor."""
+    return abs(float(value)) <= float(floor)
+
+
 def calculate_paleoisochron_line(
     age_ma: float,
     params: dict[str, Any] | None = None,
@@ -73,7 +78,7 @@ def calculate_paleoisochron_line(
 
     e8T = np.exp(lam238 * T1)
     e8t = np.exp(lam238 * t_years)
-    if e8T == e8t:
+    if _is_near_zero(e8T - e8t):
         return None
 
     if algorithm == 'PB_EVOL_76':
@@ -329,7 +334,7 @@ def calculate_pbpb_age_from_ratio(
         return age_ma, None
 
     dRdt = u_ratio * ((l235 * e5 * (e8 - 1.0)) - ((e5 - 1.0) * l238 * e8)) / den
-    if dRdt == 0:
+    if _is_near_zero(dRdt):
         return age_ma, None
 
     dt_dR = 1.0 / dRdt

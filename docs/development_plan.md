@@ -2,6 +2,15 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-07 · StateStore 第一百五十九批）
+
+- P2-3（数值稳定性统一）收敛 isochron 模块浮点零比较：
+    - `data/geochemistry/isochron.py` 新增 `_is_near_zero`，并将 `calculate_paleoisochron_line` 与 `calculate_pbpb_age_from_ratio` 中直接 `== 0` / `==` 判定改为统一近零判断。
+- 回归测试新增：
+    - `tests/test_geochemistry_age_isochron.py` 新增 2 个测试，覆盖：
+        - `_is_near_zero` 相对 `_SOURCE_DEN_FLOOR` 的阈值行为；
+        - paleoisochron 在近等时刻（`e8T≈e8t`）场景下返回 `None` 的保护路径。
+
 ## 阶段进展（2026-04-07 · StateStore 第一百五十八批）
 
 - P2-3（数值稳定性统一）推进 GeoPanel 参数控件配置常量收敛：

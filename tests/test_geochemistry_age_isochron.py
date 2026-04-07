@@ -9,6 +9,7 @@ from data.geochemistry import age as age_module
 from data.geochemistry import engine
 from data.geochemistry import isochron as isochron_module
 from data.geochemistry.isochron import (
+    calculate_paleoisochron_line,
     calculate_isochron1_growth_curve,
     calculate_isochron_age_from_slope,
     calculate_pbpb_age_from_ratio,
@@ -59,6 +60,25 @@ def test_calculate_pbpb_age_from_ratio_uses_named_solver_bounds(monkeypatch) -> 
     assert age_ma == pytest.approx(2.0, rel=0.0, abs=1e-12)
     assert age_err_ma is None
     assert captured["bounds"] == isochron_module._PBPB_SOLVER_BOUNDS
+
+
+def test_is_near_zero_respects_source_den_floor() -> None:
+    assert isochron_module._is_near_zero(0.0) is True
+    assert isochron_module._is_near_zero(isochron_module._SOURCE_DEN_FLOOR * 0.5) is True
+    assert isochron_module._is_near_zero(isochron_module._SOURCE_DEN_FLOOR * 2.0) is False
+
+
+def test_calculate_paleoisochron_line_returns_none_for_near_equal_time_terms() -> None:
+    params = {
+        **engine.get_parameters(),
+        "Tsec": 1_000_000.0,
+        "lambda_238": 1.55125e-10,
+    }
+
+    age_ma = (params["Tsec"] + 1e-6) / 1e6
+    result = calculate_paleoisochron_line(age_ma=age_ma, params=params, algorithm="PB_EVOL_76")
+
+    assert result is None
 
 
 def test_calculate_isochron_age_from_slope_matches_pbpb_solver() -> None:
