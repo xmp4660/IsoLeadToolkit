@@ -2,6 +2,13 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-07 · StateStore 第一百七十一批）
+
+- P2-3（数值稳定性统一）继续收敛 export image 默认纵横比字面量：
+    - `application/use_cases/export_image.py` 新增 `DEFAULT_EXPORT_HEIGHT_RATIO`，并统一 `science_single` / `ieee_single` 预设及 `height_ratio` fallback 的默认来源。
+- 回归测试新增：
+    - `tests/test_export_image_usecases.py` 新增 1 个测试，覆盖 `science_single` 与 `ieee_single` 预设对 `DEFAULT_EXPORT_HEIGHT_RATIO` 的绑定。
+
 ## 阶段进展（2026-04-07 · StateStore 第一百七十批）
 
 - P2-3（数值稳定性统一）继续收敛 selection overlay 默认置信度字面量：

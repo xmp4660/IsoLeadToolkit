@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Mapping
 
 SUPPORTED_IMAGE_FORMATS = {"png", "tiff", "pdf", "svg", "eps"}
+DEFAULT_EXPORT_HEIGHT_RATIO = 0.72
 
 
 def build_image_export_profile(preset_key: str) -> dict:
@@ -14,7 +15,7 @@ def build_image_export_profile(preset_key: str) -> dict:
         "science_single": {
             "styles": ["science", "no-latex"],
             "width_mm": 85.0,
-            "height_ratio": 0.72,
+            "height_ratio": DEFAULT_EXPORT_HEIGHT_RATIO,
             "dpi": 300,
             "point_size": 48,
             "legend": {
@@ -31,7 +32,7 @@ def build_image_export_profile(preset_key: str) -> dict:
         "ieee_single": {
             "styles": ["science", "ieee", "no-latex"],
             "width_mm": 88.0,
-            "height_ratio": 0.72,
+            "height_ratio": DEFAULT_EXPORT_HEIGHT_RATIO,
             "dpi": 300,
             "point_size": 46,
             "legend": {
@@ -83,7 +84,7 @@ def build_image_export_profile(preset_key: str) -> dict:
 
     profile = dict(profiles.get(preset_key, profiles["science_single"]))
     width_in = mm_to_inch(float(profile["width_mm"]))
-    height_in = max(2.0, width_in * float(profile.get("height_ratio", 0.72)))
+    height_in = max(2.0, width_in * float(profile.get("height_ratio", DEFAULT_EXPORT_HEIGHT_RATIO)))
     profile["figsize"] = (width_in, height_in)
     return profile
 
