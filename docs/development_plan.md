@@ -2,6 +2,13 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-07 · StateStore 第一百六十八批）
+
+- P2-3（数值稳定性统一）继续收敛 ternary 基础跨度 near-zero 判定：
+    - `visualization/plotting/ternary.py` 将 `infer_ternary_limits` 中 `base_span <= 0.0` 改为复用 `_TERNARY_LIMIT_EPSILON`。
+- 回归测试新增：
+    - `tests/test_plotting_ternary_helpers.py` 新增 1 个测试，覆盖 tiny base span 场景触发 fallback span 后仍返回有限且可读的限制范围。
+
 ## 阶段进展（2026-04-07 · StateStore 第一百六十七批）
 
 - P2-3（数值稳定性统一）继续收敛 ternary 边界估计中的近零判定：

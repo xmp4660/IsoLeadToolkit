@@ -155,3 +155,15 @@ def test_robust_bounds_treats_tiny_trim_ratio_as_no_trim() -> None:
 
     assert low == np.nanmin(vals)
     assert high == np.nanmax(vals)
+
+
+def test_infer_ternary_limits_uses_fallback_span_for_tiny_base_span() -> None:
+    t_vals = np.array([0.333333333333, 0.333333333334], dtype=float)
+    l_vals = np.array([0.333333333333, 0.333333333332], dtype=float)
+    r_vals = np.array([0.333333333334, 0.333333333334], dtype=float)
+
+    tmin, tmax, *_ = ternary.infer_ternary_limits(t_vals, l_vals, r_vals, boundary_percent=5.0)
+
+    assert np.isfinite(tmin)
+    assert np.isfinite(tmax)
+    assert (tmax - tmin) > 0.1

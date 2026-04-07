@@ -231,7 +231,7 @@ def infer_ternary_limits(
 
     spans = np.maximum(maxs - mins, 0.0)
     base_span = float(np.nanmax(spans))
-    if not np.isfinite(base_span) or base_span <= 0.0:
+    if not np.isfinite(base_span) or base_span <= _TERNARY_LIMIT_EPSILON:
         base_span = 0.15
 
     span = min(1.0, base_span * (1.0 + 2.0 * boundary_ratio))
