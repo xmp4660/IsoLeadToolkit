@@ -13,11 +13,14 @@ from matplotlib.patches import Ellipse
 logger = logging.getLogger(__name__)
 
 
+_DEFAULT_ELLIPSE_CONFIDENCE = 0.95
+
+
 def draw_confidence_ellipse(
     x: np.ndarray,
     y: np.ndarray,
     ax: Any,
-    confidence: float = 0.95,
+    confidence: float = _DEFAULT_ELLIPSE_CONFIDENCE,
     facecolor: str = "none",
     **kwargs,
 ) -> Ellipse | None:

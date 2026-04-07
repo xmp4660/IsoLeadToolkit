@@ -2,6 +2,13 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-07 · StateStore 第一百七十批）
+
+- P2-3（数值稳定性统一）继续收敛 selection overlay 默认置信度字面量：
+    - `visualization/selection_overlay.py` 新增 `_DEFAULT_ELLIPSE_CONFIDENCE`，并将 `draw_confidence_ellipse` 的默认参数从内联 `0.95` 改为命名常量。
+- 回归测试新增：
+    - `tests/test_selection_overlay_helpers.py` 新增 1 个测试，覆盖 `draw_confidence_ellipse` 默认参数路径对命名常量的透传行为。
+
 ## 阶段进展（2026-04-07 · StateStore 第一百六十九批）
 
 - P2-3（数值稳定性统一）继续收敛 ternary 的 tiny-span 判定复用：
