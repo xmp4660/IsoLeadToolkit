@@ -2,6 +2,13 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-07 · StateStore 第一百七十三批）
+
+- P2-3（数值稳定性统一）继续收敛 export image 的最小 DPI 护栏字面量：
+    - `application/use_cases/export_image.py` 新增 `MIN_EXPORT_DPI`，并将 `resolve_image_save_options` 中 `max(72, dpi_value)` 改为命名常量版本。
+- 回归测试更新：
+    - `tests/test_export_image_usecases.py` 断言改为使用 `MIN_EXPORT_DPI`，覆盖最小 DPI 护栏常量绑定。
+
 ## 阶段进展（2026-04-07 · StateStore 第一百七十二批）
 
 - P2-3（数值稳定性统一）继续收敛 StateStore 的默认置信度字面量：

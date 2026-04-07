@@ -2,6 +2,7 @@
 
 from application.use_cases.export_image import (
     DEFAULT_EXPORT_HEIGHT_RATIO,
+    MIN_EXPORT_DPI,
     build_image_export_profile,
     normalize_export_target,
     resolve_image_save_options,
@@ -34,7 +35,7 @@ def test_resolve_image_save_options_applies_bounds() -> None:
         default_dpi=300,
     )
 
-    assert options["dpi"] == 72
+    assert options["dpi"] == MIN_EXPORT_DPI
     assert options["bbox_tight"] is True
     assert options["transparent"] is True
     assert options["pad_inches"] == 0.0

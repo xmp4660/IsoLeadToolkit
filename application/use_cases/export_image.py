@@ -7,6 +7,7 @@ from typing import Mapping
 
 SUPPORTED_IMAGE_FORMATS = {"png", "tiff", "pdf", "svg", "eps"}
 DEFAULT_EXPORT_HEIGHT_RATIO = 0.72
+MIN_EXPORT_DPI = 72
 
 
 def build_image_export_profile(preset_key: str) -> dict:
@@ -125,7 +126,7 @@ def resolve_image_save_options(
     profile_dpi = int(profile.get("dpi", default_dpi))
     dpi_value = int(dpi_override) if dpi_override is not None else profile_dpi
     return {
-        "dpi": max(72, dpi_value),
+        "dpi": max(MIN_EXPORT_DPI, dpi_value),
         "bbox_tight": bool(bbox_tight),
         "pad_inches": max(0.0, float(pad_inches)),
         "transparent": bool(transparent),
