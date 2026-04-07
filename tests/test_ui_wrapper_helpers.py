@@ -325,3 +325,51 @@ def test_display_theme_auto_layout_delegates_to_layout_helper(monkeypatch) -> No
 
     assert calls["fig"] is fake_fig
     assert calls["draw_called"] is True
+
+
+def test_display_theme_load_theme_uses_named_legend_alpha_default(monkeypatch) -> None:
+    from ui.panels.display import themes
+
+    class _Combo:
+        def currentText(self) -> str:
+            return "demo"
+
+    class _Spin:
+        def __init__(self):
+            self.value_set = None
+
+        def setValue(self, value):
+            self.value_set = value
+
+    class _Gateway:
+        def set_color_scheme(self, _value):
+            return None
+
+        def set_legend_location(self, _value):
+            return None
+
+        def set_legend_position(self, _value):
+            return None
+
+    class _Panel(themes.DisplayThemeMixin):
+        def __init__(self):
+            self.theme_load_combo = _Combo()
+            self.legend_frame_alpha_spin = _Spin()
+            self.font_size_spins = {}
+
+        def __getattr__(self, _name):
+            return None
+
+        def _set_legend_position_button(self, *_args):
+            return None
+
+        def _on_style_change(self):
+            return None
+
+    monkeypatch.setattr(themes, "app_state", SimpleNamespace(saved_themes={"demo": {}}))
+    monkeypatch.setattr(themes, "state_gateway", _Gateway())
+
+    panel = _Panel()
+    panel._load_theme()
+
+    assert panel.legend_frame_alpha_spin.value_set == themes._DEFAULT_LEGEND_FRAME_ALPHA

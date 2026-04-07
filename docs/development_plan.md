@@ -6,6 +6,15 @@
 
 ## 阶段进展（2026-04-07 · StateStore 第一百七十七批）
 
+## 阶段进展（2026-04-07 · StateStore 第一百七十八批）
+
+- P2-3（数值稳定性统一）继续收敛 DisplayTheme 的 legend alpha fallback 字面量：
+    - `ui/panels/display/themes.py` 新增 `_DEFAULT_LEGEND_FRAME_ALPHA`，并统一 `_save_theme` 与 `_load_theme` 的默认值来源。
+- 回归测试新增：
+    - `tests/test_ui_wrapper_helpers.py` 新增 1 个测试，覆盖主题数据缺失 `legend_frame_alpha` 时加载路径回退到命名常量。
+
+## 阶段进展（2026-04-07 · StateStore 第一百七十七批）
+
 - P2-3（数值稳定性统一）继续收敛 StateStore 的最小 DPI 护栏字面量：
     - `core/state/store.py` 新增 `MIN_EXPORT_DPI`，并统一 `_normalize_export_options` 与 `_normalize_plot_dpi` 的下界钳制逻辑。
 - 回归测试更新/新增：

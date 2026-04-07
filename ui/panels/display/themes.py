@@ -10,6 +10,8 @@ from visualization.plotting.style import configure_constrained_layout
 
 logger = logging.getLogger(__name__)
 
+_DEFAULT_LEGEND_FRAME_ALPHA = 0.95
+
 
 class DisplayThemeMixin:
     """Theme management methods for display panel."""
@@ -94,7 +96,7 @@ class DisplayThemeMixin:
             'legend_location': getattr(app_state, 'legend_location', 'outside_right'),
             'legend_position': getattr(app_state, 'legend_position', None),
             'legend_frame_on': bool(self.legend_frame_on_check.isChecked()) if self.legend_frame_on_check else True,
-            'legend_frame_alpha': self.legend_frame_alpha_spin.value() if self.legend_frame_alpha_spin else 0.95,
+            'legend_frame_alpha': self.legend_frame_alpha_spin.value() if self.legend_frame_alpha_spin else _DEFAULT_LEGEND_FRAME_ALPHA,
             'legend_frame_facecolor': self.legend_frame_face_edit.text() if self.legend_frame_face_edit else '#ffffff',
             'legend_frame_edgecolor': self.legend_frame_edge_edit.text() if self.legend_frame_edge_edit else '#cbd5f5',
             'adjust_text_force_text': [
@@ -244,7 +246,7 @@ class DisplayThemeMixin:
         if self.legend_frame_on_check:
             self.legend_frame_on_check.setChecked(bool(data.get('legend_frame_on', True)))
         if self.legend_frame_alpha_spin:
-            self.legend_frame_alpha_spin.setValue(float(data.get('legend_frame_alpha', 0.95)))
+            self.legend_frame_alpha_spin.setValue(float(data.get('legend_frame_alpha', _DEFAULT_LEGEND_FRAME_ALPHA)))
         if self.legend_frame_face_edit:
             self.legend_frame_face_edit.setText(data.get('legend_frame_facecolor', '#ffffff'))
         if self.legend_frame_edge_edit:
