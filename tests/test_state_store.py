@@ -80,6 +80,11 @@ def _snapshot_state() -> dict[str, Any]:
         "marginal_kde_right_size": float(getattr(app_state, "marginal_kde_right_size", 15.0)),
         "marginal_kde_max_points": int(getattr(app_state, "marginal_kde_max_points", 5000)),
         "marginal_kde_bw_adjust": float(getattr(app_state, "marginal_kde_bw_adjust", 1.0)),
+        "marginal_kde_bandwidth": float(getattr(app_state, "marginal_kde_bandwidth", 0.0) or 0.0),
+        "marginal_kde_kernel": str(getattr(app_state, "marginal_kde_kernel", "gaussian") or "gaussian"),
+        "marginal_kde_auto_bandwidth_method": str(
+            getattr(app_state, "marginal_kde_auto_bandwidth_method", "scott") or "scott"
+        ),
         "marginal_kde_gridsize": int(getattr(app_state, "marginal_kde_gridsize", 256)),
         "marginal_kde_cut": float(getattr(app_state, "marginal_kde_cut", 1.0)),
         "marginal_kde_log_transform": bool(getattr(app_state, "marginal_kde_log_transform", False)),
@@ -345,6 +350,9 @@ def _restore_state(snapshot: dict[str, Any]) -> None:
     state_gateway.set_marginal_kde_compute_options(
         max_points=int(snapshot["marginal_kde_max_points"]),
         bw_adjust=float(snapshot["marginal_kde_bw_adjust"]),
+        bandwidth=float(snapshot["marginal_kde_bandwidth"]),
+        kernel=str(snapshot["marginal_kde_kernel"]),
+        auto_bandwidth_method=str(snapshot["marginal_kde_auto_bandwidth_method"]),
         gridsize=int(snapshot["marginal_kde_gridsize"]),
         cut=float(snapshot["marginal_kde_cut"]),
         log_transform=bool(snapshot["marginal_kde_log_transform"]),
@@ -1311,6 +1319,9 @@ def test_state_store_kde_domains() -> None:
         state_gateway.set_marginal_kde_compute_options(
             max_points=100000,
             bw_adjust=0.001,
+            bandwidth=0.37,
+            kernel="cosine",
+            auto_bandwidth_method="silverman",
             gridsize=2000,
             cut=-1.0,
             log_transform=True,
@@ -1322,6 +1333,9 @@ def test_state_store_kde_domains() -> None:
         assert app_state.marginal_kde_right_size == 5.0
         assert app_state.marginal_kde_max_points == 50000
         assert app_state.marginal_kde_bw_adjust == 0.05
+        assert app_state.marginal_kde_bandwidth == 0.37
+        assert app_state.marginal_kde_kernel == "cosine"
+        assert app_state.marginal_kde_auto_bandwidth_method == "silverman"
         assert app_state.marginal_kde_gridsize == 1024
         assert app_state.marginal_kde_cut == 0.0
         assert app_state.marginal_kde_log_transform is True
@@ -1333,6 +1347,9 @@ def test_state_store_kde_domains() -> None:
         assert store_snapshot["marginal_kde_right_size"] == 5.0
         assert store_snapshot["marginal_kde_max_points"] == 50000
         assert store_snapshot["marginal_kde_bw_adjust"] == 0.05
+        assert store_snapshot["marginal_kde_bandwidth"] == 0.37
+        assert store_snapshot["marginal_kde_kernel"] == "cosine"
+        assert store_snapshot["marginal_kde_auto_bandwidth_method"] == "silverman"
         assert store_snapshot["marginal_kde_gridsize"] == 1024
         assert store_snapshot["marginal_kde_cut"] == 0.0
         assert store_snapshot["marginal_kde_log_transform"] is True

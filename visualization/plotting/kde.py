@@ -15,8 +15,71 @@ logger = logging.getLogger(__name__)
 _KDE_MAX_POINTS_DEFAULT = 5000
 _KDE_GRID_SIZE_DEFAULT = 256
 _KDE_BW_ADJUST_DEFAULT = 1.0
+_KDE_BANDWIDTH_DEFAULT = 0.0
 _KDE_CUT_DEFAULT = 1.0
 _KDE_MIN_STD = 1e-12
+_KDE_KERNEL_DEFAULT = "gaussian"
+_KDE_AUTO_BW_METHOD_DEFAULT = "scott"
+_KDE_ALLOWED_KERNELS = (
+    "gaussian",
+    "tophat",
+    "epanechnikov",
+    "exponential",
+    "linear",
+    "cosine",
+)
+_KDE_ALLOWED_AUTO_BW_METHODS = ("scott", "silverman")
+
+KernelDensity = None
+_kernel_density_import_checked = False
+
+
+def _lazy_import_kernel_density():
+    """Lazy import sklearn KernelDensity for optional non-Gaussian kernels."""
+    global KernelDensity, _kernel_density_import_checked
+    if KernelDensity is None and not _kernel_density_import_checked:
+        _kernel_density_import_checked = True
+        try:
+            from sklearn.neighbors import KernelDensity as _KernelDensity
+
+            KernelDensity = _KernelDensity
+        except Exception as exc:
+            logger.warning("Failed to import sklearn KernelDensity: %s", exc)
+    return KernelDensity
+
+
+def _resolve_kernel_name(value: Any) -> str:
+    kernel = str(value or _KDE_KERNEL_DEFAULT).strip().lower()
+    return kernel if kernel in _KDE_ALLOWED_KERNELS else _KDE_KERNEL_DEFAULT
+
+
+def _resolve_auto_bandwidth_method(value: Any) -> str:
+    method = str(value or _KDE_AUTO_BW_METHOD_DEFAULT).strip().lower()
+    return method if method in _KDE_ALLOWED_AUTO_BW_METHODS else _KDE_AUTO_BW_METHOD_DEFAULT
+
+
+def _resolve_kernel_bandwidth(
+    data: np.ndarray,
+    *,
+    bw_adjust: float,
+    bandwidth: float,
+    auto_bandwidth_method: str,
+) -> float:
+    bw_adjust_safe = max(0.05, float(bw_adjust))
+    if bandwidth > 0.0:
+        return max(0.01, float(bandwidth) * bw_adjust_safe)
+
+    std = float(np.nanstd(data))
+    if not np.isfinite(std) or std <= _KDE_MIN_STD:
+        std = 1.0
+
+    n_samples = max(int(data.size), 2)
+    method = _resolve_auto_bandwidth_method(auto_bandwidth_method)
+    if method == "silverman":
+        factor = float((n_samples * 3.0 / 4.0) ** (-1.0 / 5.0))
+    else:
+        factor = float(n_samples ** (-1.0 / 5.0))
+    return max(0.01, std * factor * bw_adjust_safe)
 
 
 def _to_float_array(values) -> np.ndarray:
@@ -31,6 +94,9 @@ def _estimate_density_curve(
     values,
     *,
     bw_adjust: float,
+    bandwidth: float,
+    kernel: str,
+    auto_bandwidth_method: str,
     gridsize: int,
     cut: float,
     log_transform: bool,
@@ -42,10 +108,11 @@ def _estimate_density_curve(
     if np.nanstd(data) <= _KDE_MIN_STD:
         return None
 
-    try:
-        kde = gaussian_kde(data)
-        kde.set_bandwidth(bw_method=max(0.05, kde.factor * float(max(0.05, bw_adjust))))
+    kernel_name = _resolve_kernel_name(kernel)
+    auto_bw_method = _resolve_auto_bandwidth_method(auto_bandwidth_method)
+    bandwidth_value = max(0.0, float(bandwidth))
 
+    try:
         std = float(np.nanstd(data))
         left = float(np.nanmin(data) - max(0.0, float(cut)) * std)
         right = float(np.nanmax(data) + max(0.0, float(cut)) * std)
@@ -53,7 +120,30 @@ def _estimate_density_curve(
             return None
 
         grid = np.linspace(left, right, int(max(32, gridsize)))
-        density = kde(grid)
+        density = None
+
+        if kernel_name == _KDE_KERNEL_DEFAULT and bandwidth_value <= 0.0:
+            kde = gaussian_kde(data)
+            kde.set_bandwidth(bw_method=auto_bw_method)
+            kde.set_bandwidth(bw_method=max(0.05, kde.factor * float(max(0.05, bw_adjust))))
+            density = kde(grid)
+        else:
+            kernel_density_cls = _lazy_import_kernel_density()
+            if kernel_density_cls is None:
+                return None
+
+            kde = kernel_density_cls(
+                bandwidth=_resolve_kernel_bandwidth(
+                    data,
+                    bw_adjust=bw_adjust,
+                    bandwidth=bandwidth_value,
+                    auto_bandwidth_method=auto_bw_method,
+                ),
+                kernel=kernel_name,
+            )
+            kde.fit(data.reshape(-1, 1))
+            density = np.exp(kde.score_samples(grid.reshape(-1, 1)))
+
         density = np.clip(density, 0.0, None)
         if log_transform:
             # Log + per-curve normalization prevents narrow spikes from dominating.
@@ -117,6 +207,21 @@ def draw_marginal_kde(
             'alpha': float(legacy_style.get('alpha', 0.25)),
             'fill': bool(legacy_style.get('fill', True)),
             'bw_adjust': float(getattr(app_state, 'marginal_kde_bw_adjust', legacy_style.get('bw_adjust', _KDE_BW_ADJUST_DEFAULT))),
+            'bandwidth': float(getattr(app_state, 'marginal_kde_bandwidth', legacy_style.get('bandwidth', _KDE_BANDWIDTH_DEFAULT)) or 0.0),
+            'kernel': _resolve_kernel_name(
+                getattr(
+                    app_state,
+                    'marginal_kde_kernel',
+                    legacy_style.get('kernel', _KDE_KERNEL_DEFAULT),
+                )
+            ),
+            'auto_bandwidth_method': _resolve_auto_bandwidth_method(
+                getattr(
+                    app_state,
+                    'marginal_kde_auto_bandwidth_method',
+                    legacy_style.get('auto_bandwidth_method', _KDE_AUTO_BW_METHOD_DEFAULT),
+                )
+            ),
             'gridsize': int(getattr(app_state, 'marginal_kde_gridsize', legacy_style.get('gridsize', _KDE_GRID_SIZE_DEFAULT))),
             'cut': float(getattr(app_state, 'marginal_kde_cut', legacy_style.get('cut', _KDE_CUT_DEFAULT))),
             'log_transform': bool(getattr(app_state, 'marginal_kde_log_transform', legacy_style.get('log_transform', False))),
@@ -127,6 +232,11 @@ def draw_marginal_kde(
     kde_fill = bool(style.get('fill', True))
     gridsize = max(32, min(int(style.get('gridsize', _KDE_GRID_SIZE_DEFAULT)), 1024))
     bw_adjust = max(0.05, min(float(style.get('bw_adjust', _KDE_BW_ADJUST_DEFAULT)), 5.0))
+    bandwidth = max(0.0, min(float(style.get('bandwidth', _KDE_BANDWIDTH_DEFAULT) or 0.0), 10.0))
+    kernel = _resolve_kernel_name(style.get('kernel', _KDE_KERNEL_DEFAULT))
+    auto_bandwidth_method = _resolve_auto_bandwidth_method(
+        style.get('auto_bandwidth_method', _KDE_AUTO_BW_METHOD_DEFAULT)
+    )
     cut = max(0.0, min(float(style.get('cut', _KDE_CUT_DEFAULT)), 5.0))
     log_transform = bool(style.get('log_transform', False))
     max_points = max(200, min(max_points, 50000))
@@ -149,6 +259,9 @@ def draw_marginal_kde(
             curve_x = _estimate_density_curve(
                 xs,
                 bw_adjust=bw_adjust,
+                bandwidth=bandwidth,
+                kernel=kernel,
+                auto_bandwidth_method=auto_bandwidth_method,
                 gridsize=gridsize,
                 cut=cut,
                 log_transform=log_transform,
@@ -178,6 +291,9 @@ def draw_marginal_kde(
             curve_y = _estimate_density_curve(
                 ys,
                 bw_adjust=bw_adjust,
+                bandwidth=bandwidth,
+                kernel=kernel,
+                auto_bandwidth_method=auto_bandwidth_method,
                 gridsize=gridsize,
                 cut=cut,
                 log_transform=log_transform,

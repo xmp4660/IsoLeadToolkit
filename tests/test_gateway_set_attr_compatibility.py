@@ -1033,6 +1033,34 @@ def test_marginal_kde_style_set_attr_compatibility() -> None:
         state_gateway.set_marginal_kde_style(original_marginal_kde_style)
 
 
+def test_marginal_kde_compute_options_set_attr_compatibility() -> None:
+    original_bandwidth = float(getattr(app_state, "marginal_kde_bandwidth", 0.0) or 0.0)
+    original_kernel = str(getattr(app_state, "marginal_kde_kernel", "gaussian") or "gaussian")
+    original_auto_bw_method = str(
+        getattr(app_state, "marginal_kde_auto_bandwidth_method", "scott") or "scott"
+    )
+
+    try:
+        state_gateway.set_attr("marginal_kde_bandwidth", 0.32)
+        state_gateway.set_attr("marginal_kde_kernel", "cosine")
+        state_gateway.set_attr("marginal_kde_auto_bandwidth_method", "silverman")
+
+        assert app_state.marginal_kde_bandwidth == 0.32
+        assert app_state.marginal_kde_kernel == "cosine"
+        assert app_state.marginal_kde_auto_bandwidth_method == "silverman"
+
+        store_snapshot = app_state.state_store.snapshot()
+        assert store_snapshot["marginal_kde_bandwidth"] == 0.32
+        assert store_snapshot["marginal_kde_kernel"] == "cosine"
+        assert store_snapshot["marginal_kde_auto_bandwidth_method"] == "silverman"
+    finally:
+        state_gateway.set_marginal_kde_compute_options(
+            bandwidth=original_bandwidth,
+            kernel=original_kernel,
+            auto_bandwidth_method=original_auto_bw_method,
+        )
+
+
 def test_ml_last_result_set_attr_compatibility() -> None:
     original_ml_last_result = getattr(app_state, "ml_last_result", None)
 

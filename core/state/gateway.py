@@ -323,6 +323,7 @@ class AppStateGateway:
             "marginal_kde_top_size": "set_marginal_kde_layout",
             "marginal_kde_right_size": "set_marginal_kde_layout",
             "marginal_kde_bw_adjust": "set_marginal_kde_compute_options",
+            "marginal_kde_bandwidth": "set_marginal_kde_compute_options",
             "marginal_kde_cut": "set_marginal_kde_compute_options",
             "adjust_text_time_lim": "set_adjust_text_time_lim",
         }
@@ -354,6 +355,8 @@ class AppStateGateway:
             "ternary_stretch_mode": "set_ternary_stretch_mode",
             "render_mode": "set_render_mode",
             "ui_theme": "set_ui_theme",
+            "marginal_kde_kernel": "set_marginal_kde_compute_options",
+            "marginal_kde_auto_bandwidth_method": "set_marginal_kde_compute_options",
         }
 
         handlers: dict[str, Callable[[Any], None]] = {
@@ -372,9 +375,16 @@ class AppStateGateway:
             "marginal_kde_right_size": lambda v: self.set_marginal_kde_layout(right_size=float(v)),
             "marginal_kde_max_points": lambda v: self.set_marginal_kde_compute_options(max_points=int(v)),
             "marginal_kde_bw_adjust": lambda v: self.set_marginal_kde_compute_options(bw_adjust=float(v)),
+            "marginal_kde_bandwidth": lambda v: self.set_marginal_kde_compute_options(
+                bandwidth=None if v is None else float(v)
+            ),
             "marginal_kde_gridsize": lambda v: self.set_marginal_kde_compute_options(gridsize=int(v)),
             "marginal_kde_cut": lambda v: self.set_marginal_kde_compute_options(cut=float(v)),
             "marginal_kde_log_transform": lambda v: self.set_marginal_kde_compute_options(log_transform=bool(v)),
+            "marginal_kde_kernel": lambda v: self.set_marginal_kde_compute_options(kernel=str(v)),
+            "marginal_kde_auto_bandwidth_method": lambda v: self.set_marginal_kde_compute_options(
+                auto_bandwidth_method=str(v)
+            ),
         }
 
         for name, setter_name in direct_map.items():
@@ -637,6 +647,9 @@ class AppStateGateway:
         *,
         max_points: int | None = None,
         bw_adjust: float | None = None,
+        bandwidth: float | None = None,
+        kernel: str | None = None,
+        auto_bandwidth_method: str | None = None,
         gridsize: int | None = None,
         cut: float | None = None,
         log_transform: bool | None = None,
@@ -645,6 +658,9 @@ class AppStateGateway:
             "SET_MARGINAL_KDE_COMPUTE_OPTIONS",
             max_points=max_points,
             bw_adjust=bw_adjust,
+            bandwidth=bandwidth,
+            kernel=kernel,
+            auto_bandwidth_method=auto_bandwidth_method,
             gridsize=gridsize,
             cut=cut,
             log_transform=log_transform,

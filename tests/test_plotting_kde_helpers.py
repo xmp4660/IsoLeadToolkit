@@ -105,9 +105,61 @@ def test_estimate_density_curve_returns_none_for_near_constant_data() -> None:
     curve = _estimate_density_curve(
         np.array([1.0, 1.0 + 1e-13, 1.0 - 1e-13], dtype=float),
         bw_adjust=1.0,
+        bandwidth=0.0,
+        kernel="gaussian",
+        auto_bandwidth_method="scott",
         gridsize=64,
         cut=1.0,
         log_transform=False,
     )
 
     assert curve is None
+
+
+def test_estimate_density_curve_supports_custom_kernel_and_bandwidth() -> None:
+    curve = _estimate_density_curve(
+        np.array([0.0, 0.8, 1.6, 2.4, 3.2], dtype=float),
+        bw_adjust=1.0,
+        bandwidth=0.4,
+        kernel="cosine",
+        auto_bandwidth_method="scott",
+        gridsize=64,
+        cut=1.0,
+        log_transform=False,
+    )
+
+    assert curve is not None
+    grid, density = curve
+    assert grid.shape == density.shape
+    assert grid.size >= 32
+
+
+def test_estimate_density_curve_supports_scott_and_silverman_auto_methods() -> None:
+    values = np.array([0.2, 0.8, 1.1, 1.9, 2.2, 2.9, 3.5], dtype=float)
+
+    scott_curve = _estimate_density_curve(
+        values,
+        bw_adjust=1.0,
+        bandwidth=0.0,
+        kernel="gaussian",
+        auto_bandwidth_method="scott",
+        gridsize=64,
+        cut=1.0,
+        log_transform=False,
+    )
+    silverman_curve = _estimate_density_curve(
+        values,
+        bw_adjust=1.0,
+        bandwidth=0.0,
+        kernel="gaussian",
+        auto_bandwidth_method="silverman",
+        gridsize=64,
+        cut=1.0,
+        log_transform=False,
+    )
+
+    assert scott_curve is not None
+    assert silverman_curve is not None
+    _, scott_density = scott_curve
+    _, silverman_density = silverman_curve
+    assert not np.allclose(scott_density, silverman_density)

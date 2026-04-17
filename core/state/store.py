@@ -28,6 +28,17 @@ class StateStore:
     MIN_EXPORT_DPI = 72
     DEFAULT_LEGEND_FRAME_ALPHA = 0.95
     DEFAULT_CONFIDENCE_LEVEL = 0.95
+    MARGINAL_KDE_DEFAULT_KERNEL = "gaussian"
+    MARGINAL_KDE_ALLOWED_KERNELS = (
+        "gaussian",
+        "tophat",
+        "epanechnikov",
+        "exponential",
+        "linear",
+        "cosine",
+    )
+    MARGINAL_KDE_DEFAULT_AUTO_BANDWIDTH_METHOD = "scott"
+    MARGINAL_KDE_ALLOWED_AUTO_BANDWIDTH_METHODS = ("scott", "silverman")
 
     def __init__(self, state: Any) -> None:
         self._state = state
@@ -287,6 +298,19 @@ class StateStore:
             "marginal_kde_right_size": float(getattr(state, "marginal_kde_right_size", 15.0)),
             "marginal_kde_max_points": int(getattr(state, "marginal_kde_max_points", 5000)),
             "marginal_kde_bw_adjust": float(getattr(state, "marginal_kde_bw_adjust", 1.0)),
+            "marginal_kde_bandwidth": self._normalize_kde_bandwidth(
+                getattr(state, "marginal_kde_bandwidth", 0.0)
+            ),
+            "marginal_kde_kernel": self._normalize_kde_kernel(
+                getattr(state, "marginal_kde_kernel", self.MARGINAL_KDE_DEFAULT_KERNEL)
+            ),
+            "marginal_kde_auto_bandwidth_method": self._normalize_kde_auto_bandwidth_method(
+                getattr(
+                    state,
+                    "marginal_kde_auto_bandwidth_method",
+                    self.MARGINAL_KDE_DEFAULT_AUTO_BANDWIDTH_METHOD,
+                )
+            ),
             "marginal_kde_gridsize": int(getattr(state, "marginal_kde_gridsize", 256)),
             "marginal_kde_cut": float(getattr(state, "marginal_kde_cut", 1.0)),
             "marginal_kde_log_transform": bool(getattr(state, "marginal_kde_log_transform", False)),
@@ -833,6 +857,9 @@ class StateStore:
         elif action_type == "SET_MARGINAL_KDE_COMPUTE_OPTIONS":
             max_points = action.get("max_points")
             bw_adjust = action.get("bw_adjust")
+            bandwidth = action.get("bandwidth")
+            kernel = action.get("kernel")
+            auto_bandwidth_method = action.get("auto_bandwidth_method")
             gridsize = action.get("gridsize")
             cut = action.get("cut")
             log_transform = action.get("log_transform")
@@ -841,6 +868,14 @@ class StateStore:
                 self._snapshot["marginal_kde_max_points"] = self._normalize_max_points(max_points)
             if bw_adjust is not None:
                 self._snapshot["marginal_kde_bw_adjust"] = self._normalize_bw_adjust(bw_adjust)
+            if bandwidth is not None:
+                self._snapshot["marginal_kde_bandwidth"] = self._normalize_kde_bandwidth(bandwidth)
+            if kernel is not None:
+                self._snapshot["marginal_kde_kernel"] = self._normalize_kde_kernel(kernel)
+            if auto_bandwidth_method is not None:
+                self._snapshot["marginal_kde_auto_bandwidth_method"] = (
+                    self._normalize_kde_auto_bandwidth_method(auto_bandwidth_method)
+                )
             if gridsize is not None:
                 self._snapshot["marginal_kde_gridsize"] = self._normalize_gridsize(gridsize)
             if cut is not None:
@@ -1239,6 +1274,11 @@ class StateStore:
             "marginal_kde_right_size": float(self._snapshot["marginal_kde_right_size"]),
             "marginal_kde_max_points": int(self._snapshot["marginal_kde_max_points"]),
             "marginal_kde_bw_adjust": float(self._snapshot["marginal_kde_bw_adjust"]),
+            "marginal_kde_bandwidth": float(self._snapshot["marginal_kde_bandwidth"]),
+            "marginal_kde_kernel": str(self._snapshot["marginal_kde_kernel"]),
+            "marginal_kde_auto_bandwidth_method": str(
+                self._snapshot["marginal_kde_auto_bandwidth_method"]
+            ),
             "marginal_kde_gridsize": int(self._snapshot["marginal_kde_gridsize"]),
             "marginal_kde_cut": float(self._snapshot["marginal_kde_cut"]),
             "marginal_kde_log_transform": bool(self._snapshot["marginal_kde_log_transform"]),
@@ -1450,6 +1490,11 @@ class StateStore:
         self._state.marginal_kde_right_size = float(self._snapshot["marginal_kde_right_size"])
         self._state.marginal_kde_max_points = int(self._snapshot["marginal_kde_max_points"])
         self._state.marginal_kde_bw_adjust = float(self._snapshot["marginal_kde_bw_adjust"])
+        self._state.marginal_kde_bandwidth = float(self._snapshot["marginal_kde_bandwidth"])
+        self._state.marginal_kde_kernel = str(self._snapshot["marginal_kde_kernel"])
+        self._state.marginal_kde_auto_bandwidth_method = str(
+            self._snapshot["marginal_kde_auto_bandwidth_method"]
+        )
         self._state.marginal_kde_gridsize = int(self._snapshot["marginal_kde_gridsize"])
         self._state.marginal_kde_cut = float(self._snapshot["marginal_kde_cut"])
         self._state.marginal_kde_log_transform = bool(self._snapshot["marginal_kde_log_transform"])
@@ -1699,6 +1744,26 @@ class StateStore:
     @staticmethod
     def _normalize_bw_adjust(value: Any) -> float:
         return max(0.05, min(float(value), 5.0))
+
+    @staticmethod
+    def _normalize_kde_bandwidth(value: Any) -> float:
+        if value is None:
+            return 0.0
+        return max(0.0, min(float(value), 10.0))
+
+    @classmethod
+    def _normalize_kde_kernel(cls, value: Any) -> str:
+        text = str(value or cls.MARGINAL_KDE_DEFAULT_KERNEL).strip().lower()
+        return text if text in cls.MARGINAL_KDE_ALLOWED_KERNELS else cls.MARGINAL_KDE_DEFAULT_KERNEL
+
+    @classmethod
+    def _normalize_kde_auto_bandwidth_method(cls, value: Any) -> str:
+        text = str(value or cls.MARGINAL_KDE_DEFAULT_AUTO_BANDWIDTH_METHOD).strip().lower()
+        return (
+            text
+            if text in cls.MARGINAL_KDE_ALLOWED_AUTO_BANDWIDTH_METHODS
+            else cls.MARGINAL_KDE_DEFAULT_AUTO_BANDWIDTH_METHOD
+        )
 
     @staticmethod
     def _normalize_gridsize(value: Any) -> int:

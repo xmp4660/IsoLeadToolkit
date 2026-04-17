@@ -2,6 +2,26 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-17 · StateStore 第一百八十批）
+
+- P2-3（可视化参数可配置）补充自动带宽方法适用场景提示：
+    - `ui/panels/analysis/equations.py` 在 `Auto Bandwidth Method` 控件下增加说明文案，明确 `Scott` 与 `Silverman` 的分布适用差异。
+    - `locales/en.json`、`locales/zh.json` 新增对应翻译键。
+- 回归保障：
+    - 沿用 KDE/StateStore/Gateway 的针对性测试集与守护脚本进行回归，确保新增提示文案不影响行为路径。
+
+## 阶段进展（2026-04-08 · StateStore 第一百七十九批）
+
+- P2-3（可视化参数可配置）新增 KDE 带宽与核函数设置：
+    - `visualization/plotting/kde.py` 增加 kernel-aware 密度估计路径，支持 `gaussian/tophat/epanechnikov/exponential/linear/cosine`，并支持显式带宽（`0` 表示自动估计）。
+    - `ui/panels/analysis/equations.py` 在边际 KDE 样式对话框新增 `KDE Bandwidth (0 = Auto)` 与 `KDE Kernel` 控件。
+    - `core/state/bootstrap.py`、`core/state/gateway.py`、`core/state/store.py` 打通 `marginal_kde_bandwidth` / `marginal_kde_kernel` 的默认值、状态同步、兼容路由与归一化。
+- 回归测试更新/新增：
+    - `tests/test_plotting_kde_helpers.py` 新增自定义 kernel + bandwidth 路径测试；
+    - `tests/test_state_store.py` 扩展 KDE 域状态测试，覆盖 bandwidth/kernel 的写入与快照；
+    - `tests/test_gateway_set_attr_compatibility.py` 新增 `set_attr` 对新字段的兼容测试。
+    - `locales/en.json`、`locales/zh.json` 新增 UI 文案翻译键。
+
 ## 阶段进展（2026-04-07 · StateStore 第一百七十六批）
 
 ## 阶段进展（2026-04-07 · StateStore 第一百七十七批）

@@ -8,6 +8,7 @@ import uuid
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QDialog,
     QDoubleSpinBox,
     QGroupBox,
@@ -171,6 +172,11 @@ class AnalysisPanelEquationMixin:
             fallback_style['levels'] = int(legacy_style.get('levels', 10))
         else:
             fallback_style['bw_adjust'] = float(legacy_style.get('bw_adjust', 1.0))
+            fallback_style['bandwidth'] = float(legacy_style.get('bandwidth', 0.0) or 0.0)
+            fallback_style['kernel'] = str(legacy_style.get('kernel', 'gaussian') or 'gaussian')
+            fallback_style['auto_bandwidth_method'] = str(
+                legacy_style.get('auto_bandwidth_method', 'scott') or 'scott'
+            )
             fallback_style['gridsize'] = int(legacy_style.get('gridsize', 256))
             fallback_style['cut'] = float(legacy_style.get('cut', 1.0))
             fallback_style['log_transform'] = bool(legacy_style.get('log_transform', False))
@@ -219,6 +225,9 @@ class AnalysisPanelEquationMixin:
         right_size_spin = None
         max_points_spin = None
         bw_adjust_spin = None
+        bandwidth_spin = None
+        kernel_combo = None
+        auto_bw_method_combo = None
         cut_spin = None
         log_transform_check = None
         if target == 'marginal_kde':
@@ -261,6 +270,78 @@ class AnalysisPanelEquationMixin:
             bw_row.addWidget(bw_adjust_spin)
             bw_row.addStretch()
             layout.addLayout(bw_row)
+
+            bandwidth_row = QHBoxLayout()
+            bandwidth_row.addWidget(QLabel(translate("KDE Bandwidth (0 = Auto)")))
+            bandwidth_spin = QDoubleSpinBox()
+            bandwidth_spin.setRange(0.0, 10.0)
+            bandwidth_spin.setSingleStep(0.05)
+            bandwidth_spin.setDecimals(3)
+            bandwidth_spin.setValue(
+                float(
+                    getattr(
+                        app_state,
+                        'marginal_kde_bandwidth',
+                        style.get('bandwidth', 0.0),
+                    )
+                    or 0.0
+                )
+            )
+            bandwidth_row.addWidget(bandwidth_spin)
+            bandwidth_row.addStretch()
+            layout.addLayout(bandwidth_row)
+
+            kernel_row = QHBoxLayout()
+            kernel_row.addWidget(QLabel(translate("KDE Kernel")))
+            kernel_combo = QComboBox()
+            for kernel_name in ('gaussian', 'tophat', 'epanechnikov', 'exponential', 'linear', 'cosine'):
+                kernel_combo.addItem(kernel_name, kernel_name)
+            current_kernel = str(
+                getattr(
+                    app_state,
+                    'marginal_kde_kernel',
+                    style.get('kernel', 'gaussian'),
+                )
+                or 'gaussian'
+            ).strip().lower()
+            kernel_index = kernel_combo.findData(current_kernel)
+            if kernel_index < 0:
+                kernel_index = kernel_combo.findData('gaussian')
+            if kernel_index >= 0:
+                kernel_combo.setCurrentIndex(kernel_index)
+            kernel_row.addWidget(kernel_combo)
+            kernel_row.addStretch()
+            layout.addLayout(kernel_row)
+
+            auto_bw_method_row = QHBoxLayout()
+            auto_bw_method_row.addWidget(QLabel(translate("Auto Bandwidth Method")))
+            auto_bw_method_combo = QComboBox()
+            auto_bw_method_combo.addItem(translate("Scott"), "scott")
+            auto_bw_method_combo.addItem(translate("Silverman"), "silverman")
+            current_auto_bw_method = str(
+                getattr(
+                    app_state,
+                    'marginal_kde_auto_bandwidth_method',
+                    style.get('auto_bandwidth_method', 'scott'),
+                )
+                or 'scott'
+            ).strip().lower()
+            auto_bw_method_index = auto_bw_method_combo.findData(current_auto_bw_method)
+            if auto_bw_method_index < 0:
+                auto_bw_method_index = auto_bw_method_combo.findData('scott')
+            if auto_bw_method_index >= 0:
+                auto_bw_method_combo.setCurrentIndex(auto_bw_method_index)
+            auto_bw_method_row.addWidget(auto_bw_method_combo)
+            auto_bw_method_row.addStretch()
+            layout.addLayout(auto_bw_method_row)
+
+            auto_bw_hint = QLabel(
+                translate(
+                    "Scott suits near-normal unimodal data; Silverman provides smoother estimates for skewed or heavy-tail data."
+                )
+            )
+            auto_bw_hint.setWordWrap(True)
+            layout.addWidget(auto_bw_hint)
 
             cut_row = QHBoxLayout()
             cut_row.addWidget(QLabel(translate("KDE Cut")))
@@ -305,6 +386,23 @@ class AnalysisPanelEquationMixin:
                 if bw_adjust_spin is not None:
                     style_ref['bw_adjust'] = float(bw_adjust_spin.value())
                     state_gateway.set_marginal_kde_compute_options(bw_adjust=float(bw_adjust_spin.value()))
+                if bandwidth_spin is not None:
+                    style_ref['bandwidth'] = float(bandwidth_spin.value())
+                    state_gateway.set_marginal_kde_compute_options(
+                        bandwidth=float(bandwidth_spin.value())
+                    )
+                if kernel_combo is not None:
+                    style_ref['kernel'] = str(kernel_combo.currentData() or 'gaussian')
+                    state_gateway.set_marginal_kde_compute_options(
+                        kernel=str(kernel_combo.currentData() or 'gaussian')
+                    )
+                if auto_bw_method_combo is not None:
+                    style_ref['auto_bandwidth_method'] = str(
+                        auto_bw_method_combo.currentData() or 'scott'
+                    )
+                    state_gateway.set_marginal_kde_compute_options(
+                        auto_bandwidth_method=str(auto_bw_method_combo.currentData() or 'scott')
+                    )
                 if cut_spin is not None:
                     style_ref['cut'] = float(cut_spin.value())
                     state_gateway.set_marginal_kde_compute_options(cut=float(cut_spin.value()))
@@ -322,6 +420,12 @@ class AnalysisPanelEquationMixin:
                 legacy_payload['levels'] = style_ref.get('levels', 10)
             else:
                 legacy_payload['bw_adjust'] = style_ref.get('bw_adjust', 1.0)
+                legacy_payload['bandwidth'] = style_ref.get('bandwidth', 0.0)
+                legacy_payload['kernel'] = style_ref.get('kernel', 'gaussian')
+                legacy_payload['auto_bandwidth_method'] = style_ref.get(
+                    'auto_bandwidth_method',
+                    'scott',
+                )
                 legacy_payload['gridsize'] = style_ref.get('gridsize', 256)
                 legacy_payload['cut'] = style_ref.get('cut', 1.0)
                 legacy_payload['log_transform'] = style_ref.get('log_transform', False)
