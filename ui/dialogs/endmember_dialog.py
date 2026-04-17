@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
+"""端元识别对话框。"""
 import logging
-logger = logging.getLogger(__name__)
-"""
-端元识别对话框
-"""
+from typing import Any
+
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
                               QLabel, QTableWidget, QTableWidgetItem, QMessageBox,
                               QHeaderView, QSizePolicy, QGroupBox, QComboBox,
@@ -13,10 +11,12 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 import numpy as np
 
-from core import app_state, translate
+from core import app_state, state_gateway, translate
+
+logger = logging.getLogger(__name__)
 
 
-def show_endmember_analysis(parent=None):
+def show_endmember_analysis(parent: Any = None) -> None:
     dialog = EndmemberAnalysisDialog(parent)
     dialog.exec_()
 
@@ -275,7 +275,7 @@ class EndmemberAnalysisDialog(QDialog):
             )
             self._display_results()
         except Exception as e:
-            logger.error(f"[ERROR] Endmember analysis failed: {e}")
+            logger.error("Endmember analysis failed: %s", e)
             QMessageBox.critical(
                 self, translate("Error"),
                 translate("Endmember analysis failed: {error}").format(error=str(e)))
@@ -367,8 +367,8 @@ class EndmemberAnalysisDialog(QDialog):
             app_state.group_cols.append(col_name)
 
         # 触发重绘
-        app_state.last_group_col = col_name
-        app_state.visible_groups = None
+        state_gateway.set_last_group_col(col_name)
+        state_gateway.set_visible_groups(None)
 
         if hasattr(app_state, '_notify_listeners'):
             app_state._notify_listeners()

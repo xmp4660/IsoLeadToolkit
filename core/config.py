@@ -88,6 +88,7 @@ CONFIG = {
     'point_size': 60,
     'figure_size': (13, 9),
     'figure_dpi': 130,
+    'savefig_dpi': 400,
     'preferred_plot_fonts': [
         'Microsoft YaHei',
         'Microsoft YaHei UI',

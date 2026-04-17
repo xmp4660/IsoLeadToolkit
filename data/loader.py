@@ -1,18 +1,18 @@
-import logging
-logger = logging.getLogger(__name__)
 """
 Data Loading and Processing
 Handles Excel file loading and data validation
 """
-import pandas as pd
-import numpy as np
-import os
+from __future__ import annotations
+
+import logging
 import traceback
-from core.config import CONFIG
-from core.state import app_state
+
+import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
-def read_data_frame(excel_file, sheet_name=None):
+def read_data_frame(excel_file: str, sheet_name: str | None = None) -> pd.DataFrame:
     """Read data file into a cleaned DataFrame."""
     if sheet_name:
         try:
@@ -23,14 +23,6 @@ def read_data_frame(excel_file, sheet_name=None):
         df = pd.read_csv(excel_file, dtype=str)
 
     df.columns = df.columns.astype(str).str.strip()
-
-    column_mapping = {
-        '省': 'Province', '省份': 'Province',
-        '市/县': 'City/County',
-        '遗址': 'Discovery site', '出土地': 'Discovery site',
-        '年代': 'Period'
-    }
-    df = df.rename(columns=column_mapping)
 
     for col in df.columns:
         numeric_col = pd.to_numeric(df[col], errors='coerce')
@@ -46,194 +38,16 @@ def read_data_frame(excel_file, sheet_name=None):
     return df
 
 
-def load_data(show_file_dialog=True, show_config_dialog=True):
-    """
-    Load and validate Excel/CSV data
-    
-    Args:
-        show_file_dialog: bool, whether to show file/sheet selection dialog
-        show_config_dialog: bool, whether to show configuration dialog for column selection
-    
-    Returns:
-        bool, success status
-    """
-    progress = None
-    df_loaded = None
-    config_from_dialog = False
+def load_data(show_file_dialog: bool = True, show_config_dialog: bool = True) -> bool:
+    """Compatibility wrapper delegated to application use case."""
     try:
-        # Show unified import dialog when both steps are requested
-        if show_file_dialog and show_config_dialog:
-            logger.info("[INFO] Showing unified data import dialog...")
-            from ui.dialogs.data_import_dialog import get_data_import_configuration
+        from application.use_cases import load_dataset
 
-            dialog_result = get_data_import_configuration(
-                default_file=app_state.file_path,
-                default_sheet=app_state.sheet_name,
-                default_group_cols=app_state.group_cols,
-                default_data_cols=app_state.data_cols
-            )
-
-            if dialog_result is None:
-                logger.error("[ERROR] Data import cancelled by user")
-                return False
-
-            excel_file = dialog_result['file']
-            sheet_name = dialog_result.get('sheet')
-            df_loaded = dialog_result.get('df')
-            app_state.group_cols = dialog_result.get('group_cols', [])
-            app_state.data_cols = dialog_result.get('data_cols', [])
-            config_from_dialog = True
-
-        # Show file selection dialog if requested
-        elif show_file_dialog:
-            logger.info("[INFO] Showing file selection dialog...")
-            from ui.dialogs.file_dialog import get_file_sheet_selection
-            
-            file_result = get_file_sheet_selection(default_file=app_state.file_path)
-            
-            if file_result is None:
-                logger.error("[ERROR] File selection cancelled by user")
-                return False
-            
-            excel_file = file_result['file']
-            sheet_name = None  # Will be set in next step if needed
-            
-            # Check if file is Excel
-            is_excel = excel_file.lower().endswith(('.xlsx', '.xls'))
-            
-            if is_excel:
-                logger.info("[INFO] Excel file detected, showing sheet selection...")
-                from ui.dialogs.sheet_dialog import get_sheet_selection
-                
-                selected_sheet = get_sheet_selection(excel_file, default_sheet=app_state.sheet_name)
-                
-                if selected_sheet is None:
-                    logger.error("[ERROR] Sheet selection cancelled by user")
-                    return False
-                
-                sheet_name = selected_sheet
-                logger.info(f"[INFO] Selected sheet: {sheet_name}")
-        else:
-            excel_file = CONFIG['excel_file']
-            sheet_name = CONFIG.get('sheet_name', 'Sheet1')
-        
-        if not os.path.exists(excel_file):
-            logger.error(f"[ERROR] Data file not found: {excel_file}")
-            return False
-            
-        logger.info(f"[INFO] Loading file: {excel_file}")
-        try:
-            from ui.dialogs.progress_dialog import ProgressDialog
-            progress = ProgressDialog("Loading Data", "Reading file...")
-        except Exception:
-            progress = None
-        if df_loaded is None:
-            if sheet_name:
-                logger.info(f"[INFO] Using sheet: {sheet_name}")
-            df = read_data_frame(excel_file, sheet_name)
-        else:
-            df = df_loaded
-
-        if progress:
-            progress.update_message("Parsing columns...")
-
-        logger.info(f"[OK] Columns: {df.columns.tolist()}")
-        
-        # Show configuration dialog if requested
-        if show_config_dialog and not config_from_dialog:
-            if progress:
-                progress.close()
-                progress = None
-            logger.info("[INFO] Showing data configuration dialog...")
-            from ui.dialogs.data_config import get_data_configuration
-            
-            config_result = get_data_configuration(
-                df,
-                default_group_cols=app_state.group_cols,
-                default_data_cols=app_state.data_cols
-            )
-            
-            if config_result is None:
-                logger.error("[ERROR] Configuration cancelled by user")
-                return False
-            
-            # Update app state with selected columns
-            selected_groups = config_result['group_cols']
-            missing_groups = [col for col in selected_groups if col not in df.columns]
-            if missing_groups:
-                logger.warning(f"[WARN] Dropping missing group columns: {missing_groups}")
-            app_state.group_cols = [col for col in selected_groups if col in df.columns]
-            app_state.data_cols = config_result['data_cols']
-            
-            logger.info(f"[OK] Selected group columns: {app_state.group_cols}")
-            logger.info(f"[OK] Selected data columns: {app_state.data_cols}")
-        elif not config_from_dialog:
-            # If no dialog, use first columns as groups, rest as data
-            logger.warning("[WARN] No configuration dialog shown, using empty defaults")
-            app_state.group_cols = []
-            app_state.data_cols = []
-
-        if app_state.last_group_col and app_state.last_group_col not in app_state.group_cols:
-            app_state.last_group_col = app_state.group_cols[0] if app_state.group_cols else None
-        app_state.selected_2d_cols = []
-        app_state.selected_3d_cols = []
-        app_state.selected_2d_confirmed = False
-        app_state.selected_3d_confirmed = False
-        app_state.available_groups = []
-        app_state.visible_groups = None
-        
-        # Validate data columns are numeric
-        for col in app_state.data_cols:
-            if col not in df.columns:
-                logger.error(f"[ERROR] Missing data column: {col}")
-                return False
-            if not pd.api.types.is_numeric_dtype(df[col]):
-                logger.error(f"[ERROR] Data column '{col}' is not numeric")
-                return False
-            logger.debug(f"[DEBUG] Data column '{col}' is numeric: OK")
-        
-        # Validate grouping columns exist, skip missing ones
-        valid_group_cols = []
-        for col in app_state.group_cols:
-            if col not in df.columns:
-                logger.warning(f"[WARN] Skipping missing group column: {col}")
-            else:
-                valid_group_cols.append(col)
-        app_state.group_cols = valid_group_cols
-        
-        if progress:
-            progress.update_message("Cleaning data...")
-        logger.info(f"[INFO] Before cleanup: {len(df)} rows")
-        df = df.dropna(subset=app_state.data_cols).copy()
-        
-        # Clean up grouping columns (replace empty/null values with 'Unknown')
-        for col in app_state.group_cols:
-            if col in df.columns:
-                df[col] = df[col].replace(['——', '', '—', 'null', 'nan'], 'Unknown')
-                df[col] = df[col].fillna('Unknown')
-        
-        app_state.df_global = df.reset_index(drop=True)
-        try:
-            app_state.data_version += 1
-            app_state.embedding_cache.clear()
-            logger.info(f"[INFO] Data version updated: {app_state.data_version}")
-        except Exception:
-            pass
-        app_state.file_path = excel_file
-        app_state.sheet_name = sheet_name if sheet_name else None
-        app_state.selected_indices.clear()
-        app_state.selection_mode = False
-        logger.info(f"[OK] Loaded {len(app_state.df_global)} valid samples.")
-        if progress:
-            progress.close()
-        return True
-        
-    except Exception as e:
-        try:
-            if progress:
-                progress.close()
-        except Exception:
-            pass
-        logger.error(f"[ERROR] Data loading failed: {e}")
+        return load_dataset(
+            show_file_dialog=show_file_dialog,
+            show_config_dialog=show_config_dialog,
+        )
+    except Exception as exc:
+        logger.error("Data loading failed: %s", exc)
         traceback.print_exc()
         return False

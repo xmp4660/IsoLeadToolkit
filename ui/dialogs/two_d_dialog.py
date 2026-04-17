@@ -9,8 +9,7 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout,
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
-from core.localization import translate
-from core.state import app_state
+from core import translate, app_state
 
 
 class Qt5TwoDDialog(QDialog):
@@ -175,7 +174,7 @@ class Qt5TwoDDialog(QDialog):
         self.accept()
 
 
-def get_2d_column_selection():
+def get_2d_column_selection() -> list[str] | None:
     """获取 2D 列选择"""
     dialog = Qt5TwoDDialog()
     if dialog.exec_() == Qt5TwoDDialog.Accepted:

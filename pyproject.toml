@@ -22,6 +22,12 @@ dependencies = [
     "python-ternary>=1.0.8",
     "pyqt5>=5.15",
     "pyqt5-qt5>=5.15",
+    "adjusttext>=1.3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
 ]
 
 [tool.isotopesanalyse.build]
@@ -30,3 +36,8 @@ command = "pyinstaller build.spec"
 
 [tool.uv]
 required-environments = ["sys_platform == 'win32' and platform_machine == 'AMD64'"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-q"

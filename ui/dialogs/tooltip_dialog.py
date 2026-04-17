@@ -10,7 +10,7 @@ from PyQt5.QtGui import QFont
 from core import app_state, translate
 
 
-def get_tooltip_configuration(parent=None):
+def get_tooltip_configuration(parent: object | None = None) -> list[str] | None:
     """
     打开工具提示配置对话框
 
@@ -89,7 +89,7 @@ class TooltipConfigDialog(QDialog):
         button_layout.addStretch()
 
         ok_btn = QPushButton(translate("OK"))
-        ok_btn.clicked.connect(self.accept)
+        ok_btn.clicked.connect(self._ok_clicked)
         button_layout.addWidget(ok_btn)
 
         cancel_btn = QPushButton(translate("Cancel"))
@@ -97,6 +97,17 @@ class TooltipConfigDialog(QDialog):
         button_layout.addWidget(cancel_btn)
 
         layout.addLayout(button_layout)
+
+    def _ok_clicked(self):
+        """验证并接受"""
+        if not self.column_list.selectedItems():
+            QMessageBox.warning(
+                self,
+                translate("Validation Error"),
+                translate("Please select at least one column."),
+            )
+            return
+        self.accept()
 
     def _load_current_selection(self):
         """加载当前选择"""

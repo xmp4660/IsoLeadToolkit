@@ -1,13 +1,18 @@
-"""
-Style Manager for Matplotlib visualization
-Handles themes, fonts, and color schemes
+"""Style Manager for Matplotlib visualization.
+
+Handles themes, fonts, and color schemes.
 """
 import json
+import logging
 import os
-import matplotlib.pyplot as plt
-from matplotlib import rcParams, font_manager
+
 import matplotlib as mpl
-from core.config import CONFIG
+import matplotlib.pyplot as plt
+from matplotlib import font_manager, rcParams
+
+from core import CONFIG
+
+logger = logging.getLogger(__name__)
 
 # --- Color Cycles ---
 # Defined to match common scienceplots schemes
@@ -217,7 +222,13 @@ style_manager_instance = StyleManager()
 COLORS = style_manager_instance.palettes
 STYLES = {'grid': style_manager_instance.GRID_STYLE}
 
-def apply_custom_style(show_grid=False, color_scheme=None, primary_font=None, cjk_font=None, font_sizes=None):
+def apply_custom_style(
+    show_grid: bool = False,
+    color_scheme: str | None = None,
+    primary_font: str | None = None,
+    cjk_font: str | None = None,
+    font_sizes: dict[str, float] | None = None,
+) -> None:
     """
     Apply custom styles and color schemes to Matplotlib using the global StyleManager.
     """

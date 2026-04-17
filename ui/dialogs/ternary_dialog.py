@@ -9,8 +9,7 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout,
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
-from core.localization import translate
-from core.state import app_state
+from core import translate, app_state
 
 
 class Qt5TernaryDialog(QDialog):
@@ -235,7 +234,7 @@ class Qt5TernaryDialog(QDialog):
         self.accept()
 
 
-def get_ternary_column_selection():
+def get_ternary_column_selection() -> dict[str, object] | None:
     """获取三元图列选择"""
     dialog = Qt5TernaryDialog()
     if dialog.exec_() == Qt5TernaryDialog.Accepted:

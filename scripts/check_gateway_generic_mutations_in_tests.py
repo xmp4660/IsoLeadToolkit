@@ -1,0 +1,46 @@
+"""Check generic state gateway mutation calls in tests against an allowlist."""
+
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+
+from gateway_mutation_guard import print_scan_result, scan_generic_gateway_calls
+
+EXCLUDED_PARTS = {".venv", "reference", ".git", "__pycache__"}
+ALLOWED = {
+    "tests/test_gateway_set_attr_compatibility.py",
+}
+
+
+def should_scan(path: Path, repo_root: Path) -> bool:
+    if path.suffix != ".py":
+        return False
+    if any(part in EXCLUDED_PARTS for part in path.parts):
+        return False
+
+    try:
+        rel = path.relative_to(repo_root)
+    except ValueError:
+        return False
+
+    return rel.parts and rel.parts[0] == "tests"
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fail-on-hits", action="store_true")
+    args = parser.parse_args()
+
+    root = Path.cwd()
+    counts = scan_generic_gateway_calls(root, include_file=should_scan, allowlist=ALLOWED)
+    total = sum(counts.values())
+    print_scan_result(counts)
+
+    if args.fail_on_hits and total > 0:
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

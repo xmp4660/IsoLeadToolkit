@@ -9,8 +9,7 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout,
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
-from core.localization import translate, available_languages, set_language
-from core.state import app_state
+from core import translate, available_languages, set_language, app_state, state_gateway
 
 
 class Qt5FileDialog(QDialog):
@@ -168,7 +167,7 @@ class Qt5FileDialog(QDialog):
         """语言变化处理"""
         code = self.lang_combo.currentData()
         if code and set_language(code):
-            app_state.language = code
+            state_gateway.set_language_code(code)
             self._apply_translations()
 
     def closeEvent(self, event):
@@ -219,7 +218,7 @@ class Qt5FileDialog(QDialog):
         self.accept()
 
 
-def get_file_sheet_selection(default_file=None):
+def get_file_sheet_selection(default_file: str | None = None) -> dict[str, str] | None:
     """获取文件和工作表选择"""
     dialog = Qt5FileDialog(default_file)
     if dialog.exec_() == Qt5FileDialog.Accepted:
