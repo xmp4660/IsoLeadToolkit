@@ -1,4 +1,5 @@
 """Data panel mixins."""
+from __future__ import annotations
 
 from .build import DataPanelBuildMixin
 from .geochem import DataPanelGeochemMixin

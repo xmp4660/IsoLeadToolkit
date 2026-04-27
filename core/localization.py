@@ -1,7 +1,7 @@
 """Localization utilities for handling multi-language support."""
 import json
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict
 
 from .config import CONFIG
 
@@ -45,7 +45,7 @@ def ensure_language(language: str) -> None:
     _load_language(language)
 
 
-def translate(text: str, language: str = None, **kwargs) -> str:
+def translate(text: str, language: str = None, **kwargs: Any) -> str:
     """Translate the provided text into the requested language.
 
     Args:

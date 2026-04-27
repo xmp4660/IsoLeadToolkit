@@ -29,7 +29,7 @@ class EmbeddingWorker(QThread):
         x_data: np.ndarray,
         params: dict[str, Any],
         feature_names: list[str],
-        parent=None,
+        parent: Any = None,
     ) -> None:
         super().__init__(parent)
         self.task_token = int(task_token)

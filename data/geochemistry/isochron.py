@@ -37,6 +37,7 @@ from .age import _solve_age_scipy
 _SOURCE_DEN_FLOOR = max(EPSILON, 1e-15)
 _YORK_TOL_DEFAULT = 1e-15
 _PBPB_SOLVER_BOUNDS = (1e6, 10e9)
+_YORK_CLIP_LIMIT: float = 0.999999
 
 
 def _is_near_zero(value: float, floor: float = _SOURCE_DEN_FLOOR) -> bool:
@@ -238,7 +239,7 @@ def york_regression(
     if x.size < 2:
         raise ValueError("At least two points are required for York regression.")
 
-    rxy = np.clip(rxy, -0.999999, 0.999999)
+    rxy = np.clip(rxy, -_YORK_CLIP_LIMIT, _YORK_CLIP_LIMIT)
 
     if np.any(sx <= 0) or np.any(sy <= 0):
         raise ValueError("All uncertainties must be > 0 for York regression.")

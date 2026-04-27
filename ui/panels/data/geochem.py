@@ -1,4 +1,5 @@
 """Data panel geochemistry behavior mixin."""
+from __future__ import annotations
 
 import logging
 

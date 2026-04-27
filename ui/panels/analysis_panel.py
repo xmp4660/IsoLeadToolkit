@@ -1,4 +1,5 @@
 """分析面板 - KDE、选择与分析工具"""
+from __future__ import annotations
 
 import logging
 

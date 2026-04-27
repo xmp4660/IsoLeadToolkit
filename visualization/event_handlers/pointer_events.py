@@ -1,6 +1,8 @@
 """Hover and click handlers for point interaction."""
 from __future__ import annotations
 
+from typing import Any
+
 import pandas as pd
 
 from .overlay import refresh_selection_overlay
@@ -43,7 +45,7 @@ def _resolve_sample_index(event: object) -> int | None:
     return None
 
 
-def on_hover(event) -> None:
+def on_hover(event: Any) -> None:
     """Handle mouse hover events."""
     try:
         if app_state.render_mode == '3D':
@@ -122,7 +124,7 @@ def on_hover(event) -> None:
         pass
 
 
-def on_click(event) -> None:
+def on_click(event: Any) -> None:
     """Handle mouse click events for interactive selection."""
     try:
         if app_state.render_mode == '3D':

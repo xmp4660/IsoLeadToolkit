@@ -40,6 +40,20 @@ class StateStore:
     MARGINAL_KDE_DEFAULT_AUTO_BANDWIDTH_METHOD = "scott"
     MARGINAL_KDE_ALLOWED_AUTO_BANDWIDTH_METHODS = ("scott", "silverman")
 
+    # Normalizer clamp bounds
+    _ADJUST_TEXT_ITER_MIN: int = 10
+    _ADJUST_TEXT_ITER_MAX: int = 1000
+    _ADJUST_TEXT_TIME_MIN: float = 0.05
+    _ADJUST_TEXT_TIME_MAX: float = 2.0
+    _MARGINAL_SIZE_MIN: float = 5.0
+    _MARGINAL_SIZE_MAX: float = 40.0
+    _MAX_POINTS_MIN: int = 200
+    _MAX_POINTS_MAX: int = 50000
+    _BW_ADJUST_MIN: float = 0.05
+    _BW_ADJUST_MAX: float = 5.0
+    _KDE_BW_MIN: float = 0.0
+    _KDE_BW_MAX: float = 10.0
+
     def __init__(self, state: Any) -> None:
         self._state = state
         self._snapshot: dict[str, Any] = {
@@ -1727,29 +1741,29 @@ class StateStore:
 
     @staticmethod
     def _normalize_adjust_text_iter_lim(value: Any) -> int:
-        return max(10, min(int(value), 1000))
+        return max(StateStore._ADJUST_TEXT_ITER_MIN, min(int(value), StateStore._ADJUST_TEXT_ITER_MAX))
 
     @staticmethod
     def _normalize_adjust_text_time_lim(value: Any) -> float:
-        return max(0.05, min(float(value), 2.0))
+        return max(StateStore._ADJUST_TEXT_TIME_MIN, min(float(value), StateStore._ADJUST_TEXT_TIME_MAX))
 
     @staticmethod
     def _normalize_marginal_size(value: Any) -> float:
-        return max(5.0, min(float(value), 40.0))
+        return max(StateStore._MARGINAL_SIZE_MIN, min(float(value), StateStore._MARGINAL_SIZE_MAX))
 
     @staticmethod
     def _normalize_max_points(value: Any) -> int:
-        return max(200, min(int(value), 50000))
+        return max(StateStore._MAX_POINTS_MIN, min(int(value), StateStore._MAX_POINTS_MAX))
 
     @staticmethod
     def _normalize_bw_adjust(value: Any) -> float:
-        return max(0.05, min(float(value), 5.0))
+        return max(StateStore._BW_ADJUST_MIN, min(float(value), StateStore._BW_ADJUST_MAX))
 
     @staticmethod
     def _normalize_kde_bandwidth(value: Any) -> float:
         if value is None:
-            return 0.0
-        return max(0.0, min(float(value), 10.0))
+            return StateStore._KDE_BW_MIN
+        return max(StateStore._KDE_BW_MIN, min(float(value), StateStore._KDE_BW_MAX))
 
     @classmethod
     def _normalize_kde_kernel(cls, value: Any) -> str:

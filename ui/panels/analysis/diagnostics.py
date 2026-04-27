@@ -1,4 +1,5 @@
 """Analysis diagnostics actions mixin."""
+from __future__ import annotations
 
 import logging
 

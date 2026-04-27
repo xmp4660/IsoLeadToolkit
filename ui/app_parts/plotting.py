@@ -1,4 +1,5 @@
 """Plot figure and event wiring helpers for Qt startup flow."""
+from __future__ import annotations
 
 import logging
 

@@ -1,4 +1,5 @@
 """Export panel modular components."""
+from __future__ import annotations
 
 from .build import ExportPanelBuildMixin
 from .common import ExportPanelCommonMixin

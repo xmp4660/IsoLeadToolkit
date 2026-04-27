@@ -1,4 +1,5 @@
 """Legend panel UI construction and editors."""
+from __future__ import annotations
 
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import (

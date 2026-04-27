@@ -1,6 +1,8 @@
 """
 Isotopes Analysis - PyQt5 entry point
 """
+from __future__ import annotations
+
 import os
 import sys
 import logging
@@ -46,6 +48,10 @@ if __name__ == "__main__":
 
         # Initialize logging (50MB limit)
         setup_logging(max_bytes=50 * 1024 * 1024)
+
+        # Load user config overrides before any state initialization
+        from core.config import load_and_merge_config
+        load_and_merge_config()
 
         from ui.app import Qt5Application
  

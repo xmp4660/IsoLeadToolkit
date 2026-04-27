@@ -41,7 +41,9 @@ def test_selection_lasso_handles_near_horizontal_edge() -> None:
 
     selected = use_case.lasso_indices(coordinates, vertices)
 
-    assert selected == [1]
+    # With _RAY_CAST_EPSILON, the near-horizontal edge (dy ≈ 1e-16) is treated
+    # as horizontal, so the barely-above point at y=5e-17 is correctly outside.
+    assert selected == []
 
 
 def test_tooltip_content_fallback_to_id() -> None:

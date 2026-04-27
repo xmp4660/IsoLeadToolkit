@@ -1,6 +1,8 @@
 """Rectangle/lasso tool lifecycle and mode switching handlers."""
 from __future__ import annotations
 
+from typing import Any
+
 from matplotlib.widgets import LassoSelector, RectangleSelector
 
 from .isochron import refresh_isochron_after_selection
@@ -123,7 +125,7 @@ def _ensure_lasso_selector() -> None:
             state_gateway.set_lasso_selector(None)
 
 
-def _handle_rectangle_select(eclick, erelease) -> None:
+def _handle_rectangle_select(eclick: Any, erelease: Any) -> None:
     try:
         if not app_state.selection_mode or app_state.render_mode == '3D':
             return
@@ -163,7 +165,7 @@ def _handle_rectangle_select(eclick, erelease) -> None:
         logger.warning('Rectangle selection failed: %s', err)
 
 
-def _handle_lasso_select(vertices) -> None:
+def _handle_lasso_select(vertices: Any) -> None:
     try:
         if not app_state.selection_mode or app_state.render_mode == '3D':
             return

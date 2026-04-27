@@ -1,4 +1,5 @@
 """Qt5 main window composed from dedicated mixins."""
+from __future__ import annotations
 
 import logging
 
@@ -24,7 +25,7 @@ class Qt5MainWindow(
 ):
     """Qt5 主窗口基类。"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: QMainWindow | None = None) -> None:
         super().__init__(parent)
         self.control_panel = None
         self._setup_ui()

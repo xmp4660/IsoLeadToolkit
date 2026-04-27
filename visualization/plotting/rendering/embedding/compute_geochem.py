@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -66,7 +67,7 @@ def compute_v1v2_embedding() -> np.ndarray | None:
         return None
 
 
-def _resolve_model_age(geochemistry, pb206: np.ndarray, pb207: np.ndarray) -> np.ndarray | None:
+def _resolve_model_age(geochemistry: Any, pb206: np.ndarray, pb207: np.ndarray) -> np.ndarray | None:
     """Resolve model age series for Mu/Kappa charts."""
     t_ma = None
     if getattr(app_state, 'use_real_age_for_mu_kappa', False):

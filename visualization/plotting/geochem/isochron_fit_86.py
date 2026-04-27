@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 
+import numpy as np
 import pandas as pd
 
 from core import app_state
@@ -23,25 +24,25 @@ logger = logging.getLogger(__name__)
 
 def render_isochron2_group(
     *,
-    ax,
-    geochemistry,
-    params,
-    grp,
-    df_subset,
-    col_207,
-    mask,
-    valid,
-    x_grp,
-    sx_grp,
-    sy_grp,
-    rxy_grp,
-    slope,
-    x_line,
-    y_line,
-    color,
-    show_fits,
-    show_growth,
-    need_207_for_86,
+    ax: Any,
+    geochemistry: Any,
+    params: dict[str, Any],
+    grp: str,
+    df_subset: pd.DataFrame,
+    col_207: str,
+    mask: np.ndarray,
+    valid: np.ndarray,
+    x_grp: np.ndarray,
+    sx_grp: np.ndarray,
+    sy_grp: np.ndarray,
+    rxy_grp: np.ndarray,
+    slope: float,
+    x_line: np.ndarray,
+    y_line: np.ndarray,
+    color: str,
+    show_fits: bool,
+    show_growth: bool,
+    need_207_for_86: bool,
 ) -> None:
     """Render fitted line labels and optional growth curve for ISOCHRON2."""
     age_ma = None

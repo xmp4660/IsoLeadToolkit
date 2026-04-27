@@ -1,4 +1,5 @@
 """Data panel grouping and utility behavior mixin."""
+from __future__ import annotations
 
 import logging
 

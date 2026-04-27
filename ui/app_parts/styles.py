@@ -1,4 +1,5 @@
 """Style and runtime diagnostics helpers for Qt application startup."""
+from __future__ import annotations
 
 import os
 import sys

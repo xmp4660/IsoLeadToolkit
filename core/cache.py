@@ -13,7 +13,7 @@ def _normalize_params(params: Any) -> str:
         return str(params)
 
 
-def build_data_signature(app_state) -> Tuple[Any, ...]:
+def build_data_signature(app_state: Any) -> Tuple[Any, ...]:
     df = getattr(app_state, 'df_global', None)
     shape = (len(df), len(df.columns)) if df is not None else (0, 0)
     file_path = getattr(app_state, 'file_path', '') or ''
@@ -24,7 +24,7 @@ def build_data_signature(app_state) -> Tuple[Any, ...]:
     return (file_path, sheet_name, shape, data_cols, group_cols, data_version)
 
 
-def build_embedding_cache_key(app_state, algorithm: str, params: Any, subset_key: Hashable) -> Tuple[Any, ...]:
+def build_embedding_cache_key(app_state: Any, algorithm: str, params: Any, subset_key: Hashable) -> Tuple[Any, ...]:
     signature = build_data_signature(app_state)
     return (
         'embed',

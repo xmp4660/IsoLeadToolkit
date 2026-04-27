@@ -1,4 +1,5 @@
 """Core legend ordering and state helpers for main window."""
+from __future__ import annotations
 
 import logging
 import os

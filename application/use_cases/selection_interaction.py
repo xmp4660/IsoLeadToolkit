@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Mapping, Sequence
 
+_RAY_CAST_EPSILON: float = 1e-12
+
 
 @dataclass(frozen=True)
 class SelectionTogglePlan:
@@ -120,7 +122,7 @@ class SelectionInteractionUseCase:
             x2, y2 = vertices[i % n]
             if (y1 > y) != (y2 > y):
                 dy = y2 - y1
-                if dy == 0.0:
+                if abs(dy) < _RAY_CAST_EPSILON:
                     x_intersection = x1
                 else:
                     x_intersection = (x2 - x1) * (y - y1) / dy + x1

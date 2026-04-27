@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Mapping
+from typing import Any, Mapping
 
 SUPPORTED_IMAGE_FORMATS = {"png", "tiff", "pdf", "svg", "eps"}
 DEFAULT_EXPORT_HEIGHT_RATIO = 0.72
@@ -153,7 +153,7 @@ def fallback_export_rc(profile: Mapping[str, object]) -> dict[str, object]:
 
 
 def save_export_figure(
-    export_fig,
+    export_fig: Any,
     file_path: str,
     image_ext: str,
     *,

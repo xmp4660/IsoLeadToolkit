@@ -1,4 +1,5 @@
 """Legend panel action handlers and auto style logic."""
+from __future__ import annotations
 
 from core import app_state, state_gateway
 

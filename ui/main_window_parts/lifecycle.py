@@ -1,4 +1,5 @@
 """Lifecycle and application actions mixin for main window."""
+from __future__ import annotations
 
 import logging
 

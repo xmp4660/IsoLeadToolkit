@@ -1,4 +1,5 @@
 """Display panel mixin composition."""
+from __future__ import annotations
 
 from .build import DisplayBuildMixin
 from .helpers import DisplayControlHelperMixin

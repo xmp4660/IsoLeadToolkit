@@ -1,7 +1,10 @@
 """Canvas and toolbar integration mixin for main window."""
+from __future__ import annotations
 
 import logging
 from pathlib import Path
+
+_ZOOM_RANGE_EPSILON: float = 1e-12
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -187,7 +190,7 @@ class MainWindowCanvasMixin:
             ylim = ax.get_ylim()
             x_range = xlim[1] - xlim[0]
             y_range = ylim[1] - ylim[0]
-            if x_range == 0 or y_range == 0:
+            if x_range < _ZOOM_RANGE_EPSILON or y_range < _ZOOM_RANGE_EPSILON:
                 return
             ax.set_xlim([xlim[0] - x_range * 0.25, xlim[1] + x_range * 0.25])
             ax.set_ylim([ylim[0] - y_range * 0.25, ylim[1] + y_range * 0.25])

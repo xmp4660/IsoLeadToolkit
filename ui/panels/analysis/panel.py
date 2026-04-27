@@ -1,4 +1,5 @@
 """Analysis panel mixin composition."""
+from __future__ import annotations
 
 from .build import AnalysisPanelBuildMixin
 from .diagnostics import AnalysisPanelDiagnosticsMixin

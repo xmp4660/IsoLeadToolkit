@@ -1,4 +1,5 @@
 """Display panel control helper methods."""
+from __future__ import annotations
 
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QColorDialog, QHBoxLayout, QLineEdit, QPushButton, QWidget

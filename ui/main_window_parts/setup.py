@@ -1,4 +1,5 @@
 """UI setup mixin for main window."""
+from __future__ import annotations
 
 import logging
 import os

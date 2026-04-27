@@ -1,4 +1,5 @@
 """Data export logic for export panel."""
+from __future__ import annotations
 
 from PyQt5.QtWidgets import QFileDialog, QInputDialog, QMessageBox
 

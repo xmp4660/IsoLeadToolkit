@@ -1,4 +1,5 @@
 """Legend panel palette and marker editor helpers."""
+from __future__ import annotations
 
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QColor, QIcon, QPainter, QPixmap

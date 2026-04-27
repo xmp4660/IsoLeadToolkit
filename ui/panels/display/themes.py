@@ -1,4 +1,5 @@
 """Display panel theme persistence and application logic."""
+from __future__ import annotations
 
 import json
 import logging

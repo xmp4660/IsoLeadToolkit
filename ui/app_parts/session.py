@@ -1,4 +1,5 @@
 """Session loading and render-mode validation helpers for Qt startup."""
+from __future__ import annotations
 
 import logging
 

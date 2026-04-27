@@ -1,4 +1,5 @@
 """Image export logic for export panel."""
+from __future__ import annotations
 
 import logging
 

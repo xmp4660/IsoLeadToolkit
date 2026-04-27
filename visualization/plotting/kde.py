@@ -18,6 +18,9 @@ _KDE_BW_ADJUST_DEFAULT = 1.0
 _KDE_BANDWIDTH_DEFAULT = 0.0
 _KDE_CUT_DEFAULT = 1.0
 _KDE_MIN_STD = 1e-12
+_KDE_BW_ADJUST_MIN = 0.05
+_KDE_BW_ADJUST_MAX = 5.0
+_KDE_BW_MIN = 0.01
 _KDE_KERNEL_DEFAULT = "gaussian"
 _KDE_AUTO_BW_METHOD_DEFAULT = "scott"
 _KDE_ALLOWED_KERNELS = (
@@ -65,9 +68,9 @@ def _resolve_kernel_bandwidth(
     bandwidth: float,
     auto_bandwidth_method: str,
 ) -> float:
-    bw_adjust_safe = max(0.05, float(bw_adjust))
+    bw_adjust_safe = max(_KDE_BW_ADJUST_MIN, float(bw_adjust))
     if bandwidth > 0.0:
-        return max(0.01, float(bandwidth) * bw_adjust_safe)
+        return max(_KDE_BW_MIN, float(bandwidth) * bw_adjust_safe)
 
     std = float(np.nanstd(data))
     if not np.isfinite(std) or std <= _KDE_MIN_STD:
@@ -79,7 +82,7 @@ def _resolve_kernel_bandwidth(
         factor = float((n_samples * 3.0 / 4.0) ** (-1.0 / 5.0))
     else:
         factor = float(n_samples ** (-1.0 / 5.0))
-    return max(0.01, std * factor * bw_adjust_safe)
+    return max(_KDE_BW_MIN, std * factor * bw_adjust_safe)
 
 
 def _to_float_array(values) -> np.ndarray:

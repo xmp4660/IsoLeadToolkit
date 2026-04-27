@@ -1,4 +1,5 @@
 """Legend UI actions for main window."""
+from __future__ import annotations
 
 import logging
 

@@ -1,4 +1,5 @@
 """显示面板 - UI 与绘图样式设置"""
+from __future__ import annotations
 
 import logging
 

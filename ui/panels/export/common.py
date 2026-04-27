@@ -1,4 +1,5 @@
 """Shared helper methods for export panel."""
+from __future__ import annotations
 
 import logging
 import sys

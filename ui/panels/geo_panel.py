@@ -1,4 +1,6 @@
 """地球化学面板 - 模型选择与参数管理"""
+from __future__ import annotations
+
 import logging
 
 from PyQt5.QtWidgets import (

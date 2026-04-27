@@ -24,6 +24,7 @@ _SOLVER_GUARD_VALUE = 1e10
 _AGE_SOLVER_XTOL = 1e-6
 _AGE_SOLVER_ENDPOINT_MARGIN = 1.0
 _AGE_SOLVER_BOUNDS = (-4700e6, 4700e6)
+_SOLVER_ZERO_EPSILON: float = 1e-15
 
 
 def _safe_scalar_denominator(value: float) -> float:
@@ -76,7 +77,7 @@ def _solve_age_scipy(
             f1, f2 = f_samples[i], f_samples[i + 1]
             if not (np.isfinite(f1) and np.isfinite(f2)):
                 continue
-            if f1 == 0:
+            if abs(float(f1)) < _SOLVER_ZERO_EPSILON:
                 return t_samples[i]
             if f1 * f2 < 0:
                 return optimize.brentq(f, t_samples[i], t_samples[i + 1], xtol=_AGE_SOLVER_XTOL)

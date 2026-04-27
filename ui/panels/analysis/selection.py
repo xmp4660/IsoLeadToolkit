@@ -1,4 +1,5 @@
 """Analysis selection actions mixin."""
+from __future__ import annotations
 
 import logging
 

@@ -1,4 +1,6 @@
 """面板模块 - 控制面板各标签页的独立实现"""
+from __future__ import annotations
+
 from .data_panel import DataPanel
 from .display_panel import DisplayPanel
 from .analysis_panel import AnalysisPanel

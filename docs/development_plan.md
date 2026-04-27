@@ -2,6 +2,42 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-27 · P2 收尾第一百八十一批）
+
+- P2-1（类型注解补齐）收尾：
+    - `core/cache.py`、`core/localization.py` 补充缺失参数类型注解。
+    - `data/geochemistry/__init__.py`：`calculate_all_parameters` 全参数注解 + 添加 `from __future__ import annotations`。
+    - `visualization/plotting/rendering/common/legend.py`：`_place_inline_legend` keyword-only 参数注解。
+    - `visualization/plotting/rendering/embedding/compute_geochem.py`：`_resolve_model_age` 注解。
+    - `visualization/event_handlers/`：`selection_tools.py`、`pointer_events.py`、`legend.py` 事件参数注解。
+    - `visualization/embedding_worker.py`：`__init__` 中 `parent` 参数注解。
+    - `application/use_cases/export_image.py`：`save_export_figure` 参数注解。
+    - `visualization/plotting/geochem/isochron_fit_76.py`、`isochron_fit_86.py`：全部 keyword-only 参数注解。
+    - `main.py`、`ui/main_window.py`、`ui/app_parts/*`(4)、`ui/main_window_parts/*`(7) 添加 `from __future__ import annotations` + 入口函数注解。
+    - `ui/panels/` 全部 34 个文件添加 `from __future__ import annotations`。
+
+- P2-3（数值稳定性统一）收尾：
+    - `application/use_cases/selection_interaction.py`：`dy == 0.0` → `abs(dy) < _RAY_CAST_EPSILON`，新增 `_RAY_CAST_EPSILON = 1e-12`。
+    - `data/geochemistry/age.py`：`f1 == 0` → `abs(float(f1)) < _SOLVER_ZERO_EPSILON`，新增 `_SOLVER_ZERO_EPSILON = 1e-15`。
+    - `ui/main_window_parts/canvas.py`：`x_range == 0` → `x_range < _ZOOM_RANGE_EPSILON`，新增 `_ZOOM_RANGE_EPSILON = 1e-12`。
+    - `data/geochemistry/isochron.py`：York 回归 `np.clip(rxy, -0.999999, 0.999999)` → `np.clip(rxy, -_YORK_CLIP_LIMIT, _YORK_CLIP_LIMIT)`，新增 `_YORK_CLIP_LIMIT = 0.999999`。
+    - `ui/panels/analysis/build.py`：置信度阈值 0.68/0.95/0.99/0.01 → 命名常量 `_CONFIDENCE_LEVEL_{1,2,3}SIGMA` + `_CONFIDENCE_EPSILON`。
+    - `visualization/plotting/kde.py`：带宽边界 0.05/0.01/5.0 → 命名常量 `_KDE_BW_ADJUST_MIN/MAX`、`_KDE_BW_MIN`。
+    - `core/state/store.py`：normalizer 方法 clamp 边界 → 类级别常量 `_ADJUST_TEXT_ITER_MIN/MAX` 等 12 个命名常量。
+
+- P3（配置外部化）启动并完成：
+    - `core/config.py` 新增 `load_user_config()`、`merge_config()`、`load_and_merge_config()`，支持 `~/.isotopes_analysis/config.json` 用户配置文件合并。
+    - 类型校验、嵌套 dict 浅合并、未知键/非法值/非法语言静默回退。
+    - `main.py` 在 `from ui.app import Qt5Application` 之前调用 `load_and_merge_config()`。
+    - `ui/app.py` 在 `run()` 入口补调 `load_and_merge_config()`（非 main 入口安全网）。
+    - `core/__init__.py` 导出 `load_and_merge_config`。
+    - 新增 `tests/test_config.py`（12 个测试，覆盖加载/合并/异常回退全路径）。
+
+- 回归保障：
+    - 339 测试全部通过。
+    - Guard scripts（`check_state_mutations.py`、`check_gateway_generic_mutations.py`、`check_gateway_direct_state_assignments.py`）全部 `TOTAL=0`。
+    - `tests/test_selection_and_tooltip_usecases.py::test_selection_lasso_handles_near_horizontal_edge` 断言更新为匹配修正后的 epsilon 比较行为。
+
 ## 阶段进展（2026-04-17 · StateStore 第一百八十批）
 
 - P2-3（可视化参数可配置）补充自动带宽方法适用场景提示：

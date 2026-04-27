@@ -1,4 +1,5 @@
 """数据面板 - 分组与投影设置"""
+from __future__ import annotations
 
 import logging
 

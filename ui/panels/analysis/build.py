@@ -1,6 +1,12 @@
 """Analysis panel build mixin."""
+from __future__ import annotations
 
 from PyQt5.QtCore import Qt
+
+_CONFIDENCE_LEVEL_1SIGMA: float = 0.68
+_CONFIDENCE_LEVEL_2SIGMA: float = 0.95
+_CONFIDENCE_LEVEL_3SIGMA: float = 0.99
+_CONFIDENCE_EPSILON: float = 0.01
 from PyQt5.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -310,17 +316,17 @@ class AnalysisPanelBuildMixin:
         self.confidence_99_radio = QRadioButton(translate("99% (3σ)"))
         self.confidence_99_radio.setProperty('translate_key', '99% (3σ)')
 
-        current_level = getattr(app_state, 'confidence_level', 0.95)
-        if abs(current_level - 0.68) < 0.01:
+        current_level = getattr(app_state, 'confidence_level', _CONFIDENCE_LEVEL_2SIGMA)
+        if abs(current_level - _CONFIDENCE_LEVEL_1SIGMA) < _CONFIDENCE_EPSILON:
             self.confidence_68_radio.setChecked(True)
-        elif abs(current_level - 0.99) < 0.01:
+        elif abs(current_level - _CONFIDENCE_LEVEL_3SIGMA) < _CONFIDENCE_EPSILON:
             self.confidence_99_radio.setChecked(True)
         else:
             self.confidence_95_radio.setChecked(True)
 
-        self.confidence_68_radio.toggled.connect(lambda: self._on_confidence_change(0.68))
-        self.confidence_95_radio.toggled.connect(lambda: self._on_confidence_change(0.95))
-        self.confidence_99_radio.toggled.connect(lambda: self._on_confidence_change(0.99))
+        self.confidence_68_radio.toggled.connect(lambda: self._on_confidence_change(_CONFIDENCE_LEVEL_1SIGMA))
+        self.confidence_95_radio.toggled.connect(lambda: self._on_confidence_change(_CONFIDENCE_LEVEL_2SIGMA))
+        self.confidence_99_radio.toggled.connect(lambda: self._on_confidence_change(_CONFIDENCE_LEVEL_3SIGMA))
 
         confidence_layout.addWidget(self.confidence_68_radio)
         confidence_layout.addWidget(self.confidence_95_radio)

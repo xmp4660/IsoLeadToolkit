@@ -1,4 +1,5 @@
 """Data panel build mixin."""
+from __future__ import annotations
 
 import logging
 

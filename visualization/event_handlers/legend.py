@@ -1,10 +1,12 @@
 """Legend click interaction handlers."""
 from __future__ import annotations
 
+from typing import Any
+
 from .shared import SELECTION_USE_CASE, app_state, logger, state_gateway
 
 
-def on_legend_click(event) -> None:
+def on_legend_click(event: Any) -> None:
     """Handle legend click events and toggle group visibility."""
     try:
         if event is None or not hasattr(event, 'inaxes'):

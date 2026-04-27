@@ -1,4 +1,5 @@
 """Display panel UI construction and control helpers."""
+from __future__ import annotations
 
 from PyQt5.QtWidgets import (
     QCheckBox,

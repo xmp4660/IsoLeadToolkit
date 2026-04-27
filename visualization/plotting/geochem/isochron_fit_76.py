@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import logging
 
+import numpy as np
+
 from core import app_state
 from visualization.line_styles import resolve_line_style
 
@@ -21,18 +23,18 @@ logger = logging.getLogger(__name__)
 
 def render_isochron1_group(
     *,
-    ax,
-    geochemistry,
-    params,
-    grp,
-    slope,
-    intercept,
-    slope_err,
-    x_line,
-    y_line,
-    color,
-    show_fits,
-    show_growth,
+    ax: Any,
+    geochemistry: Any,
+    params: dict[str, Any],
+    grp: str,
+    slope: float,
+    intercept: float,
+    slope_err: float | None,
+    x_line: np.ndarray,
+    y_line: np.ndarray,
+    color: str,
+    show_fits: bool,
+    show_growth: bool,
 ) -> None:
     """Render fitted line labels and optional growth curve for ISOCHRON1."""
     age_ma = None

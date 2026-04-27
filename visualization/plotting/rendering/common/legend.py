@@ -72,7 +72,10 @@ def _place_inline_legend(
     group_col: str,
     legend_handles: list[Any],
     legend_labels: list[str],
-    *, show_marginal_kde=False, scatters=None, is_kde_mode=False,
+    *,
+    show_marginal_kde: bool = False,
+    scatters: list[Any] | None = None,
+    is_kde_mode: bool = False,
 ) -> None:
     """Place in-plot legend and notify the outside legend panel."""
     state_gateway.set_legend_snapshot(group_col, legend_handles, legend_labels)

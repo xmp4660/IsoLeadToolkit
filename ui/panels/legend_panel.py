@@ -1,4 +1,5 @@
 """图例面板 - 颜色和形状设置"""
+from __future__ import annotations
 
 import logging
 

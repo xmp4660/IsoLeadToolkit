@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """Geochemistry package exports."""
+from __future__ import annotations
+
 import logging
+from typing import Any
+
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -122,16 +126,16 @@ def resolve_age_model(params: dict | None = None, model_name: str | None = None)
 
 
 def calculate_all_parameters(
-    Pb206_204_S,
-    Pb207_204_S,
-    Pb208_204_S,
-    calculate_ages=True,
-    a=None,
-    b=None,
-    c=None,
+    Pb206_204_S: np.ndarray | float,
+    Pb207_204_S: np.ndarray | float,
+    Pb208_204_S: np.ndarray | float,
+    calculate_ages: bool = True,
+    a: float | None = None,
+    b: float | None = None,
+    c: float | None = None,
     scale: float = 1.0,
-    t_Ma=None,
-    **kwargs,
+    t_Ma: np.ndarray | float | None = None,
+    **kwargs: Any,
 ) -> dict[str, np.ndarray | float | int | str | None]:
     """
     计算所有地球化学参数 (主调用接口)
