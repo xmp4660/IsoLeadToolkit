@@ -80,24 +80,6 @@ class MainWindowCanvasMixin:
 
         self._connect_event_handlers(canvas)
 
-    def set_control_panel(self, panel_widget):
-        """Attach the control panel widget above the canvas."""
-        for i in reversed(range(self.panel_layout.count())):
-            widget = self.panel_layout.itemAt(i).widget()
-            if widget:
-                widget.setParent(None)
-
-        if panel_widget is None:
-            self.panel_container.setVisible(False)
-            return
-
-        self.panel_layout.addWidget(panel_widget)
-        self.panel_container.setVisible(True)
-        try:
-            self.main_splitter.setSizes([320, 560])
-        except Exception:
-            pass
-
     def _attach_matplotlib_toolbar_actions(self, toolbar):
         self._clear_matplotlib_toolbar_actions()
         self._mpl_toolbar = toolbar

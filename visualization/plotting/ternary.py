@@ -77,12 +77,7 @@ def _coerce_nonnegative(values: Iterable[float]) -> np.ndarray:
     return np.maximum(arr, 0.0)
 
 
-def _sanitize_boundary_percent(value: Any, default: float = 5.0) -> float:
-    try:
-        percent = float(value)
-    except (TypeError, ValueError):
-        percent = float(default)
-    return float(min(30.0, max(0.0, percent)))
+
 
 
 def resolve_ternary_limit_mode(mode: Any = None) -> str:
@@ -164,206 +159,36 @@ def prepare_ternary_components(
     return normalize_ternary_components(t_vals, l_vals, r_vals)
 
 
-def _equalized_window(min_val: float, max_val: float, span: float) -> tuple[float, float]:
-    center = 0.5 * (min_val + max_val)
-    low = center - 0.5 * span
-    high = center + 0.5 * span
 
-    if low < 0.0:
-        high -= low
-        low = 0.0
-    if high > 1.0:
-        low -= (high - 1.0)
-        high = 1.0
-
-    low = max(0.0, low)
-    high = min(1.0, high)
-
-    if (high - low) < span:
-        if low <= _TERNARY_LIMIT_EPSILON:
-            high = min(1.0, low + span)
-        elif high >= (1.0 - _TERNARY_LIMIT_EPSILON):
-            low = max(0.0, high - span)
-
-    return float(low), float(high)
-
-
-def _robust_bounds(vals: np.ndarray, trim_ratio: float) -> tuple[float, float]:
-    finite = vals[np.isfinite(vals)]
-    if finite.size == 0:
-        return 0.0, 1.0
-
-    low = float(np.nanmin(finite))
-    high = float(np.nanmax(finite))
-    if finite.size < 10 or trim_ratio <= _TERNARY_LIMIT_EPSILON:
-        return low, high
-
-    q_low = float(np.quantile(finite, trim_ratio))
-    q_high = float(np.quantile(finite, 1.0 - trim_ratio))
-    if np.isfinite(q_low) and np.isfinite(q_high) and q_high > q_low:
-        return q_low, q_high
-    return low, high
-
-
-def _is_tiny_span(value: float, floor: float = _TERNARY_LIMIT_EPSILON) -> bool:
-    """Return True when span is non-finite or effectively zero."""
-    return (not np.isfinite(value)) or (float(value) <= float(floor))
 
 
 def infer_ternary_limits(
     t_vals: Iterable[float],
     l_vals: Iterable[float],
     r_vals: Iterable[float],
-    *,
-    boundary_percent: float = 5.0,
 ) -> tuple[float, float, float, float, float, float]:
-    """Infer ternary limits using data distribution and boundary percentage."""
+    """Infer ternary data limits from component ranges."""
     t_arr, l_arr, r_arr = normalize_ternary_components(t_vals, l_vals, r_vals)
     if t_arr.size == 0 or l_arr.size == 0 or r_arr.size == 0:
         return _FULL_TERNARY_LIMITS
 
-    boundary_ratio = _sanitize_boundary_percent(boundary_percent) / 100.0
-    trim_ratio = min(0.20, boundary_ratio * 0.5)
+    tmin = float(np.nanmin(t_arr))
+    tmax = float(np.nanmax(t_arr))
+    lmin = float(np.nanmin(l_arr))
+    lmax = float(np.nanmax(l_arr))
+    rmin = float(np.nanmin(r_arr))
+    rmax = float(np.nanmax(r_arr))
 
-    tmin_raw, tmax_raw = _robust_bounds(t_arr, trim_ratio)
-    lmin_raw, lmax_raw = _robust_bounds(l_arr, trim_ratio)
-    rmin_raw, rmax_raw = _robust_bounds(r_arr, trim_ratio)
-
-    mins = np.array([tmin_raw, lmin_raw, rmin_raw], dtype=float)
-    maxs = np.array([tmax_raw, lmax_raw, rmax_raw], dtype=float)
-    if not np.all(np.isfinite(mins)) or not np.all(np.isfinite(maxs)):
-        return _FULL_TERNARY_LIMITS
-
-    spans = np.maximum(maxs - mins, 0.0)
-    base_span = float(np.nanmax(spans))
-    if _is_tiny_span(base_span):
-        base_span = 0.15
-
-    span = min(1.0, base_span * (1.0 + 2.0 * boundary_ratio))
-    span = max(span, 0.03)
-
-    tmin, tmax = _equalized_window(mins[0], maxs[0], span)
-    lmin, lmax = _equalized_window(mins[1], maxs[1], span)
-    rmin, rmax = _equalized_window(mins[2], maxs[2], span)
     return tmin, tmax, lmin, lmax, rmin, rmax
 
 
-def _apply_mode_limits(
-    ax: Any,
-    limits: tuple[float, float, float, float, float, float],
-    *,
-    mode: str,
-    auto_zoom: bool,
-) -> tuple[float, float, float, float, float, float]:
-    tmin, tmax, lmin, lmax, rmin, rmax = limits
-
-    if not auto_zoom:
-        ax.set_ternary_lim(*limits)
-        return limits
-
-    if mode == 'max':
-        ax.set_ternary_max(tmax, lmax, rmax)
-        return (
-            max(0.0, 1.0 - lmax - rmax), tmax,
-            max(0.0, 1.0 - tmax - rmax), lmax,
-            max(0.0, 1.0 - tmax - lmax), rmax,
-        )
-
-    if mode == 'min':
-        ax.set_ternary_min(tmin, lmin, rmin)
-        return (
-            tmin, min(1.0, 1.0 - lmin - rmin),
-            lmin, min(1.0, 1.0 - tmin - rmin),
-            rmin, min(1.0, 1.0 - tmin - lmin),
-        )
-
-    ax.set_ternary_lim(*limits)
-    return limits
 
 
-def _collect_current_ternary_components() -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
-    cols = getattr(app_state, 'selected_ternary_cols', [])
-    if not cols or len(cols) != 3:
-        return None
-
-    df_global = _df_global()
-    if df_global is None or df_global.empty:
-        return None
-
-    subset_indices = _active_subset_indices()
-    if subset_indices is not None:
-        if len(subset_indices) == 0:
-            return None
-        df = df_global.iloc[sorted(list(subset_indices))].copy()
-    else:
-        df = df_global.copy()
-
-    missing = [col for col in cols if col not in df.columns]
-    if missing:
-        logger.warning("Missing ternary columns during optimization: %s", missing)
-        return None
-
-    data = df[cols].apply(pd.to_numeric, errors='coerce').fillna(0.0).to_numpy(dtype=float)
-    if data.size == 0:
-        return None
-    return data[:, 0], data[:, 1], data[:, 2]
 
 
-def recommend_boundary_percent_from_components(
-    t_vals: Iterable[float],
-    l_vals: Iterable[float],
-    r_vals: Iterable[float],
-    *,
-    mode: str,
-    current_percent: float,
-) -> float:
-    """Recommend boundary percent from data spread and selected limit mode."""
-    t_arr, l_arr, r_arr = normalize_ternary_components(t_vals, l_vals, r_vals)
-    spans = np.array([
-        float(np.nanmax(t_arr) - np.nanmin(t_arr)),
-        float(np.nanmax(l_arr) - np.nanmin(l_arr)),
-        float(np.nanmax(r_arr) - np.nanmin(r_arr)),
-    ])
-    base_span = float(np.nanmax(np.maximum(spans, 0.0)))
-
-    if _is_tiny_span(base_span):
-        computed = 12.0
-    else:
-        target_span = 0.78 if mode in ('min', 'max') else 0.72
-        computed = ((target_span / base_span) - 1.0) * 50.0
-
-    computed = _sanitize_boundary_percent(computed)
-    current = _sanitize_boundary_percent(current_percent)
-    blended = (0.65 * computed) + (0.35 * current)
-    return round(_sanitize_boundary_percent(blended), 1)
 
 
-def optimize_current_ternary_limits(
-    *,
-    mode: str | None = None,
-    boundary_percent: float | None = None,
-) -> dict[str, Any] | None:
-    """Auto-optimize ternary limits using the current boundary percent.
 
-    Boundary percent is treated as a user-controlled parameter and is not
-    auto-estimated here.
-    """
-    components = _collect_current_ternary_components()
-    if components is None:
-        return None
-
-    resolved_mode = resolve_ternary_limit_mode(mode)
-    fixed_percent = _sanitize_boundary_percent(
-        boundary_percent,
-        default=getattr(app_state, 'ternary_boundary_percent', 5.0),
-    )
-
-    limits = infer_ternary_limits(*components, boundary_percent=fixed_percent)
-    return {
-        'mode': resolved_mode,
-        'boundary_percent': fixed_percent,
-        'limits': limits,
-    }
 
 
 def configure_ternary_axis(
@@ -375,7 +200,7 @@ def configure_ternary_axis(
     *,
     auto_zoom: bool = True,
 ) -> tuple[float, float, float, float, float, float]:
-    """Configure mpltern axis labels and limits."""
+    """Configure mpltern axis labels and limits using mpltern API."""
     if labels and len(labels) == 3:
         try:
             ax.set_tlabel(str(labels[0]))
@@ -385,31 +210,36 @@ def configure_ternary_axis(
             logger.debug("Failed to set ternary axis labels", exc_info=True)
 
     mode = resolve_ternary_limit_mode(getattr(app_state, 'ternary_limit_mode', None))
-    boundary_percent = _sanitize_boundary_percent(getattr(app_state, 'ternary_boundary_percent', 5.0))
     state_gateway.set_ternary_limit_mode(mode)
-    state_gateway.set_ternary_boundary_percent(boundary_percent)
 
-    limits = _FULL_TERNARY_LIMITS
-    if auto_zoom:
-        use_manual = bool(getattr(app_state, 'ternary_manual_limits_enabled', False))
-        if use_manual:
-            limits = _resolve_manual_limits()
-        else:
-            limits = infer_ternary_limits(t_vals, l_vals, r_vals, boundary_percent=boundary_percent)
-
+    tmin, tmax, lmin, lmax, rmin, rmax = _FULL_TERNARY_LIMITS
+    
     try:
-        limits = _apply_mode_limits(ax, limits, mode=mode, auto_zoom=bool(auto_zoom))
-    except Exception:
-        logger.warning("Invalid ternary limits %s, using full ternary range.", limits)
-        limits = _FULL_TERNARY_LIMITS
-        ax.set_ternary_lim(*limits)
+        if auto_zoom:
+            use_manual = bool(getattr(app_state, 'ternary_manual_limits_enabled', False))
+            if use_manual:
+                tmin, tmax, lmin, lmax, rmin, rmax = _resolve_manual_limits()
+            else:
+                tmin, tmax, lmin, lmax, rmin, rmax = infer_ternary_limits(t_vals, l_vals, r_vals)
+
+        # Apply via mpltern API based on mode
+        if mode == 'max':
+            ax.set_ternary_max(tmax, lmax, rmax)
+        elif mode == 'min':
+            ax.set_ternary_min(tmin, lmin, rmin)
+        else:  # 'both' or default
+            ax.set_ternary_lim(tmin, tmax, lmin, lmax, rmin, rmax)
+    except Exception as e:
+        logger.warning("Failed to configure ternary limits: %s", e)
+        ax.set_ternary_lim(*_FULL_TERNARY_LIMITS)
+        tmin, tmax, lmin, lmax, rmin, rmax = _FULL_TERNARY_LIMITS
 
     try:
         ax.set_aspect('equal', adjustable='box')
     except Exception:
         logger.debug("Failed to set equal aspect on ternary axis", exc_info=True)
 
-    return limits
+    return tmin, tmax, lmin, lmax, rmin, rmax
 
 
 def calculate_auto_ternary_factors() -> bool:

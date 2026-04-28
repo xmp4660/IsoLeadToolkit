@@ -33,6 +33,7 @@ class LegendBuildMixin:
         self.auto_palette_combo = None
         self.auto_shape_set_combo = None
         self.auto_base_shape_combo = None
+        self.auto_style_btn = None
         self.legend_nudge_step = 0.02
         self._last_palette_name = None
 
@@ -242,6 +243,7 @@ class LegendBuildMixin:
         auto_btn = QPushButton(translate("Auto Style"))
         auto_btn.setProperty('translate_key', 'Auto Style')
         auto_btn.clicked.connect(self._auto_assign_styles)
+        self.auto_style_btn = auto_btn
         style_layout.addWidget(auto_btn)
 
         style_group.setLayout(style_layout)

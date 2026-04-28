@@ -75,7 +75,6 @@ class Qt5Application(Qt5AppStyleMixin, Qt5AppSessionMixin, Qt5AppPlottingMixin):
         self.app = None
         self.main_window = None
         self.translator = None
-        self.control_panel = None
         self._style_filter = None
 
     def run(self):

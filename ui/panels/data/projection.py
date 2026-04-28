@@ -230,7 +230,7 @@ class DataPanelProjectionMixin:
         auto_zoom_enabled = bool(getattr(app_state, "ternary_auto_zoom", True))
         base_widgets = [
             getattr(self, "ternary_limit_mode_combo", None),
-            getattr(self, "ternary_boundary_percent_spin", None),
+
             getattr(self, "ternary_auto_optimize_btn", None),
             getattr(self, "ternary_manual_limits_check", None),
         ]
@@ -251,16 +251,6 @@ class DataPanelProjectionMixin:
         state_gateway.set_ternary_limit_mode(mode)
         if mode in ("min", "max"):
             state_gateway.set_ternary_limit_anchor(mode)
-        self._on_change()
-
-    def _on_ternary_boundary_percent_change(self, value):
-        """Handle boundary percent changes for ternary limit optimization."""
-        try:
-            percent = float(value)
-        except (TypeError, ValueError):
-            percent = 5.0
-        percent = max(0.0, min(30.0, percent))
-        state_gateway.set_ternary_boundary_percent(percent)
         self._on_change()
 
     def _on_ternary_manual_limits_change(self, state):
@@ -284,58 +274,15 @@ class DataPanelProjectionMixin:
             self._on_change()
 
     def _on_ternary_auto_optimize(self):
-        """Auto-optimize ternary boundary parameters from current data distribution."""
+        """Auto-optimize ternary factors using the built-in ternary module algorithm."""
         try:
-            from visualization.plotting.ternary import optimize_current_ternary_limits
+            from visualization.plotting.ternary import calculate_auto_ternary_factors
 
-            mode = str(getattr(app_state, "ternary_limit_mode", "min")).strip().lower()
-            if mode not in ("min", "max", "both"):
-                mode = "min"
-            boundary_percent = float(getattr(app_state, "ternary_boundary_percent", 5.0))
-
-            optimized = optimize_current_ternary_limits(mode=mode, boundary_percent=boundary_percent)
+            optimized = calculate_auto_ternary_factors()
             if not optimized:
-                logger.warning("Ternary auto-optimize skipped: no valid ternary data available.")
+                logger.warning("Ternary auto-optimize skipped: failed to calculate ternary factors.")
                 return
-
-            optimized_mode = str(optimized.get("mode", mode)).strip().lower()
-            limits = optimized.get("limits")
-
-            manual_limits: dict[str, float] = {}
-            if isinstance(limits, (list, tuple)) and len(limits) == 6:
-                manual_limits = {
-                    "tmin": float(limits[0]),
-                    "tmax": float(limits[1]),
-                    "lmin": float(limits[2]),
-                    "lmax": float(limits[3]),
-                    "rmin": float(limits[4]),
-                    "rmax": float(limits[5]),
-                }
-
-            state_gateway.set_ternary_limit_mode(optimized_mode)
-            if optimized_mode in ("min", "max"):
-                state_gateway.set_ternary_limit_anchor(optimized_mode)
-            if manual_limits:
-                state_gateway.set_ternary_manual_limits(manual_limits)
-
-            if getattr(self, "ternary_limit_mode_combo", None) is not None:
-                self.ternary_limit_mode_combo.blockSignals(True)
-                self._set_combo_value(self.ternary_limit_mode_combo, optimized_mode)
-                self.ternary_limit_mode_combo.blockSignals(False)
-
-            for key, spin in (getattr(self, "ternary_limit_spins", None) or {}).items():
-                if key not in manual_limits:
-                    continue
-                spin.blockSignals(True)
-                spin.setValue(float(manual_limits[key]))
-                spin.blockSignals(False)
-
-            logger.info(
-                "Ternary auto-optimized: mode=%s, boundary=%.1f%% (fixed), limits=%s",
-                optimized_mode,
-                boundary_percent,
-                limits,
-            )
+            logger.info("Ternary auto-optimized with built-in module algorithm: factors=%s", getattr(app_state, "ternary_factors", None))
             self._on_change()
         except Exception as err:
             logger.warning("Failed ternary auto-optimize: %s", err)

@@ -73,24 +73,28 @@ def _render_scatter_groups(
                     picker=5,
                 )
 
-                offsets = sc.get_offsets()
-                if offsets is None or len(offsets) < len(indices):
-                    x_cart = 0.5 * t_norm + r_norm
-                    y_cart = (np.sqrt(3.0) / 2.0) * t_norm
-                    offsets = np.column_stack((x_cart, y_cart))
-
                 sc.indices = indices
+                scatter_id = id(sc)
+                num_indices = len(indices)
 
-                for j, idx in enumerate(indices):
-                    if j >= len(offsets):
-                        continue
-                    x_val, y_val = offsets[j]
-                    x_val = float(x_val)
-                    y_val = float(y_val)
-                    key = (round(x_val, 2), round(y_val, 2))
-                    app_state.sample_index_map[key] = idx
-                    app_state.sample_coordinates[idx] = (x_val, y_val)
-                    app_state.artist_to_sample[(id(sc), j)] = idx
+                if num_indices > 0:
+                    offsets = sc.get_offsets()
+                    if offsets is None or len(offsets) < num_indices:
+                        x_cart = 0.5 * t_norm + r_norm
+                        y_cart = (np.sqrt(3.0) / 2.0) * t_norm
+                        offsets = np.column_stack((x_cart, y_cart))
+
+                    valid_count = min(len(offsets), num_indices)
+                    x_vals = offsets[:valid_count, 0]
+                    y_vals = offsets[:valid_count, 1]
+                    x_rounded = np.round(x_vals, 2)
+                    y_rounded = np.round(y_vals, 2)
+
+                    for j, idx in enumerate(indices[:valid_count]):
+                        key = (float(x_rounded[j]), float(y_rounded[j]))
+                        app_state.sample_index_map[key] = idx
+                        app_state.sample_coordinates[idx] = (float(x_vals[j]), float(y_vals[j]))
+                        app_state.artist_to_sample[(scatter_id, j)] = idx
 
             else:
                 xs = subset['_emb_x'].to_numpy(dtype=float, copy=False)
@@ -118,13 +122,18 @@ def _render_scatter_groups(
                     picker=5,
                 )
 
+                scatter_id = id(sc)
+                num_indices = len(indices)
+                x_rounded = np.round(xs[:num_indices], 2)
+                y_rounded = np.round(ys[:num_indices], 2)
+
                 for j, idx in enumerate(indices):
-                    x_val = float(xs[j])
-                    y_val = float(ys[j])
-                    key = (round(x_val, 2), round(y_val, 2))
+                    if j >= num_indices:
+                        break
+                    key = (float(x_rounded[j]), float(y_rounded[j]))
                     app_state.sample_index_map[key] = idx
-                    app_state.sample_coordinates[idx] = (x_val, y_val)
-                    app_state.artist_to_sample[(id(sc), j)] = idx
+                    app_state.sample_coordinates[idx] = (float(xs[j]), float(ys[j]))
+                    app_state.artist_to_sample[(scatter_id, j)] = idx
 
             scatters.append(sc)
             app_state.scatter_collections.append(sc)

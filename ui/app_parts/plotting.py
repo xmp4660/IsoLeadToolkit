@@ -69,12 +69,10 @@ class Qt5AppPlottingMixin:
         plt.ion()
 
     def _setup_control_panel(self):
-        """Disable legacy control panel in menu-driven UI mode."""
+        """Disable legacy control panel references in menu-driven UI mode."""
         logger.info("Control panel disabled; using top menu dialogs.")
-        self.control_panel = None
-        import core.state as state
-
-        state.control_panel = None
+        if hasattr(self, "control_panel"):
+            self.control_panel = None
         state_gateway.set_control_panel_ref(None)
 
     def _connect_event_handlers(self):
@@ -98,9 +96,9 @@ class Qt5AppPlottingMixin:
     def _print_instructions(self):
         """Print startup interaction hints to log."""
         logger.info("Application Controls:")
-        logger.info("  * Use the Control Panel window to adjust parameters")
-        logger.info("  * Algorithm selector -> Choose UMAP or t-SNE")
-        logger.info("  * Point size -> Adjust marker size")
+        logger.info("  * Use top-menu dialogs (Data/Display/Analysis/Export/Legend/Geochemistry)")
+        logger.info("  * Render Mode -> switch UMAP/t-SNE/PCA/RobustPCA/2D/3D/Ternary and geochem views")
+        logger.info("  * Display settings -> adjust marker, palette, legend, and plot style")
         logger.info("  * Hover over points -> View Lab No. / Site / Period")
         logger.info("  * Left click point -> Export sample to CSV")
         logger.info("  * Click legend item -> Bring group to front")

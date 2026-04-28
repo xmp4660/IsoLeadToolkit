@@ -27,7 +27,6 @@ class Qt5MainWindow(
 
     def __init__(self, parent: QMainWindow | None = None) -> None:
         super().__init__(parent)
-        self.control_panel = None
         self._setup_ui()
         self._setup_menubar()
         self._setup_toolbar()

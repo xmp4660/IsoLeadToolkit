@@ -2,6 +2,33 @@
 
 本文件仅保留尚未完成或正在推进的事项。历史已完成条目不再重复记录。
 
+## 阶段进展（2026-04-27 · P2 收尾第一百八十四批）
+
+- P2-1（主窗口 legacy 面板容器路径收敛）：
+    - `ui/main_window_parts/canvas.py` 删除无调用的 `set_control_panel()` 兼容入口。
+    - `ui/main_window_parts/setup.py` 移除仅为已禁用控制面板服务的 `panel_container/panel_layout/main_splitter` 布局层，主布局直接承载 `canvas_widget`。
+- 回归保障：
+    - 新增 `tests/test_main_window_canvas_helpers.py`，锁定 `MainWindowCanvasMixin` 不再暴露 `set_control_panel`，并校验 `_setup_ui` 不再创建 legacy 面板容器分割层。
+    - 定向回归 `uv run pytest tests/test_main_window_canvas_helpers.py tests/test_app_plotting_helpers.py tests/test_ui_wrapper_helpers.py -q` 通过（20 tests）。
+
+## 阶段进展（2026-04-27 · P2 收尾第一百八十三批）
+
+- P2-1（UI 启动路径 legacy 字段收敛）：
+    - `ui/app.py` 与 `ui/main_window.py` 去除无实际用途的 `self.control_panel` 初始化字段，避免与 `app_state.control_panel_ref` 语义重叠。
+    - `ui/app_parts/plotting.py::_setup_control_panel` 调整为“仅清理运行态引用 + 可选兼容清理 legacy 字段”，不再依赖固定实例字段存在。
+- 回归保障：
+    - 扩展 `tests/test_app_plotting_helpers.py`，覆盖“无 `control_panel` 字段实例也可安全执行 `_setup_control_panel`”行为。
+    - 定向回归 `uv run pytest tests/test_app_plotting_helpers.py tests/test_ui_wrapper_helpers.py -q` 通过（18 tests）。
+
+## 阶段进展（2026-04-27 · P2 收尾第一百八十二批）
+
+- P2-1（UI 启动路径去遗留状态写入）：
+    - `ui/app_parts/plotting.py` 清理 `_setup_control_panel` 中对 `core.state` 模块级 `control_panel` 的遗留赋值，改为仅通过 `state_gateway.set_control_panel_ref(None)` 维护运行态引用。
+    - 同步更新 `_print_instructions` 的启动提示文案，使其与当前“菜单栏分区对话框”交互模式一致。
+- 回归保障：
+    - 新增 `tests/test_app_plotting_helpers.py`，覆盖 `_setup_control_panel` 的状态收口行为与 `_print_instructions` 文案语义。
+    - 定向回归 `uv run pytest tests/test_app_plotting_helpers.py tests/test_ui_wrapper_helpers.py -q` 通过。
+
 ## 阶段进展（2026-04-27 · P2 收尾第一百八十一批）
 
 - P2-1（类型注解补齐）收尾：

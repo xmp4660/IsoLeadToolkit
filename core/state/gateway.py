@@ -313,7 +313,6 @@ class AppStateGateway:
             "legend_frame_alpha": "set_legend_frame_alpha",
             "confidence_level": "set_confidence_level",
             "legend_nudge_step": "set_legend_nudge_step",
-            "ternary_boundary_percent": "set_ternary_boundary_percent",
             "model_curve_width": "set_model_curve_width",
             "plumbotectonics_curve_width": "set_plumbotectonics_curve_width",
             "paleoisochron_width": "set_paleoisochron_width",
@@ -939,9 +938,6 @@ class AppStateGateway:
 
     def set_ternary_limit_anchor(self, anchor: str) -> None:
         self._dispatch("SET_TERNARY_LIMIT_ANCHOR", anchor=anchor)
-
-    def set_ternary_boundary_percent(self, percent: float) -> None:
-        self._dispatch("SET_TERNARY_BOUNDARY_PERCENT", percent=percent)
 
     def set_ternary_manual_limits_enabled(self, enabled: bool) -> None:
         self._dispatch("SET_TERNARY_MANUAL_LIMITS_ENABLED", enabled=bool(enabled))

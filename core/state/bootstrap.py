@@ -85,7 +85,6 @@ def init_runtime_defaults(state: Any, config: dict[str, Any]) -> None:
     state.ternary_stretch = False
     state.ternary_auto_zoom = True
     state.ternary_limit_mode = 'min'
-    state.ternary_boundary_percent = 5.0
     state.ternary_manual_limits_enabled = False
     state.ternary_manual_limits = {
         'tmin': 0.0,

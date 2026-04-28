@@ -103,10 +103,10 @@ Excel/CSV 文件
 | `_on_style_change` 初始化期间崩溃 | control_panel.py:3665 | ✅ 已修复 (添加 `_is_initialized` 守卫) |
 | `create_section_dialog` 未初始化属性 | control_panel.py:5614 | ✅ 已修复 (添加 `_reset_ui_state()`) |
 | numba 日志过长 | utils/logger.py | ✅ 已修复 (设置 WARNING 级别) |
-| `_reset_ui_state` 重复赋值 | control_panel.py:285-296 | 待修复 |
-| 全局 widget 引用 (slider_n 等) | state.py:332-344 | 待清理 |
+| `_reset_ui_state` 重复赋值 | control_panel.py:285-296 | ✅ 已不适用（相关实现已迁移） |
+| 全局 widget 引用 (slider_n 等) | state.py:332-344 | ✅ 已不适用（旧 state.py 已拆分为 core/state/） |
 | 循环导入风险 | visualization/plotting (旧 shim) | ✅ 已消解 (兼容入口已移除) |
-| 控制面板禁用但代码保留 | app.py:322 | 待清理 |
+| 控制面板禁用但代码保留 | ui/app_parts/plotting.py:_setup_control_panel | 🔄 持续收敛（已移除启动链路中的模块级遗留状态写入、Qt 应用/主窗口中的 legacy 字段初始化，以及 main_window_parts 中无调用的 legacy 面板容器分割层） |
 | 可视化模块 docstring/导入顺序不规范 | visualization/events.py, visualization/plotting/* | ✅ 已修复 |
 | 可视化模块日志前缀残留 | visualization/events.py, visualization/plotting/* | ✅ 已修复 |
 | 可视化模块 core 导入入口不统一 | visualization/plotting/* | ✅ 已修复 |

@@ -59,7 +59,6 @@ class DataPanelBuildMixin:
         self.ternary_scale_slider = None
         self.ternary_auto_zoom_check = None
         self.ternary_limit_mode_combo = None
-        self.ternary_boundary_percent_spin = None
         self.ternary_auto_optimize_btn = None
         self.ternary_manual_limits_check = None
         self.ternary_limit_spins = {}
@@ -563,21 +562,6 @@ class DataPanelBuildMixin:
             current_limit_mode = "min"
         self._set_combo_value(self.ternary_limit_mode_combo, current_limit_mode)
         self.ternary_limit_mode_combo.currentIndexChanged.connect(self._on_ternary_limit_mode_change)
-
-        boundary_row = QHBoxLayout()
-        boundary_label = QLabel(translate("Boundary Percent (%)"))
-        boundary_label.setProperty("translate_key", "Boundary Percent (%)")
-        boundary_row.addWidget(boundary_label)
-
-        self.ternary_boundary_percent_spin = QDoubleSpinBox()
-        self.ternary_boundary_percent_spin.setRange(0.0, 30.0)
-        self.ternary_boundary_percent_spin.setDecimals(1)
-        self.ternary_boundary_percent_spin.setSingleStep(0.5)
-        self.ternary_boundary_percent_spin.setSuffix("%")
-        self.ternary_boundary_percent_spin.setValue(float(getattr(app_state, "ternary_boundary_percent", 5.0)))
-        self._connect_spinbox_deferred(self.ternary_boundary_percent_spin, self._on_ternary_boundary_percent_change)
-        boundary_row.addWidget(self.ternary_boundary_percent_spin)
-        ternary_layout.addLayout(boundary_row)
 
         self.ternary_auto_optimize_btn = QPushButton(translate("Auto Optimize"))
         self.ternary_auto_optimize_btn.setProperty("translate_key", "Auto Optimize")

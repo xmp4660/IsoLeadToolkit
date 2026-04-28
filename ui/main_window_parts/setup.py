@@ -111,17 +111,7 @@ class MainWindowSetupMixin:
         self.canvas_root_layout.addWidget(self.legend_splitter)
         self._apply_legend_panel_layout()
 
-        self.panel_container = QWidget()
-        self.panel_layout = QVBoxLayout(self.panel_container)
-        self.panel_layout.setContentsMargins(0, 0, 0, 0)
-        self.panel_layout.setSpacing(0)
-        self.panel_container.setVisible(False)
-
-        self.main_splitter = QSplitter(Qt.Vertical)
-        self.main_splitter.setChildrenCollapsible(False)
-        self.main_splitter.addWidget(self.panel_container)
-        self.main_splitter.addWidget(self.canvas_widget)
-        self.main_layout.addWidget(self.main_splitter)
+        self.main_layout.addWidget(self.canvas_widget)
 
         # 浮动dock区域
         self.dock_widgets = []
