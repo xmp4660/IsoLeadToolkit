@@ -109,7 +109,8 @@ class LegendActionsMixin:
             if not app_state.last_group_col or app_state.df_global is None:
                 logger.warning('No group column or dataframe: last_group_col=%s', app_state.last_group_col)
                 return
-            groups = list(app_state.available_groups or app_state.df_global[app_state.last_group_col].unique())
+            raw_groups = list(app_state.available_groups or app_state.df_global[app_state.last_group_col].unique())
+            groups = [str(g) for g in raw_groups]
             if not groups:
                 logger.warning('No groups found')
                 return
@@ -119,10 +120,8 @@ class LegendActionsMixin:
             palette_name = None
             if self.auto_palette_combo is not None:
                 palette_name = self.auto_palette_combo.currentData()
-            if palette_name:
-                if palette_name == "__custom__":
-                    palette_name = getattr(app_state, 'color_scheme', None)
-                state_gateway.set_color_scheme(palette_name)
+            if palette_name == "__custom__":
+                palette_name = getattr(app_state, 'color_scheme', None)
 
             color_pool = []
             try:
@@ -131,12 +130,11 @@ class LegendActionsMixin:
                     color_pool = list(style_manager_instance.palettes[palette_name])
             except Exception as e:
                 logger.debug('Failed to get palette: %s', e)
-                color_pool = []
 
             if not color_pool:
-                palette = getattr(app_state, 'current_palette', {}) or {}
+                existing = getattr(app_state, 'current_palette', {}) or {}
                 for group in groups:
-                    color = palette.get(group)
+                    color = existing.get(group)
                     if color and color not in color_pool:
                         color_pool.append(color)
 
@@ -150,7 +148,6 @@ class LegendActionsMixin:
                             color_pool.append(color)
                 except Exception as e:
                     logger.debug('Failed to get matplotlib colors: %s', e)
-                    pass
 
             if not color_pool:
                 color_pool = ['#333333']
@@ -176,20 +173,22 @@ class LegendActionsMixin:
 
             shapes_extra = [s for s in shape_set if s != base_shape] or shape_set
 
+            new_palette = {}
+            new_marker_map = {}
             total_colors = len(color_pool)
             for idx, group in enumerate(groups):
                 if idx < total_colors:
-                    app_state.current_palette[group] = color_pool[idx]
-                    app_state.group_marker_map[group] = base_shape
+                    new_palette[group] = color_pool[idx]
+                    new_marker_map[group] = base_shape
                 else:
                     extra = idx - total_colors
-                    color = color_pool[extra % total_colors]
-                    shape = shapes_extra[(extra // total_colors) % len(shapes_extra)]
-                    app_state.current_palette[group] = color
-                    app_state.group_marker_map[group] = shape
+                    new_palette[group] = color_pool[extra % total_colors]
+                    new_marker_map[group] = shapes_extra[(extra // total_colors) % len(shapes_extra)]
 
-            state_gateway.set_current_palette(app_state.current_palette)
-            state_gateway.set_group_marker_map(app_state.group_marker_map)
+            state_gateway.set_palette_and_marker_map(new_palette, new_marker_map)
+
+            if palette_name:
+                state_gateway.set_color_scheme(palette_name)
 
             logger.info('Auto styles assigned, calling _on_change')
             self._on_change()
