@@ -41,7 +41,6 @@ from .plotting import (
     show_embedding_correlation,
     show_shepard_diagram,
     show_correlation_heatmap,
-    calculate_auto_ternary_factors,
 )
 
 __all__ = [
@@ -76,5 +75,4 @@ __all__ = [
     'show_embedding_correlation',
     'show_shepard_diagram',
     'show_correlation_heatmap',
-    'calculate_auto_ternary_factors',
 ]

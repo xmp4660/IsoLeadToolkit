@@ -79,10 +79,6 @@ def init_runtime_defaults(state: Any, config: dict[str, Any]) -> None:
     state.selected_2d_cols = []
     state.selected_3d_cols = []
     state.selected_ternary_cols = []
-    state.ternary_stretch_power = 0.5
-    state.ternary_stretch_mode = 'power'
-    state.ternary_factors = [1.0, 1.0, 1.0]
-    state.ternary_stretch = False
     state.ternary_auto_zoom = True
     state.ternary_limit_mode = 'min'
     state.ternary_manual_limits_enabled = False
@@ -95,6 +91,7 @@ def init_runtime_defaults(state: Any, config: dict[str, Any]) -> None:
         'rmax': 1.0,
     }
     state.ternary_limit_anchor = 'min'
+    state.ternary_render_margin = 0.002
     state.ui_theme = 'Modern Light'
     state.available_groups = []
     state.visible_groups = None

@@ -103,49 +103,6 @@ class Qt5TernaryDialog(QDialog):
 
         layout.addWidget(list_group, 1)
 
-        params_group = QGroupBox(translate("Ternary Parameters"))
-        params_group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        params_layout = QVBoxLayout()
-        params_layout.setSpacing(6)
-
-        # 拉伸选项
-        self.stretch_check = QCheckBox(translate("Enable stretching"))
-        self.stretch_check.setChecked(app_state.ternary_stretch)
-        params_layout.addWidget(self.stretch_check)
-
-        # 缩放因子
-        factors_label = QLabel(translate("Scaling factors (Top, Left, Right):"))
-        params_layout.addWidget(factors_label)
-
-        factors_row = QHBoxLayout()
-        factors_row.setSpacing(6)
-
-        self.top_factor = QDoubleSpinBox()
-        self.top_factor.setRange(0.1, 10.0)
-        self.top_factor.setSingleStep(0.1)
-        self.top_factor.setValue(app_state.ternary_factors[0])
-        factors_row.addWidget(QLabel(f"{translate('Top')}:"))
-        factors_row.addWidget(self.top_factor)
-
-        self.left_factor = QDoubleSpinBox()
-        self.left_factor.setRange(0.1, 10.0)
-        self.left_factor.setSingleStep(0.1)
-        self.left_factor.setValue(app_state.ternary_factors[1])
-        factors_row.addWidget(QLabel(f"{translate('Left')}:"))
-        factors_row.addWidget(self.left_factor)
-
-        self.right_factor = QDoubleSpinBox()
-        self.right_factor.setRange(0.1, 10.0)
-        self.right_factor.setSingleStep(0.1)
-        self.right_factor.setValue(app_state.ternary_factors[2])
-        factors_row.addWidget(QLabel(f"{translate('Right')}:"))
-        factors_row.addWidget(self.right_factor)
-
-        params_layout.addLayout(factors_row)
-
-        params_group.setLayout(params_layout)
-        layout.addWidget(params_group)
-
         footer_layout = QHBoxLayout()
         footer_layout.setSpacing(8)
 
@@ -224,12 +181,6 @@ class Qt5TernaryDialog(QDialog):
 
         self.result = {
             'columns': self.selected_cols,
-            'stretch': self.stretch_check.isChecked(),
-            'factors': [
-                self.top_factor.value(),
-                self.left_factor.value(),
-                self.right_factor.value()
-            ]
         }
         self.accept()
 

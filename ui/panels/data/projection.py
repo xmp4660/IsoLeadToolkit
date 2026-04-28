@@ -219,6 +219,16 @@ class DataPanelProjectionMixin:
                 translate("Failed to show PCA loadings: {error}").format(error=str(exc)),
             )
 
+    def _on_ternary_render_margin_change(self, value):
+        """Handle ternary render margin changes."""
+        try:
+            margin = float(value)
+        except (TypeError, ValueError):
+            margin = 0.002
+        margin = max(0.0, min(0.05, margin))
+        state_gateway.set_ternary_render_margin(margin)
+        self._on_change()
+
     def _on_ternary_zoom_change(self, state):
         """Handle ternary auto-zoom toggle."""
         state_gateway.set_ternary_auto_zoom(state == Qt.Checked)
@@ -230,8 +240,6 @@ class DataPanelProjectionMixin:
         auto_zoom_enabled = bool(getattr(app_state, "ternary_auto_zoom", True))
         base_widgets = [
             getattr(self, "ternary_limit_mode_combo", None),
-
-            getattr(self, "ternary_auto_optimize_btn", None),
             getattr(self, "ternary_manual_limits_check", None),
         ]
         for widget in base_widgets:
@@ -272,55 +280,6 @@ class DataPanelProjectionMixin:
 
         if bool(getattr(app_state, "ternary_manual_limits_enabled", False)):
             self._on_change()
-
-    def _on_ternary_auto_optimize(self):
-        """Auto-optimize ternary factors using the built-in ternary module algorithm."""
-        try:
-            from visualization.plotting.ternary import calculate_auto_ternary_factors
-
-            optimized = calculate_auto_ternary_factors()
-            if not optimized:
-                logger.warning("Ternary auto-optimize skipped: failed to calculate ternary factors.")
-                return
-            logger.info("Ternary auto-optimized with built-in module algorithm: factors=%s", getattr(app_state, "ternary_factors", None))
-            self._on_change()
-        except Exception as err:
-            logger.warning("Failed ternary auto-optimize: %s", err)
-
-    def _on_ternary_stretch_mode_change(self, index):
-        """Handle ternary stretch mode changes."""
-        modes = ["power", "minmax", "hybrid"]
-        if 0 <= index < len(modes):
-            state_gateway.set_ternary_stretch_mode(modes[index])
-            self._on_change()
-
-    def _on_ternary_scale_change(self, value):
-        """Handle ternary stretch mode slider changes."""
-        idx = max(0, min(2, int(value)))
-        mode = self._ternary_stretch_modes[idx]
-        state_gateway.set_ternary_stretch_mode(mode)
-        self._update_ternary_scale_label(mode)
-        state_gateway.set_ternary_stretch(True)
-        if hasattr(self, "ternary_stretch_check"):
-            self.ternary_stretch_check.blockSignals(True)
-            self.ternary_stretch_check.setChecked(True)
-            self.ternary_stretch_check.blockSignals(False)
-        self._on_change()
-
-    def _on_ternary_stretch_change(self, state):
-        """Handle ternary stretch toggle."""
-        state_gateway.set_ternary_stretch(state == Qt.Checked)
-        self._on_change()
-
-    def _update_ternary_scale_label(self, mode):
-        """Update stretch mode label text."""
-        label_map = {
-            "power": translate("Power"),
-            "minmax": translate("Min-Max"),
-            "hybrid": translate("Hybrid"),
-        }
-        if self.ternary_scale_label is not None:
-            self.ternary_scale_label.setText(label_map.get(mode, mode))
 
     def _refresh_2d_axis_combos(self):
         """Refresh 2D axis selection combo boxes."""
@@ -381,10 +340,7 @@ class DataPanelProjectionMixin:
         result = get_ternary_column_selection()
         if result:
             state_gateway.set_selected_ternary_columns(result["columns"], confirmed=True)
-            state_gateway.set_ternary_stretch(result["stretch"])
-            state_gateway.set_ternary_factors(result["factors"])
             logger.info("Selected ternary columns: %s", result["columns"])
-            logger.info("Ternary stretch: %s, factors: %s", result["stretch"], result["factors"])
             self._on_change()
 
 

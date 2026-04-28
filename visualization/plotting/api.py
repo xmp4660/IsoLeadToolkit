@@ -21,7 +21,6 @@ from .core import (
     get_embedding,
 )
 from .geo import refresh_paleoisochron_labels
-from .ternary import calculate_auto_ternary_factors
 from .render import (
     plot_embedding,
     plot_umap,
@@ -49,6 +48,5 @@ __all__ = [
     'show_shepard_diagram',
     'show_correlation_heatmap',
     # Utilities
-    'calculate_auto_ternary_factors',
     'refresh_paleoisochron_labels',
 ]

@@ -400,12 +400,8 @@ class StateStore:
             "ternary_manual_limits": self._normalize_ternary_manual_limits(
                 getattr(state, "ternary_manual_limits", None)
             ),
-            "ternary_stretch_mode": self._normalize_ternary_stretch_mode(
-                getattr(state, "ternary_stretch_mode", "power")
-            ),
-            "ternary_stretch": bool(getattr(state, "ternary_stretch", False)),
-            "ternary_factors": self._normalize_ternary_factors(
-                getattr(state, "ternary_factors", None)
+            "ternary_render_margin": self._normalize_ternary_render_margin(
+                getattr(state, "ternary_render_margin", 0.002)
             ),
             "model_curve_width": float(getattr(state, "model_curve_width", 1.2)),
             "plumbotectonics_curve_width": float(getattr(state, "plumbotectonics_curve_width", 1.2)),
@@ -1097,16 +1093,10 @@ class StateStore:
                 action.get("limits")
             )
 
-        elif action_type == "SET_TERNARY_STRETCH_MODE":
-            self._snapshot["ternary_stretch_mode"] = self._normalize_ternary_stretch_mode(
-                action.get("mode")
+        elif action_type == "SET_TERNARY_RENDER_MARGIN":
+            self._snapshot["ternary_render_margin"] = self._normalize_ternary_render_margin(
+                action.get("margin")
             )
-
-        elif action_type == "SET_TERNARY_STRETCH":
-            self._snapshot["ternary_stretch"] = bool(action.get("enabled", False))
-
-        elif action_type == "SET_TERNARY_FACTORS":
-            self._snapshot["ternary_factors"] = self._normalize_ternary_factors(action.get("factors"))
 
         elif action_type == "SET_MODEL_CURVE_WIDTH":
             self._snapshot["model_curve_width"] = float(action.get("width", 1.2))
@@ -1356,9 +1346,6 @@ class StateStore:
             "ternary_boundary_percent": float(self._snapshot["ternary_boundary_percent"]),
             "ternary_manual_limits_enabled": bool(self._snapshot["ternary_manual_limits_enabled"]),
             "ternary_manual_limits": dict(self._snapshot["ternary_manual_limits"]),
-            "ternary_stretch_mode": str(self._snapshot["ternary_stretch_mode"]),
-            "ternary_stretch": bool(self._snapshot["ternary_stretch"]),
-            "ternary_factors": list(self._snapshot["ternary_factors"]),
             "model_curve_width": float(self._snapshot["model_curve_width"]),
             "plumbotectonics_curve_width": float(self._snapshot["plumbotectonics_curve_width"]),
             "paleoisochron_width": float(self._snapshot["paleoisochron_width"]),
@@ -1573,9 +1560,6 @@ class StateStore:
         self._state.ternary_boundary_percent = float(self._snapshot["ternary_boundary_percent"])
         self._state.ternary_manual_limits_enabled = bool(self._snapshot["ternary_manual_limits_enabled"])
         self._state.ternary_manual_limits = dict(self._snapshot["ternary_manual_limits"])
-        self._state.ternary_stretch_mode = str(self._snapshot["ternary_stretch_mode"])
-        self._state.ternary_stretch = bool(self._snapshot["ternary_stretch"])
-        self._state.ternary_factors = list(self._snapshot["ternary_factors"])
         self._state.overlay.model_curve_width = float(self._snapshot["model_curve_width"])
         self._state.overlay.plumbotectonics_curve_width = float(
             self._snapshot["plumbotectonics_curve_width"]
@@ -1814,11 +1798,6 @@ class StateStore:
         return max(0.0, min(float(percent if percent is not None else 5.0), 30.0))
 
     @staticmethod
-    def _normalize_ternary_stretch_mode(mode: Any) -> str:
-        text = str(mode or "power").strip().lower()
-        return text if text in ("power", "minmax", "hybrid") else "power"
-
-    @staticmethod
     def _normalize_ternary_manual_limits(limits: Any) -> dict[str, float]:
         defaults = {
             "tmin": 0.0,
@@ -1836,28 +1815,6 @@ class StateStore:
         return merged
 
     @staticmethod
-    def _normalize_ternary_factors(factors: Any) -> list[float]:
-        values: list[Any]
-        if isinstance(factors, dict):
-            if all(k in factors for k in ("top", "left", "right")):
-                values = [factors.get("top"), factors.get("left"), factors.get("right")]
-            elif all(k in factors for k in ("t", "l", "r")):
-                values = [factors.get("t"), factors.get("l"), factors.get("r")]
-            else:
-                values = list(factors.values())
-        elif factors is None:
-            values = [1.0, 1.0, 1.0]
-        elif isinstance(factors, Iterable) and not isinstance(factors, (str, bytes)):
-            values = list(factors)
-        else:
-            values = [factors]
+    def _normalize_ternary_render_margin(margin: Any) -> float:
+        return max(0.0, min(float(margin if margin is not None else 0.002), 0.05))
 
-        out: list[float] = []
-        for value in values[:3]:
-            try:
-                out.append(float(value))
-            except Exception:
-                out.append(1.0)
-        while len(out) < 3:
-            out.append(1.0)
-        return out

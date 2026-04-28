@@ -208,7 +208,6 @@ class AppStateGateway:
             "plumbotectonics_isoage_label_data": "set_plumbotectonics_isoage_label_data",
             "pca_component_indices": "set_pca_component_indices",
             "ternary_manual_limits": "set_ternary_manual_limits",
-            "ternary_factors": "set_ternary_factors",
             "isochron_label_options": "set_isochron_label_options",
             "mixing_endmembers": "set_mixing_endmembers",
             "mixing_mixtures": "set_mixing_mixtures",
@@ -275,7 +274,6 @@ class AppStateGateway:
             "standardize_data": "set_standardize_data",
             "ternary_auto_zoom": "set_ternary_auto_zoom",
             "ternary_manual_limits_enabled": "set_ternary_manual_limits_enabled",
-            "ternary_stretch": "set_ternary_stretch",
             "marginal_kde_log_transform": "set_marginal_kde_compute_options",
             "show_tooltip": "set_show_tooltip",
             "preserve_import_render_mode": "set_preserve_import_render_mode",
@@ -317,6 +315,7 @@ class AppStateGateway:
             "plumbotectonics_curve_width": "set_plumbotectonics_curve_width",
             "paleoisochron_width": "set_paleoisochron_width",
             "model_age_line_width": "set_model_age_line_width",
+            "ternary_render_margin": "set_ternary_render_margin",
             "isochron_line_width": "set_isochron_line_width",
             "selected_isochron_line_width": "set_selected_isochron_line_width",
             "marginal_kde_top_size": "set_marginal_kde_layout",
@@ -351,7 +350,6 @@ class AppStateGateway:
             "plumbotectonics_variant": "set_plumbotectonics_variant",
             "ternary_limit_mode": "set_ternary_limit_mode",
             "ternary_limit_anchor": "set_ternary_limit_anchor",
-            "ternary_stretch_mode": "set_ternary_stretch_mode",
             "render_mode": "set_render_mode",
             "ui_theme": "set_ui_theme",
             "marginal_kde_kernel": "set_marginal_kde_compute_options",
@@ -945,15 +943,6 @@ class AppStateGateway:
     def set_ternary_manual_limits(self, limits: Any) -> None:
         self._dispatch("SET_TERNARY_MANUAL_LIMITS", limits=dict(limits or {}))
 
-    def set_ternary_stretch_mode(self, mode: str) -> None:
-        self._dispatch("SET_TERNARY_STRETCH_MODE", mode=mode)
-
-    def set_ternary_stretch(self, enabled: bool) -> None:
-        self._dispatch("SET_TERNARY_STRETCH", enabled=bool(enabled))
-
-    def set_ternary_factors(self, factors: Any) -> None:
-        self._dispatch("SET_TERNARY_FACTORS", factors=factors)
-
     def set_model_curve_width(self, width: float) -> None:
         self._dispatch("SET_MODEL_CURVE_WIDTH", width=width)
 
@@ -989,6 +978,9 @@ class AppStateGateway:
 
     def set_legend_item_order(self, order: Any) -> None:
         self._dispatch("SET_LEGEND_ITEM_ORDER", order=list(order or []))
+
+    def set_ternary_render_margin(self, margin: float) -> None:
+        self._dispatch("SET_TERNARY_RENDER_MARGIN", margin=margin)
 
     def set_ternary_ranges(self, ranges: Any) -> None:
         self._dispatch("SET_TERNARY_RANGES", ranges=dict(ranges or {}))

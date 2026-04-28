@@ -188,6 +188,9 @@ class LegendActionsMixin:
                     app_state.current_palette[group] = color
                     app_state.group_marker_map[group] = shape
 
+            state_gateway.set_current_palette(app_state.current_palette)
+            state_gateway.set_group_marker_map(app_state.group_marker_map)
+
             logger.info('Auto styles assigned, calling _on_change')
             self._on_change()
         except Exception as e:

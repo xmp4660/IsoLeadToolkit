@@ -38,11 +38,9 @@ class DataPanelBuildMixin:
         super().__init__(callback, parent)
         self.legend_panel = None
         self.geo_panel = None
-        self._ternary_stretch_modes = ["power", "minmax", "hybrid"]
 
     def reset_state(self):
         super().reset_state()
-        self._ternary_stretch_modes = ["power", "minmax", "hybrid"]
         self.group_radio_group = None
         self.group_radio_layout = None
         self.group_placeholder_label = None
@@ -55,14 +53,11 @@ class DataPanelBuildMixin:
         self.pca_group = None
         self.robust_pca_group = None
         self.ternary_group = None
-        self.ternary_scale_label = None
-        self.ternary_scale_slider = None
         self.ternary_auto_zoom_check = None
         self.ternary_limit_mode_combo = None
-        self.ternary_auto_optimize_btn = None
         self.ternary_manual_limits_check = None
         self.ternary_limit_spins = {}
-        self.ternary_stretch_check = None
+        self.ternary_render_margin_spin = None
         self.geochem_plot_group = None
         self.modeling_show_model_check = None
         self.modeling_show_paleoisochron_check = None
@@ -545,6 +540,22 @@ class DataPanelBuildMixin:
         self.ternary_auto_zoom_check.stateChanged.connect(self._on_ternary_zoom_change)
         ternary_layout.addWidget(self.ternary_auto_zoom_check)
 
+        margin_row = QHBoxLayout()
+        margin_label = QLabel(translate("Edge Margin"))
+        margin_label.setProperty("translate_key", "Edge Margin")
+        margin_row.addWidget(margin_label)
+        self.ternary_render_margin_spin = QDoubleSpinBox()
+        self.ternary_render_margin_spin.setRange(0.0, 0.05)
+        self.ternary_render_margin_spin.setDecimals(3)
+        self.ternary_render_margin_spin.setSingleStep(0.001)
+        self.ternary_render_margin_spin.setValue(float(getattr(app_state, "ternary_render_margin", 0.002)))
+        self.ternary_render_margin_spin.setToolTip(
+            translate("Expand ternary axis limits to prevent edge data clipping when figure is enlarged")
+        )
+        self.ternary_render_margin_spin.valueChanged.connect(self._on_ternary_render_margin_change)
+        margin_row.addWidget(self.ternary_render_margin_spin)
+        ternary_layout.addLayout(margin_row)
+
         limit_mode_row = QHBoxLayout()
         limit_mode_label = QLabel(translate("Limit Mode"))
         limit_mode_label.setProperty("translate_key", "Limit Mode")
@@ -562,11 +573,6 @@ class DataPanelBuildMixin:
             current_limit_mode = "min"
         self._set_combo_value(self.ternary_limit_mode_combo, current_limit_mode)
         self.ternary_limit_mode_combo.currentIndexChanged.connect(self._on_ternary_limit_mode_change)
-
-        self.ternary_auto_optimize_btn = QPushButton(translate("Auto Optimize"))
-        self.ternary_auto_optimize_btn.setProperty("translate_key", "Auto Optimize")
-        self.ternary_auto_optimize_btn.clicked.connect(self._on_ternary_auto_optimize)
-        ternary_layout.addWidget(self.ternary_auto_optimize_btn)
 
         self.ternary_manual_limits_check = QCheckBox(translate("Manual Limit Parameters"))
         self.ternary_manual_limits_check.setProperty("translate_key", "Manual Limit Parameters")
@@ -611,36 +617,6 @@ class DataPanelBuildMixin:
         _add_limit_spin(4, "Right Min", "rmin")
         _add_limit_spin(5, "Right Max", "rmax")
         ternary_layout.addLayout(manual_grid)
-
-        stretch_header = QHBoxLayout()
-        stretch_label = QLabel(translate("Stretch Mode"))
-        stretch_label.setProperty("translate_key", "Stretch Mode")
-        stretch_header.addWidget(stretch_label)
-        stretch_header.addStretch()
-        self.ternary_scale_label = QLabel()
-        stretch_header.addWidget(self.ternary_scale_label)
-        ternary_layout.addLayout(stretch_header)
-
-        current_mode = getattr(app_state, "ternary_stretch_mode", "power")
-        if current_mode not in self._ternary_stretch_modes:
-            current_mode = "power"
-        current_idx = self._ternary_stretch_modes.index(current_mode)
-        self._update_ternary_scale_label(current_mode)
-
-        self.ternary_scale_slider = QSlider(Qt.Horizontal)
-        self.ternary_scale_slider.setRange(0, 2)
-        self.ternary_scale_slider.setSingleStep(1)
-        self.ternary_scale_slider.setPageStep(1)
-        self.ternary_scale_slider.setTickInterval(1)
-        self.ternary_scale_slider.setValue(current_idx)
-        self.ternary_scale_slider.valueChanged.connect(self._on_ternary_scale_change)
-        ternary_layout.addWidget(self.ternary_scale_slider)
-
-        self.ternary_stretch_check = QCheckBox(translate("Stretch to Fill"))
-        self.ternary_stretch_check.setProperty("translate_key", "Stretch to Fill")
-        self.ternary_stretch_check.setChecked(getattr(app_state, "ternary_stretch", False))
-        self.ternary_stretch_check.stateChanged.connect(self._on_ternary_stretch_change)
-        ternary_layout.addWidget(self.ternary_stretch_check)
 
         self._refresh_ternary_limit_controls_enabled()
         self.ternary_group.setLayout(ternary_layout)

@@ -15,7 +15,6 @@ from .api import (
     show_embedding_correlation,
     show_shepard_diagram,
     show_correlation_heatmap,
-    calculate_auto_ternary_factors,
     refresh_paleoisochron_labels,
 )
 
@@ -35,6 +34,5 @@ __all__ = [
     'show_embedding_correlation',
     'show_shepard_diagram',
     'show_correlation_heatmap',
-    'calculate_auto_ternary_factors',
     'refresh_paleoisochron_labels',
 ]
