@@ -83,12 +83,7 @@ class MainWindowLegendActionsMixin:
             visibility = getattr(app_state, "plumbotectonics_group_visibility", {}) or {}
             visibility[style_key] = checked
             state_gateway.set_plumbotectonics_group_visibility(visibility)
-            try:
-                from visualization.plotting.style import refresh_overlay_visibility
-
-                refresh_overlay_visibility()
-            except Exception:
-                self._refresh_plot()
+            self._refresh_plot()
             return
         if style_key == "isochron":
             if checked:
@@ -118,13 +113,7 @@ class MainWindowLegendActionsMixin:
             state_gateway.set_isochron_results({})
 
         self._sync_geochem_toggle_panels(style_key)
-
-        try:
-            from visualization.plotting.style import refresh_overlay_visibility
-
-            refresh_overlay_visibility()
-        except Exception:
-            self._refresh_plot()
+        self._refresh_plot()
 
     def _on_legend_item_double_clicked(self, item):
         meta = item.data(Qt.UserRole) if item is not None else None

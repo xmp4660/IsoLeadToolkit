@@ -193,8 +193,26 @@ def position_curve_label(
     line_y = None
     if mode == 'paleo' or (slope is not None and intercept is not None):
         xlim = ax.get_xlim()
-        line_x = np.asarray([xlim[0], xlim[1]], dtype=float)
-        line_y = np.asarray([slope * xlim[0] + intercept, slope * xlim[1] + intercept], dtype=float)
+        ylim = ax.get_ylim()
+        xlim_min, xlim_max = min(xlim), max(xlim)
+        ylim_min, ylim_max = min(ylim), max(ylim)
+        # Find x-range where the line passes through the visible y-range.
+        if abs(slope) > _SLOPE_EPSILON:
+            x_at_ylim_min = (ylim_min - intercept) / slope
+            x_at_ylim_max = (ylim_max - intercept) / slope
+            x_visible_min = min(x_at_ylim_min, x_at_ylim_max)
+            x_visible_max = max(x_at_ylim_min, x_at_ylim_max)
+        else:
+            x_visible_min, x_visible_max = xlim_min, xlim_max
+        # Cover the full xlim range plus the x-interval where the line is
+        # visible in y.  This handles both shallow lines (visible segment
+        # spans xlim) and steep lines (visible segment lies outside xlim
+        # but the line still crosses the viewport rectangle).
+        margin = max((x_visible_max - x_visible_min) * 0.3, (xlim_max - xlim_min) * 0.1)
+        x_start = min(x_visible_min, xlim_min) - margin
+        x_end = max(x_visible_max, xlim_max) + margin
+        line_x = np.linspace(x_start, x_end, 200, dtype=float)
+        line_y = slope * line_x + intercept
     elif mode == 'curve_left':
         line_x = np.asarray(x_vals if x_vals is not None else [], dtype=float)
         line_y = np.asarray(y_vals if y_vals is not None else [], dtype=float)
