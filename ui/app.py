@@ -116,6 +116,9 @@ class Qt5Application(Qt5AppStyleMixin, Qt5AppSessionMixin, Qt5AppPlottingMixin):
                     session_data.get('data_cols') or [],
                 )
 
+            # 恢复会话参数（须在导入向导之前，确保 render_mode 等已同步）
+            self._restore_session_state(session_data)
+
             # 加载数据
             logger.info("Loading data...")
             from application.use_cases import load_dataset
@@ -129,9 +132,6 @@ class Qt5Application(Qt5AppStyleMixin, Qt5AppSessionMixin, Qt5AppPlottingMixin):
             if not app_state.last_group_col and app_state.group_cols:
                 state_gateway.set_last_group_col(app_state.group_cols[0])
                 logger.info("Set default group column: %s", app_state.last_group_col)
-
-            # 恢复会话参数
-            self._restore_session_state(session_data)
 
             # 验证渲染模式
             self._validate_render_mode()

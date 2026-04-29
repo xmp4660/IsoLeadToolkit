@@ -18,6 +18,9 @@ class DataPanelProjectionMixin:
         """Handle render mode changes."""
         mode = self._normalize_render_mode(self._combo_value(self.render_combo, mode))
         state_gateway.set_render_mode(mode)
+        # Clear the import-preserve flag so the user's explicit mode choice
+        # is respected on the next session restart.
+        state_gateway.set_preserve_import_render_mode(False)
 
         if mode in ["UMAP", "tSNE", "PCA", "RobustPCA"]:
             self._set_combo_value(self.algo_combo, mode)
@@ -37,6 +40,7 @@ class DataPanelProjectionMixin:
         """Handle algorithm changes."""
         algorithm = self._normalize_algorithm(self._combo_value(self.algo_combo, algorithm))
         state_gateway.set_render_mode(algorithm)
+        state_gateway.set_preserve_import_render_mode(False)
         self._set_combo_value(self.render_combo, algorithm)
         self._update_algorithm_visibility()
         self._on_change()
