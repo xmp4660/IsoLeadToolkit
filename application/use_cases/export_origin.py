@@ -2,7 +2,8 @@
 
 Extracts plot data from the current matplotlib axes and app_state,
 constructs an Origin project (.opju) with worksheets and graphs that
-replicate the current view.
+replicate the current view.  Also exports a companion image via
+Origin's save_fig when requested.
 """
 
 from __future__ import annotations
@@ -55,7 +56,6 @@ def _lazy_import_originpro() -> Any:
     _originpro_checked = True
     try:
         import originpro as _op
-
         _originpro = _op
     except ImportError as err:
         logger.info("originpro not available: %s", err)
@@ -76,7 +76,6 @@ def is_origin_available() -> bool:
 def _hex_color(color: Any) -> str:
     """Convert a matplotlib color spec to a hex string."""
     import matplotlib.colors as mcolors
-
     try:
         return mcolors.to_hex(color)
     except Exception:
@@ -88,19 +87,25 @@ def _origin_marker(matplotlib_marker: str) -> int:
     return _MARKER_TO_ORIGIN.get(str(matplotlib_marker), 1)
 
 
-def extract_scatter_data_from_axes(ax: Any, group_col: str) -> list[dict[str, Any]]:
+def _extract_scatter_groups(ax: Any) -> list[dict[str, Any]]:
     """Extract per-group (x, y) data from matplotlib scatter collections."""
     if ax is None:
         return []
 
     groups: list[dict[str, Any]] = []
+    marker_map = getattr(app_state, "group_marker_map", {}) or {}
+    seen = set()
+
     for coll in getattr(ax, "collections", []):
         try:
             label = str(coll.get_label() or "")
         except Exception:
-            label = ""
+            continue
         if not label or label.startswith("_"):
             continue
+        if label in seen:
+            continue
+        seen.add(label)
 
         try:
             offsets = coll.get_offsets()
@@ -115,40 +120,40 @@ def extract_scatter_data_from_axes(ax: Any, group_col: str) -> list[dict[str, An
         except Exception:
             color = "#333333"
 
-        marker_map = getattr(app_state, "group_marker_map", {}) or {}
-        marker = _origin_marker(marker_map.get(label, "o"))
-
-        groups.append(
-            {
-                "label": label,
-                "x": offsets[:, 0].tolist(),
-                "y": offsets[:, 1].tolist(),
-                "color": color,
-                "marker": marker,
-            }
-        )
+        groups.append({
+            "label": label,
+            "x": offsets[:, 0].tolist(),
+            "y": offsets[:, 1].tolist(),
+            "color": color,
+            "marker": _origin_marker(marker_map.get(label, "o")),
+        })
 
     return groups
 
 
-def extract_3d_data_from_axes(ax: Any, group_col: str) -> list[dict[str, Any]]:
+def _extract_scatter_groups_3d(ax: Any) -> list[dict[str, Any]]:
     """Extract per-group (x, y, z) data from 3D scatter collections."""
     if ax is None:
         return []
 
     groups: list[dict[str, Any]] = []
+    marker_map = getattr(app_state, "group_marker_map", {}) or {}
+    seen = set()
+
     for coll in getattr(ax, "collections", []):
         try:
             label = str(coll.get_label() or "")
         except Exception:
-            label = ""
+            continue
         if not label or label.startswith("_"):
             continue
+        if label in seen:
+            continue
+        seen.add(label)
 
         offsets3d = getattr(coll, "_offsets3d", None)
         if offsets3d is None or len(offsets3d) != 3:
             continue
-
         xs, ys, zs = offsets3d
         if len(xs) == 0:
             continue
@@ -159,19 +164,14 @@ def extract_3d_data_from_axes(ax: Any, group_col: str) -> list[dict[str, Any]]:
         except Exception:
             color = "#333333"
 
-        marker_map = getattr(app_state, "group_marker_map", {}) or {}
-        marker = _origin_marker(marker_map.get(label, "o"))
-
-        groups.append(
-            {
-                "label": label,
-                "x": np.asarray(xs).tolist(),
-                "y": np.asarray(ys).tolist(),
-                "z": np.asarray(zs).tolist(),
-                "color": color,
-                "marker": marker,
-            }
-        )
+        groups.append({
+            "label": label,
+            "x": np.asarray(xs).tolist(),
+            "y": np.asarray(ys).tolist(),
+            "z": np.asarray(zs).tolist(),
+            "color": color,
+            "marker": _origin_marker(marker_map.get(label, "o")),
+        })
 
     return groups
 
@@ -184,35 +184,31 @@ def _extract_pb_evolution_overlay_data(
 
     try:
         from visualization.plotting.data import _lazy_import_geochemistry
-
         geochemistry, _ = _lazy_import_geochemistry()
         if geochemistry is None:
+            logger.debug("_extract_pb_evolution_overlay_data: geochemistry not available")
             return result
-
         params = geochemistry.engine.get_parameters()
-        xlim = (0, 45)
     except Exception as err:
         logger.warning("Failed to load geochemistry engine: %s", err)
         return result
+
+    xlim = (0, 45)
 
     # --- model curves ---
     if getattr(app_state, "show_model_curves", True):
         curves: list[tuple[np.ndarray, np.ndarray, str, dict[str, Any]]] = []
         try:
-            for model_params in [params]:
-                t_vals = np.linspace(0, 4500, 300)
-                x_vals, y_vals = geochemistry.calculate_modelcurve(
-                    t_vals, params=model_params, algorithm=actual_algorithm
-                )
-                if x_vals is not None and y_vals is not None:
-                    curves.append(
-                        (
-                            np.asarray(x_vals),
-                            np.asarray(y_vals),
-                            str(model_params.get("model_name", "Model")),
-                            {"color": "#64748b", "width": 1.2},
-                        )
-                    )
+            t_vals = np.linspace(0, 4500, 300)
+            x_vals, y_vals = geochemistry.calculate_modelcurve(
+                t_vals, params=params, algorithm=actual_algorithm,
+            )
+            if x_vals is not None and y_vals is not None:
+                curves.append((
+                    np.asarray(x_vals), np.asarray(y_vals),
+                    str(params.get("model_name", "Model")),
+                    {"color": "#64748b", "width": 1.2},
+                ))
         except Exception as err:
             logger.warning("Failed to compute model curves for Origin export: %s", err)
         if curves:
@@ -224,65 +220,22 @@ def _extract_pb_evolution_overlay_data(
         ages = getattr(app_state, "paleoisochron_ages", [3000, 2000, 1000, 0])
         try:
             for age in ages:
-                line = geochemistry.calculate_paleoisochron_line(
-                    age, params=params, algorithm=actual_algorithm
+                line_info = geochemistry.calculate_paleoisochron_line(
+                    age, params=params, algorithm=actual_algorithm,
                 )
-                if not line:
+                if not line_info:
                     continue
-                slope, intercept = line
+                slope, intercept = line_info
                 xs = np.linspace(xlim[0], xlim[1], 200)
                 ys = slope * xs + intercept
-                lines.append(
-                    (
-                        xs,
-                        ys,
-                        f"{float(age):.0f} Ma",
-                        {"color": "#94a3b8", "width": 0.9, "style": "--"},
-                    )
-                )
+                lines.append((
+                    xs, ys, f"{float(age):.0f} Ma",
+                    {"color": "#94a3b8", "width": 0.9},
+                ))
         except Exception as err:
             logger.warning("Failed to compute paleoisochrons for Origin export: %s", err)
         if lines:
             result["paleoisochrons"] = lines
-
-    # --- model age lines ---
-    if getattr(app_state, "show_model_age_lines", True):
-        age_lines: list[tuple[np.ndarray, np.ndarray, str, dict[str, Any]]] = []
-        try:
-            df_global = getattr(app_state, "df_global", None)
-            if df_global is not None:
-                col_206 = "206Pb/204Pb"
-                col_207 = "207Pb/204Pb"
-                if col_206 in df_global.columns and col_207 in df_global.columns:
-                    pb206 = df_global[col_206].dropna().values[:200]
-                    pb207 = df_global[col_207].dropna().values[:200]
-                    n = min(len(pb206), len(pb207))
-                    for i in range(0, n, max(1, n // 10)):
-                        try:
-                            model_age = geochemistry.calculate_model_age(
-                                pb206[i], pb207[i], params=params
-                            )
-                            xs_line = np.linspace(xlim[0], xlim[1], 50)
-                            slope_line = (
-                                (model_age - params.get("initial_207_204", 10.0))
-                                / (pb206[i] - params.get("initial_206_204", 9.0))
-                            )
-                            intercept_line = model_age - slope_line * pb206[i]
-                            ys_line = slope_line * xs_line + intercept_line
-                            age_lines.append(
-                                (
-                                    xs_line,
-                                    ys_line,
-                                    f"{float(model_age):.0f} Ma",
-                                    {"color": "#cbd5e1", "width": 0.7, "style": ":"},
-                                )
-                            )
-                        except Exception:
-                            continue
-        except Exception as err:
-            logger.warning("Failed to compute model age lines for Origin export: %s", err)
-        if age_lines:
-            result["model_age_lines"] = age_lines
 
     return result
 
@@ -295,44 +248,76 @@ def _extract_pb_evolution_overlay_data(
 def _build_origin_project(
     file_path: str,
     scatter_groups: list[dict[str, Any]],
-    mode: str,
     axis_labels: dict[str, str],
     overlay_data: dict[str, list[tuple[np.ndarray, np.ndarray, str, dict[str, Any]]]],
     title: str | None,
 ) -> bool:
-    """Create an Origin project with worksheets and a multi-layer graph."""
+    """Create an Origin project with worksheets and a multi-layer graph,
+    then export the graph as a PNG image alongside the project."""
     op = _lazy_import_originpro()
     if op is None:
         return False
 
     try:
+        # Build a fresh project with a single data workbook.
         wb = op.new_book("w", "IsotopesAnalyse_Data")
-        gp = op.new_graph(template="scatter")
-        gl = gp[0]
 
-        # ---- scatter layer ----
+        # ---- scatter worksheets ----
+        sheet_names: set[str] = set()
+        wks_map: dict[str, Any] = {}
         for group in scatter_groups:
+            base = str(group["label"]).replace("/", "_").replace(" ", "_")[:28]
+            name = base
+            suffix = 1
+            while name in sheet_names:
+                name = f"{base}_{suffix}"
+                suffix += 1
+            sheet_names.add(name)
             try:
-                safe_label = str(group["label"]).replace("/", "_")[:30]
-                wks = wb.add_sheet(f"G_{safe_label}")
+                wks = wb.add_sheet(name)
                 wks.from_list(0, group["x"], "X")
                 wks.from_list(1, group["y"], "Y")
+                wks_map[group["label"]] = wks
+            except Exception as err:
+                logger.warning("Failed to create sheet %s: %s", name, err)
+                continue
+
+        if not wks_map:
+            logger.warning("No worksheets created for scatter data.")
+            return False
+
+        # ---- graph ----
+        template = "scatter"  # Default for embedding / raw data modes.
+        gp = op.new_graph(template=template)
+        gl = gp[0]
+
+        for group in scatter_groups:
+            wks = wks_map.get(group["label"])
+            if wks is None:
+                continue
+            try:
                 plot = gl.add_plot(wks, coly=1, colx=0, type="s")
                 plot.color = group.get("color", "#333333")
                 plot.symbol_kind = group.get("marker", 1)
                 plot.symbol_size = 8
             except Exception as err:
-                logger.debug("Skipping group %s: %s", group.get("label"), err)
+                logger.debug("Skipping scatter %s: %s", group.get("label"), err)
 
         gl.group()
         gl.rescale()
 
         # ---- overlay layers ----
-        for _category, curves in overlay_data.items():
+        for curves in overlay_data.values():
             for x_arr, y_arr, curve_label, style in curves:
+                base = str(curve_label).replace("/", "_").replace(" ", "_")[:25]
+                name = f"OV_{base}"
+                suffix = 1
+                while name in sheet_names:
+                    name = f"OV_{base}_{suffix}"
+                    suffix += 1
+                sheet_names.add(name)
                 try:
-                    safe_label = str(curve_label).replace("/", "_")[:30]
-                    owks = wb.add_sheet(f"OL_{safe_label}")
+                    owks = wb.add_sheet(name)
                     owks.from_list(0, x_arr.tolist(), "X")
                     owks.from_list(1, y_arr.tolist(), "Y")
                     line = gl.add_plot(owks, coly=1, colx=0, type="l")
@@ -341,16 +326,29 @@ def _build_origin_project(
                     logger.debug("Skipping overlay %s: %s", curve_label, err)
 
         # ---- axis labels and title ----
-        gl.axis("x").title = axis_labels.get("x", "")
-        gl.axis("y").title = axis_labels.get("y", "")
+        if axis_labels.get("x"):
+            gl.axis("x").title = axis_labels["x"]
+        if axis_labels.get("y"):
+            gl.axis("y").title = axis_labels["y"]
         if title:
             try:
                 gl.set_str("title", title)
             except Exception:
                 pass
 
-        # ---- save project ----
+        # ---- save project (.opju) ----
         op.save(file_path)
+        logger.info("Origin project saved to %s", file_path)
+
+        # ---- also export a companion PNG at 300 dpi ----
+        img_path = file_path.rsplit(".", 1)[0] + ".png"
+        try:
+            res = gp.save_fig(img_path, width=1600)
+            if res:
+                logger.info("Origin graph image saved to %s", img_path)
+        except Exception as err:
+            logger.warning("Failed to export Origin graph image: %s", err)
+
         return True
     except Exception as err:
         logger.warning("Failed to build Origin project: %s", err)
@@ -363,7 +361,7 @@ def _build_origin_project(
 
 
 def export_to_origin(file_path: str) -> bool:
-    """Export the current plot to an Origin project (.opju).
+    """Export the current plot to an Origin project (.opju) and companion PNG.
 
     Returns True on success, False on failure.
     """
@@ -378,14 +376,20 @@ def export_to_origin(file_path: str) -> bool:
         return False
 
     mode = str(getattr(app_state, "render_mode", "UMAP"))
-    group_col = str(getattr(app_state, "last_group_col", ""))
+    logger.info("Origin export: render_mode=%s", mode)
 
     # ---- scatter data ----
     ax_name = getattr(ax, "name", "")
     if ax_name == "3d":
-        scatter_groups = extract_3d_data_from_axes(ax, group_col)
+        scatter_groups = _extract_scatter_groups_3d(ax)
     else:
-        scatter_groups = extract_scatter_data_from_axes(ax, group_col)
+        scatter_groups = _extract_scatter_groups(ax)
+
+    logger.info(
+        "Origin export: extracted %d scatter groups (%d collections on axes)",
+        len(scatter_groups),
+        len(getattr(ax, "collections", [])),
+    )
 
     if not scatter_groups:
         logger.warning("No scatter data extracted from axes for Origin export.")
@@ -398,15 +402,16 @@ def export_to_origin(file_path: str) -> bool:
     }
 
     # ---- overlay data (Pb evolution modes) ----
-    overlay_data: dict[
-        str, list[tuple[np.ndarray, np.ndarray, str, dict[str, Any]]]
-    ] = {}
+    overlay_data: dict[str, list[tuple[np.ndarray, np.ndarray, str, dict[str, Any]]]] = {}
     if mode in ("PB_EVOL_76", "PB_EVOL_86"):
         overlay_data = _extract_pb_evolution_overlay_data(mode)
+        logger.info(
+            "Origin export: overlay categories=%s, entries=%d",
+            list(overlay_data.keys()),
+            sum(len(v) for v in overlay_data.values()),
+        )
 
     # ---- title ----
     title = str(getattr(app_state, "current_plot_title", "") or "")
 
-    return _build_origin_project(
-        file_path, scatter_groups, mode, axis_labels, overlay_data, title
-    )
+    return _build_origin_project(file_path, scatter_groups, axis_labels, overlay_data, title)
