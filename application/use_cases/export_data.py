@@ -6,9 +6,73 @@ import logging
 from pathlib import Path
 from typing import Iterable, Mapping, Sequence
 
+import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
+
+#: Geochemistry modes whose derived parameters are appended on export.
+_GEO_CHEM_MODES: dict[str, list[str]] = {
+    "V1V2": [
+        "tSK (Ma)", "tCDT (Ma)", "mu", "kappa",
+        "V1", "V2", "Delta_alpha", "Delta_beta", "Delta_gamma",
+    ],
+    "PB_EVOL_76": ["tSK (Ma)", "mu"],
+    "PB_EVOL_86": ["tSK (Ma)", "mu", "kappa"],
+    "PB_MU_AGE": ["tSK (Ma)", "mu"],
+    "PB_KAPPA_AGE": ["tSK (Ma)", "kappa"],
+    "PLUMBOTECTONICS_76": ["tSK (Ma)", "mu"],
+    "PLUMBOTECTONICS_86": ["tSK (Ma)", "mu", "kappa"],
+}
+
+_PB206_COL = "206Pb/204Pb"
+_PB207_COL = "207Pb/204Pb"
+_PB208_COL = "208Pb/204Pb"
+
+
+def _compute_geochem_params(
+    df: pd.DataFrame,
+    render_mode: str,
+) -> dict[str, np.ndarray]:
+    """Compute derived geochemistry parameters for the given DataFrame.
+
+    Returns a dict mapping column-name → numpy array, keyed to the
+    original DataFrame index so results can be joined back.
+    """
+    columns = _GEO_CHEM_MODES.get(render_mode, [])
+    if not columns:
+        return {}
+
+    needed = {_PB206_COL, _PB207_COL}
+    if "kappa" in columns:
+        needed.add(_PB208_COL)
+    missing = needed - set(df.columns)
+    if missing:
+        logger.debug("Skipping geochem export – missing columns: %s", missing)
+        return {}
+
+    try:
+        from data.geochemistry import calculate_all_parameters
+
+        pb206 = pd.to_numeric(df[_PB206_COL], errors="coerce").to_numpy(dtype=float)
+        pb207 = pd.to_numeric(df[_PB207_COL], errors="coerce").to_numpy(dtype=float)
+        pb208 = (
+            pd.to_numeric(df[_PB208_COL], errors="coerce").to_numpy(dtype=float)
+            if _PB208_COL in df.columns
+            else np.full_like(pb206, 29.476)
+        )
+
+        results = calculate_all_parameters(pb206, pb207, pb208)
+
+        out: dict[str, np.ndarray] = {}
+        for col in columns:
+            arr = results.get(col)
+            if arr is not None:
+                out[col] = np.asarray(arr, dtype=float)
+        return out
+    except Exception as err:
+        logger.warning("Failed to compute geochem params for export: %s", err)
+        return {}
 
 
 def build_export_dataframe(
@@ -22,12 +86,17 @@ def build_export_dataframe(
     pca_component_indices: Sequence[int] | None,
     algorithm_params: Mapping[str, object] | None,
     axis_labels: Mapping[str, str] | None = None,
+    render_mode: str | None = None,
 ) -> pd.DataFrame:
     """Create export DataFrame and append coordinate columns for every mode.
 
     Column names are taken from the current plot's axis labels so they
     reflect exactly what is shown on screen (e.g. "UMAP 1" / "UMAP 2",
     "206Pb/204Pb" / "207Pb/204Pb" for Pb evolution, etc.).
+
+    For geochemistry modes (V1V2, PB_EVOL_*, PB_MU_AGE, PB_KAPPA_AGE,
+    PLUMBOTECTONICS_*) derived parameters such as model age, mu, kappa,
+    V1/V2, and Delta values are computed and appended automatically.
     """
     selected_list = list(selected_indices)
     selected_df = df_global.iloc[selected_list].copy()
@@ -68,6 +137,12 @@ def build_export_dataframe(
 
     for key, value in (algorithm_params or {}).items():
         selected_df[f"param_{key}"] = value
+
+    # ---- geochemistry derived parameters ----
+    mode = str(render_mode or "") if render_mode else ""
+    geo_params = _compute_geochem_params(selected_df, mode)
+    for col_name, arr in geo_params.items():
+        selected_df[col_name] = arr
 
     return selected_df
 

@@ -52,6 +52,7 @@ class ExportPanelDataExportMixin:
             'pca_component_indices': getattr(app_state, 'pca_component_indices', [0, 1]),
             'algorithm_params': params,
             'axis_labels': axis_labels,
+            'render_mode': getattr(app_state, 'render_mode', None),
         }
 
     def _build_export_df(self, selected_indices):
