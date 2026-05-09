@@ -93,13 +93,29 @@ def _on_embedding_task_finished(task_token: int, payload: dict, group_col: str) 
 
     from .plotting import plot_embedding
 
+    # Use the worker's original params for the computed algorithm so the
+    # title / labels match the embedding that was actually produced.
+    worker_params = payload.get('params', {}) or {}
+    umap_p = dict(app_state.umap_params)
+    tsne_p = dict(app_state.tsne_params)
+    pca_p = dict(app_state.pca_params)
+    robust_pca_p = dict(app_state.robust_pca_params)
+    if algorithm == 'UMAP':
+        umap_p.update(worker_params)
+    elif algorithm == 'tSNE':
+        tsne_p.update(worker_params)
+    elif algorithm == 'PCA':
+        pca_p.update(worker_params)
+    elif algorithm == 'RobustPCA':
+        robust_pca_p.update(worker_params)
+
     render_ok = plot_embedding(
         group_col,
         algorithm,
-        umap_params=app_state.umap_params,
-        tsne_params=app_state.tsne_params,
-        pca_params=app_state.pca_params,
-        robust_pca_params=app_state.robust_pca_params,
+        umap_params=umap_p,
+        tsne_params=tsne_p,
+        pca_params=pca_p,
+        robust_pca_params=robust_pca_p,
         size=app_state.point_size,
         precomputed_embedding=payload.get('embedding'),
         precomputed_meta=payload.get('meta', {}),
@@ -111,6 +127,7 @@ def _on_embedding_task_finished(task_token: int, payload: dict, group_col: str) 
         _notify_selection_ui()
         try:
             app_state.fig.canvas.draw_idle()
+            app_state.fig.canvas.flush_events()
         except Exception:
             pass
         state_gateway.set_initial_render_done(True)

@@ -120,13 +120,16 @@ class DataPanelProjectionMixin:
         self._refresh_mu_kappa_age_controls()
 
     def _on_umap_slider_changed(self, param, value, label, slider):
-        """Handle UMAP slider move without scheduling redraw."""
+        """Handle UMAP slider move."""
         app_state.umap_params[param] = value
         if label:
             if param == "min_dist":
                 label.setText(translate("{param}: {value:.2f}").format(param=param, value=value))
             else:
                 label.setText(translate("{param}: {value}").format(param=param, value=value))
+        # Schedule a debounced render so keyboard / scroll-wheel adjustments
+        # also trigger a recompute (sliderReleased only fires on mouse release).
+        self._schedule_slider_callback(f"umap_{param}")
 
     def _on_umap_param_change(self, param, value, label):
         """Handle UMAP parameter changes for non-slider controls."""
@@ -139,10 +142,11 @@ class DataPanelProjectionMixin:
         self._schedule_slider_callback(f"umap_{param}")
 
     def _on_tsne_slider_changed(self, param, value, label):
-        """Handle t-SNE slider move without scheduling redraw."""
+        """Handle t-SNE slider move."""
         app_state.tsne_params[param] = value
         if label:
             label.setText(translate("{param}: {value}").format(param=param, value=int(value)))
+        self._schedule_slider_callback(f"tsne_{param}")
 
     def _on_tsne_param_change(self, param, value, label):
         """Handle t-SNE parameter changes for non-slider controls."""

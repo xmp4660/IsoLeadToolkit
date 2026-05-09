@@ -80,6 +80,7 @@ class EmbeddingWorker(QThread):
                 "algorithm": algorithm,
                 "embedding": result["embedding"],
                 "meta": result.get("meta", {}),
+                "params": dict(self.params),
             }
             self.progress.emit(self.task_token, 100, "done")
             self.finished_signal.emit(self.task_token, payload)
