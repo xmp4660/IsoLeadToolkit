@@ -51,7 +51,10 @@ class ExportPanelSelectionMixin:
                 translate("Selected Samples: {count}").format(count=count)
             )
 
-        enable_exports = count > 0
+        # Always enable export buttons — when nothing is selected the
+        # handler exports the full dataset instead of a subset.
+        _ = count  # still update the status label above
+        enable_exports = True
         for btn in (
             getattr(self, 'export_csv_button', None),
             getattr(self, 'export_excel_button', None),
