@@ -92,6 +92,7 @@ class RenderPlotUseCase:
             self._notify_selection_ui()
             try:
                 self._state.fig.canvas.draw_idle()
+                self._state.fig.canvas.flush_events()
             except Exception as err:
                 logger.warning("Draw error: %s", err)
         else:
@@ -258,6 +259,7 @@ class RenderPlotUseCase:
             self._notify_selection_ui()
             try:
                 self._state.fig.canvas.draw_idle()
+                self._state.fig.canvas.flush_events()
             except Exception:
                 pass
         else:
