@@ -66,6 +66,16 @@ class BasePanel(QWidget):
 
     def _on_change(self):
         """参数变化回调"""
+        # Cancel pending debounce timers to prevent double-firing when
+        # _on_change is called directly (e.g. from sliderReleased) while a
+        # _schedule_slider_callback timer is still pending.
+        for key, timer in list(self._slider_timers.items()):
+            try:
+                timer.stop()
+            except Exception:
+                pass
+        self._slider_timers.clear()
+
         if self.callback:
             self.callback()
 

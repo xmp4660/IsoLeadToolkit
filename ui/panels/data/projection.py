@@ -122,6 +122,10 @@ class DataPanelProjectionMixin:
     def _on_umap_slider_changed(self, param, value, label, slider):
         """Handle UMAP slider move."""
         app_state.umap_params[param] = value
+        # Sync the state store snapshot so subsequent _sync_state() calls
+        # (triggered by any state gateway dispatch) do not overwrite
+        # the in-place modification with stale snapshot values.
+        state_gateway.set_umap_params(app_state.umap_params)
         if label:
             if param == "min_dist":
                 label.setText(translate("{param}: {value:.2f}").format(param=param, value=value))
@@ -134,16 +138,19 @@ class DataPanelProjectionMixin:
     def _on_umap_param_change(self, param, value, label):
         """Handle UMAP parameter changes for non-slider controls."""
         app_state.umap_params[param] = value
+        state_gateway.set_umap_params(app_state.umap_params)
         if label:
             if param == "min_dist":
                 label.setText(translate("{param}: {value:.2f}").format(param=param, value=value))
             else:
                 label.setText(translate("{param}: {value}").format(param=param, value=value))
         self._schedule_slider_callback(f"umap_{param}")
+        self._on_change()
 
     def _on_tsne_slider_changed(self, param, value, label):
         """Handle t-SNE slider move."""
         app_state.tsne_params[param] = value
+        state_gateway.set_tsne_params(app_state.tsne_params)
         if label:
             label.setText(translate("{param}: {value}").format(param=param, value=int(value)))
         self._schedule_slider_callback(f"tsne_{param}")
@@ -151,23 +158,29 @@ class DataPanelProjectionMixin:
     def _on_tsne_param_change(self, param, value, label):
         """Handle t-SNE parameter changes for non-slider controls."""
         app_state.tsne_params[param] = value
+        state_gateway.set_tsne_params(app_state.tsne_params)
         if label:
             label.setText(translate("{param}: {value}").format(param=param, value=value))
         self._schedule_slider_callback(f"tsne_{param}")
+        self._on_change()
 
     def _on_pca_param_change(self, param, value, label=None):
         """Handle PCA parameter changes."""
         app_state.pca_params[param] = value
+        state_gateway.set_pca_params(app_state.pca_params)
         if label and param == "random_state":
             label.setText(translate("random_state: {value}").format(value=value))
         self._schedule_slider_callback(f"pca_{param}")
+        self._on_change()
 
     def _on_robust_pca_param_change(self, param, value, label=None):
         """Handle RobustPCA parameter changes."""
         app_state.robust_pca_params[param] = value
+        state_gateway.set_robust_pca_params(app_state.robust_pca_params)
         if label and param == "support_fraction":
             label.setText(translate("support_fraction: {value:.2f}").format(value=value))
         self._schedule_slider_callback(f"robust_pca_{param}")
+        self._on_change()
 
     def _on_standardize_change(self, state):
         """Handle standardization checkbox changes."""

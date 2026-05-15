@@ -143,6 +143,25 @@ def _on_embedding_task_failed(task_token: int, error_message: str) -> None:
     state_gateway.set_embedding_worker(None, running=False)
     logger.warning('Embedding task failed: %s', error_message)
 
+    # Notify user with a visible error dialog so silent failures don't
+    # leave the user wondering why the plot didn't refresh.
+    try:
+        from PyQt5.QtWidgets import QApplication, QMessageBox
+        from core import translate as _t
+
+        parent = QApplication.activeWindow()
+        algorithm = getattr(app_state, 'render_mode', 'Unknown')
+        QMessageBox.warning(
+            parent,
+            _t("Embedding Error"),
+            _t("Failed to compute {algorithm} embedding: {error}").format(
+                algorithm=algorithm,
+                error=error_message,
+            ),
+        )
+    except Exception as notify_err:
+        logger.warning('Failed to show embedding error dialog: %s', notify_err)
+
 
 def _on_embedding_task_cancelled(task_token: int) -> None:
     if task_token != getattr(app_state, 'embedding_task_token', -1):
